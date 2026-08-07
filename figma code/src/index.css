@@ -1,0 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Aref+Ruqaa:wght@400;700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Cairo', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Aref Ruqaa', 'Cairo', serif;
+
+  --color-background: #faf7ff;
+  --color-foreground: #2b1b3d;
+  --color-card: #ffffff;
+  --color-card-foreground: #2b1b3d;
+  --color-primary: #7a17c9;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f3e8ff;
+  --color-secondary-foreground: #5b0e9c;
+  --color-muted: #f6f1fb;
+  --color-muted-foreground: #6a5b7a;
+  --color-accent: #c020f0;
+  --color-accent-foreground: #ffffff;
+  --color-brand-blue: #2b7fff;
+  --color-brand-deep: #5b0e9c;
+  --color-brand-mid: #8a17c9;
+  --color-brand-magenta: #c020f0;
+  --color-border: #ecd9fb;
+  --color-ring: #ad46ff;
+
+  --radius: 1.25rem;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 28%, transparent);
+  color: var(--color-brand-deep);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.brand-gradient {
+  background-image: linear-gradient(135deg, #5b0e9c 0%, #8a17c9 50%, #c020f0 100%);
+}
+.brand-gradient-blue {
+  background-image: linear-gradient(135deg, #ad46ff 0%, #2b7fff 100%);
+}
+.brand-text-gradient {
+  background-image: linear-gradient(120deg, #8a17c9 0%, #c020f0 55%, #2b7fff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Animated moving purple gradient border (for the ask input) */
+@keyframes borderShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-border {
+  background-image: linear-gradient(
+    120deg,
+    #5b0e9c,
+    #8a17c9,
+    #c020f0,
+    #ad46ff,
+    #2b7fff,
+    #8a17c9,
+    #5b0e9c
+  );
+  background-size: 300% 300%;
+  animation: borderShift 5s ease-in-out infinite;
+}
+
+.dot-grid {
+  background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.16) 1.3px, transparent 1.6px);
+  background-size: 20px 20px;
+}
+
+/* Twinkling night-sky stars (opacity only, so it can combine with drift) */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: var(--star-min, 0.2);
+  }
+  50% {
+    opacity: var(--star-max, 1);
+  }
+}
+
+/* Gentle floating drift */
+@keyframes drift {
+  0% {
+    transform: translate(0, 0) scale(0.85);
+  }
+  50% {
+    transform: translate(var(--drift-x, 4px), var(--drift-y, -5px)) scale(1.1);
+  }
+  100% {
+    transform: translate(0, 0) scale(0.85);
+  }
+}
+
+.star {
+  position: absolute;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.7);
+  animation:
+    twinkle var(--star-dur, 3s) ease-in-out infinite,
+    drift var(--drift-dur, 7s) ease-in-out infinite;
+  animation-delay: var(--star-delay, 0s), var(--star-delay, 0s);
+  will-change: transform, opacity;
+}
+
+/* Occasional shooting star */
+@keyframes shoot {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(18deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  22% {
+    opacity: 1;
+  }
+  40%,
+  100% {
+    transform: translate3d(-460px, 200px, 0) rotate(18deg);
+    opacity: 0;
+  }
+}
+
+.shooting-star {
+  position: absolute;
+  height: 2px;
+  width: 120px;
+  background: linear-gradient(270deg, #fff, rgba(255, 255, 255, 0));
+  border-radius: 9999px;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+  animation: shoot var(--shoot-dur, 6s) ease-in infinite;
+  animation-delay: var(--shoot-delay, 0s);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

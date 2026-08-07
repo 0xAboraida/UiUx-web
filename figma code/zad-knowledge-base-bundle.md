@@ -1,0 +1,891 @@
+# حزمة كود صفحة "قاعدة المعرفة" — Zad-AI
+
+انسخ هذا الملف بالكامل والصقه لـ Gemini في Antigravity مع البرومبت التالي:
+
+> **البرومبت:**
+> دي مكوّنات React 19 + TypeScript + Tailwind CSS v4 لصفحة "قاعدة المعرفة" بالعربي (RTL).
+> عايزك تنشئها في مشروعي بنفس الشكل والسلوك بالظبط، بنفس أسماء الملفات ومساراتها.
+> ملاحظات مهمة:
+> - المشروع يستخدم Tailwind v4 عبر إضافة `@tailwindcss/vite` (من غير `tailwind.config.js` ولا PostCSS).
+> - فيه alias اسمه `@` بيشاور على مجلد `src` (معرّف في `vite.config.ts`).
+> - لازم `src/index.css` يفضل فيه استيراد خطوط Google (Cairo + Aref Ruqaa) وكتلة `@theme`
+>   والكلاسات المخصّصة (`brand-gradient`, `brand-gradient-blue`, `brand-text-gradient`,
+>   `font-display`, `dot-grid`) زي ما هي.
+> - عنصر الشعار `@/imports/WhiteLogo.png` لازم يكون موجود (لو مش عندك، استبدله بأي صورة شعار).
+> - حافظ على RTL والأنيميشن (accordion / fade / hover) وكل مميزات الصفحة.
+> ركّب الملفات زي ما هي، ولو حبيت اربط زر "اسأل زاد عنه" استخدم ملفات المحادثة المرفقة.
+
+---
+
+## ① `src/index.css`  (الألوان + الخطوط + الكلاسات المخصّصة — مطلوب)
+
+```css
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Aref+Ruqaa:wght@400;700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Cairo', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Aref Ruqaa', 'Cairo', serif;
+
+  --color-background: #faf7ff;
+  --color-foreground: #2b1b3d;
+  --color-card: #ffffff;
+  --color-card-foreground: #2b1b3d;
+  --color-primary: #7a17c9;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f3e8ff;
+  --color-secondary-foreground: #5b0e9c;
+  --color-muted: #f6f1fb;
+  --color-muted-foreground: #6a5b7a;
+  --color-accent: #c020f0;
+  --color-accent-foreground: #ffffff;
+  --color-brand-blue: #2b7fff;
+  --color-brand-deep: #5b0e9c;
+  --color-brand-mid: #8a17c9;
+  --color-brand-magenta: #c020f0;
+  --color-border: #ecd9fb;
+  --color-ring: #ad46ff;
+
+  --radius: 1.25rem;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 28%, transparent);
+  color: var(--color-brand-deep);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.brand-gradient {
+  background-image: linear-gradient(135deg, #5b0e9c 0%, #8a17c9 50%, #c020f0 100%);
+}
+.brand-gradient-blue {
+  background-image: linear-gradient(135deg, #ad46ff 0%, #2b7fff 100%);
+}
+.brand-text-gradient {
+  background-image: linear-gradient(120deg, #8a17c9 0%, #c020f0 55%, #2b7fff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.dot-grid {
+  background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.16) 1.3px, transparent 1.6px);
+  background-size: 20px 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+
+---
+
+## ② `src/components/knowledge/data.ts`  (البيانات — مطلوب)
+
+```ts
+export type Book = {
+  title: string
+  author: string
+}
+
+export type Category = {
+  id: string
+  name: string
+  books: Book[]
+}
+
+export type Domain = {
+  id: string
+  name: string
+  icon: string
+  categories: Category[]
+}
+
+/**
+ * Knowledge-base content model. The UI renders whatever is here, so the design
+ * scales to thousands of books without changes — just extend these arrays.
+ * A few example books per category are included on purpose.
+ */
+export function countBooks(list: Domain[]): number {
+  return list.reduce(
+    (total, d) => total + d.categories.reduce((n, c) => n + c.books.length, 0),
+    0,
+  )
+}
+
+export const domains: Domain[] = [
+  {
+    id: 'fiqh',
+    name: 'الفقه',
+    icon: '📚',
+    categories: [
+      {
+        id: 'hanbali',
+        name: 'المذهب الحنبلي',
+        books: [
+          { title: 'المغني', author: 'ابن قدامة المقدسي' },
+          { title: 'زاد المستقنع', author: 'الحجاوي' },
+        ],
+      },
+      {
+        id: 'hanafi',
+        name: 'المذهب الحنفي',
+        books: [{ title: 'بدائع الصنائع', author: 'الكاساني' }],
+      },
+      {
+        id: 'maliki',
+        name: 'المذهب المالكي',
+        books: [{ title: 'المدوّنة الكبرى', author: 'الإمام مالك' }],
+      },
+      {
+        id: 'shafii',
+        name: 'المذهب الشافعي',
+        books: [{ title: 'الأم', author: 'الإمام الشافعي' }],
+      },
+      {
+        id: 'general-fiqh',
+        name: 'الفقه العام',
+        books: [{ title: 'بداية المجتهد', author: 'ابن رشد الحفيد' }],
+      },
+    ],
+  },
+  {
+    id: 'aqeedah',
+    name: 'العقيدة',
+    icon: '🕌',
+    categories: [
+      {
+        id: 'tawheed',
+        name: 'التوحيد',
+        books: [{ title: 'كتاب التوحيد', author: 'محمد بن عبد الوهاب' }],
+      },
+      {
+        id: 'creed-texts',
+        name: 'المتون العقدية',
+        books: [{ title: 'العقيدة الواسطية', author: 'ابن تيمية' }],
+      },
+    ],
+  },
+  {
+    id: 'hadith',
+    name: 'الحديث',
+    icon: '📜',
+    categories: [
+      {
+        id: 'sahih',
+        name: 'الصحاح',
+        books: [
+          { title: 'صحيح البخاري', author: 'الإمام البخاري' },
+          { title: 'صحيح مسلم', author: 'الإمام مسلم' },
+        ],
+      },
+      {
+        id: 'sunan',
+        name: 'السنن',
+        books: [{ title: 'سنن أبي داود', author: 'أبو داود السجستاني' }],
+      },
+    ],
+  },
+  {
+    id: 'tafsir',
+    name: 'التفسير',
+    icon: '✨',
+    categories: [
+      {
+        id: 'athari-tafsir',
+        name: 'التفسير بالمأثور',
+        books: [{ title: 'تفسير الطبري', author: 'ابن جرير الطبري' }],
+      },
+      {
+        id: 'general-tafsir',
+        name: 'التفسير العام',
+        books: [{ title: 'تفسير ابن كثير', author: 'ابن كثير' }],
+      },
+    ],
+  },
+  {
+    id: 'seerah',
+    name: 'السيرة النبوية',
+    icon: '🌙',
+    categories: [
+      {
+        id: 'classic-seerah',
+        name: 'كتب السيرة',
+        books: [
+          { title: 'السيرة النبوية', author: 'ابن هشام' },
+          { title: 'الرحيق المختوم', author: 'المباركفوري' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'history',
+    name: 'التاريخ الإسلامي',
+    icon: '🏛️',
+    categories: [
+      {
+        id: 'general-history',
+        name: 'التاريخ العام',
+        books: [{ title: 'البداية والنهاية', author: 'ابن كثير' }],
+      },
+    ],
+  },
+  {
+    id: 'grammar',
+    name: 'النحو والصرف',
+    icon: '🖋️',
+    categories: [
+      {
+        id: 'nahw',
+        name: 'النحو',
+        books: [{ title: 'الأجرومية', author: 'ابن آجروم' }],
+      },
+      {
+        id: 'sarf',
+        name: 'الصرف',
+        books: [{ title: 'شذا العرف', author: 'أحمد الحملاوي' }],
+      },
+    ],
+  },
+]
+```
+
+---
+
+## ③ `src/components/knowledge/KnowledgeBase.tsx`  (الصفحة نفسها — مطلوب)
+
+```tsx
+import { useEffect, useMemo, useState } from 'react'
+import whiteLogo from '@/imports/WhiteLogo.png'
+import { countBooks, domains, type Book, type Category, type Domain } from './data'
+
+const norm = (s: string) => s.trim().toLowerCase()
+const PAGE_SIZE = 24
+const STORE_KEY = 'zad-kb'
+
+/** Highlights the matching part of a string with a soft accent mark. */
+function Highlight({ text, query }: { text: string; query: string }) {
+  if (!query) return <>{text}</>
+  const idx = norm(text).indexOf(query)
+  if (idx === -1) return <>{text}</>
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="rounded bg-accent/20 px-0.5 text-primary">{text.slice(idx, idx + query.length)}</mark>
+      {text.slice(idx + query.length)}
+    </>
+  )
+}
+
+/** Minimal Islamic-library illustration (books under an arch), inline SVG. */
+function LibraryArt() {
+  return (
+    <svg viewBox="0 0 240 200" className="h-full w-full" role="img" aria-label="مكتبة إسلامية">
+      <defs>
+        <linearGradient id="kb-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ad46ff" />
+          <stop offset="1" stopColor="#2b7fff" />
+        </linearGradient>
+      </defs>
+      <path d="M40 180V96a80 80 0 0 1 160 0v84" fill="none" stroke="url(#kb-g)" strokeWidth="3" opacity="0.5" />
+      <path d="M120 24l6 12 12 2-9 9 2 12-11-6-11 6 2-12-9-9 12-2z" fill="url(#kb-g)" opacity="0.9" />
+      <g strokeWidth="2" stroke="url(#kb-g)" fill="none">
+        <rect x="70" y="120" width="18" height="52" rx="3" />
+        <rect x="92" y="110" width="18" height="62" rx="3" />
+        <rect x="114" y="126" width="18" height="46" rx="3" />
+        <rect x="136" y="114" width="18" height="58" rx="3" />
+        <rect x="158" y="132" width="18" height="40" rx="3" />
+      </g>
+      <line x1="52" y1="180" x2="188" y2="180" stroke="url(#kb-g)" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function BookCard({ book, query, onAsk }: { book: Book; query: string; onAsk: (b: Book) => void }) {
+  return (
+    <div className="group relative rounded-2xl border border-border bg-card/70 p-4 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:border-accent/40 hover:shadow-[0_16px_40px_-18px_rgba(122,23,201,0.5)]">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-lg transition-colors group-hover:bg-primary">
+          📖
+        </span>
+        <div className="min-w-0 flex-1">
+          <h4 className="truncate font-display text-lg text-foreground">
+            <Highlight text={book.title} query={query} />
+          </h4>
+          <p className="mt-0.5 truncate text-sm text-muted-foreground">
+            ✍️ <Highlight text={book.author} query={query} />
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1 rounded-full bg-secondary/70 px-2 py-0.5 text-[11px] text-secondary-foreground">
+          ✓ مصدر معتمد
+        </span>
+        <button
+          type="button"
+          onClick={() => onAsk(book)}
+          className="rounded-full border border-accent/30 px-3 py-1 text-xs font-medium text-primary opacity-0 transition-all hover:bg-secondary group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          اسأل زاد عنه
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function CategoryBlock({
+  cat,
+  open,
+  onToggle,
+  query,
+  onAsk,
+}: {
+  cat: Category
+  open: boolean
+  onToggle: () => void
+  query: string
+  onAsk: (b: Book) => void
+}) {
+  const [limit, setLimit] = useState(PAGE_SIZE)
+  const shown = cat.books.slice(0, limit)
+  const panelId = `cat-panel-${cat.id}`
+
+  return (
+    <div className="rounded-2xl border border-border/70 bg-background/40">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="flex w-full items-center gap-3 px-4 py-3 text-right transition-colors hover:bg-secondary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
+        <span className="text-accent" aria-hidden>├──</span>
+        <span className="flex-1 font-medium text-foreground">
+          <Highlight text={cat.name} query={query} />
+        </span>
+        <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-secondary-foreground">
+          {cat.books.length}
+        </span>
+        <span className={`text-muted-foreground transition-transform duration-300 ${open ? 'rotate-180' : ''}`} aria-hidden>
+          ⌄
+        </span>
+      </button>
+      <div id={panelId} className={`grid transition-all duration-300 ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+        <div className="overflow-hidden">
+          <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3">
+            {shown.map((b) => (
+              <BookCard key={b.title} book={b} query={query} onAsk={onAsk} />
+            ))}
+          </div>
+          {cat.books.length > limit && (
+            <div className="px-4 pb-4 text-center">
+              <button
+                type="button"
+                onClick={() => setLimit((l) => l + PAGE_SIZE)}
+                className="rounded-full border border-border bg-card/60 px-5 py-2 text-sm text-primary transition-colors hover:bg-secondary"
+              >
+                تحميل المزيد ({cat.books.length - limit})
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DomainAccordion({
+  domain,
+  open,
+  onToggle,
+  openCats,
+  toggleCat,
+  forceOpen,
+  query,
+  onAsk,
+}: {
+  domain: Domain
+  open: boolean
+  onToggle: () => void
+  openCats: Set<string>
+  toggleCat: (id: string) => void
+  forceOpen: boolean
+  query: string
+  onAsk: (b: Book) => void
+}) {
+  const isOpen = forceOpen || open
+  const bookCount = countBooks([domain])
+  const panelId = `domain-panel-${domain.id}`
+
+  return (
+    <div className="overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur-md shadow-[0_8px_30px_-18px_rgba(122,23,201,0.35)]">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        className="flex w-full items-center gap-4 p-5 text-right transition-colors hover:bg-secondary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
+        <span className="brand-gradient flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl text-white shadow-lg shadow-primary/25">
+          {domain.icon}
+        </span>
+        <div className="flex-1">
+          <h3 className="font-display text-2xl text-foreground">
+            <Highlight text={domain.name} query={query} />
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {domain.categories.length} تصنيفات · {bookCount} كتاب
+          </p>
+        </div>
+        <span className={`text-xl text-accent transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} aria-hidden>
+          ⌄
+        </span>
+      </button>
+
+      <div id={panelId} className={`grid transition-all duration-300 ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+        <div className="overflow-hidden">
+          <div className="space-y-3 px-5 pb-5">
+            {domain.categories.map((cat) => (
+              <CategoryBlock
+                key={cat.id}
+                cat={cat}
+                open={forceOpen || openCats.has(cat.id)}
+                onToggle={() => toggleCat(cat.id)}
+                query={query}
+                onAsk={onAsk}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SkeletonList() {
+  return (
+    <div className="space-y-4">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="animate-pulse rounded-3xl border border-border bg-card/60 p-5">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-secondary" />
+            <div className="flex-1 space-y-2">
+              <div className="h-5 w-40 rounded bg-secondary" />
+              <div className="h-3 w-28 rounded bg-secondary/70" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export default function KnowledgeBase({
+  onExit,
+  onAskBook,
+}: {
+  onExit: () => void
+  onAskBook: (book: Book) => void
+}) {
+  // restore persisted state
+  const persisted = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') as { query?: string; filter?: string }
+    } catch {
+      return {}
+    }
+  })()
+
+  const [query, setQuery] = useState(persisted.query ?? '')
+  const [filter, setFilter] = useState<string>(persisted.filter ?? 'all')
+  const [loading, setLoading] = useState(true)
+  const [openDomains, setOpenDomains] = useState<Set<string>>(new Set())
+  const [openCats, setOpenCats] = useState<Set<string>>(new Set())
+
+  const q = norm(query)
+  const searching = q.length > 0
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setLoading(false), 500)
+    return () => window.clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ query, filter }))
+    } catch {
+      /* ignore */
+    }
+  }, [query, filter])
+
+  const visible = useMemo(() => {
+    return domains
+      .filter((d) => filter === 'all' || d.id === filter)
+      .map((d) => {
+        if (!q) return d
+        const domainMatch = norm(d.name).includes(q)
+        const categories = d.categories
+          .map((c) => {
+            const catMatch = domainMatch || norm(c.name).includes(q)
+            const books = catMatch
+              ? c.books
+              : c.books.filter((b) => norm(b.title).includes(q) || norm(b.author).includes(q))
+            return { ...c, books }
+          })
+          .filter((c) => c.books.length > 0 || domainMatch)
+        return { ...d, categories }
+      })
+      .filter((d) => d.categories.length > 0)
+  }, [q, filter])
+
+  const resultBooks = countBooks(visible)
+  const totalBooks = countBooks(domains)
+  const isFiltered = searching || filter !== 'all'
+
+  const toggleDomain = (id: string) =>
+    setOpenDomains((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+
+  const toggleCat = (id: string) =>
+    setOpenCats((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+
+  const expandAll = () => {
+    setOpenDomains(new Set(visible.map((d) => d.id)))
+    setOpenCats(new Set(visible.flatMap((d) => d.categories.map((c) => c.id))))
+  }
+  const collapseAll = () => {
+    setOpenDomains(new Set())
+    setOpenCats(new Set())
+  }
+  const clearAll = () => {
+    setQuery('')
+    setFilter('all')
+  }
+
+  const chips = [{ id: 'all', name: 'الكل' }, ...domains.map((d) => ({ id: d.id, name: d.name }))]
+
+  return (
+    <div dir="rtl" className="relative min-h-screen bg-background text-foreground">
+      <div
+        className="pointer-events-none fixed inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 1px 1px, #7a17c9 1px, transparent 0), radial-gradient(circle at 20px 20px, #2b7fff 1px, transparent 0)',
+          backgroundSize: '40px 40px',
+        }}
+      />
+      <div className="pointer-events-none fixed -right-32 top-0 h-96 w-96 rounded-full bg-brand-magenta/10 blur-[130px]" />
+      <div className="pointer-events-none fixed -left-32 top-40 h-96 w-96 rounded-full bg-brand-blue/10 blur-[130px]" />
+
+      <header className="sticky top-0 z-30 border-b border-border bg-background/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <span className="brand-gradient flex h-9 w-9 items-center justify-center rounded-xl">
+              <img src={whiteLogo} alt="زاد" className="h-6 w-6 object-contain" />
+            </span>
+            <span className="font-display text-2xl text-primary">زاد</span>
+          </div>
+          <button
+            type="button"
+            onClick={onExit}
+            className="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary"
+          >
+            → العودة إلى الموقع
+          </button>
+        </div>
+      </header>
+
+      <main className="relative mx-auto max-w-6xl px-5 pb-24">
+        {/* Hero */}
+        <section className="grid items-center gap-8 py-12 md:grid-cols-[1.4fr_1fr] md:py-16">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-1.5 text-sm text-primary backdrop-blur-sm">
+              <span className="h-2 w-2 rounded-full bg-accent" /> Zad-AI · المصادر المعتمدة
+            </span>
+            <h1 className="mt-5 font-display text-5xl text-foreground md:text-6xl">
+              قاعدة <span className="brand-text-gradient">المعرفة</span>
+            </h1>
+            <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
+              تضم قاعدة المعرفة في Zad-AI مجموعة مختارة بعناية من أمهات الكتب في مختلف العلوم
+              الشرعية، جرى تنظيمها وتصنيفها لتوفير تجربة بحث واسترجاع دقيقة وموثوقة.
+            </p>
+            <p className="mt-5 font-display text-lg text-primary">
+              +{totalBooks} كتاب · {domains.length} مجالات علمية
+            </p>
+          </div>
+          <div className="mx-auto w-full max-w-xs rounded-[2rem] border border-border bg-card/50 p-6 backdrop-blur-md">
+            <LibraryArt />
+          </div>
+        </section>
+
+        {/* Search */}
+        <div className="sticky top-[73px] z-20 -mx-5 bg-background/70 px-5 py-4 backdrop-blur-xl">
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/70 px-5 py-3.5 shadow-sm backdrop-blur-md focus-within:border-accent/50">
+            <span className="text-xl text-muted-foreground" aria-hidden>🔍</span>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ابحث باسم الكتاب أو المؤلف أو المجال…"
+              className="w-full bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery('')} aria-label="مسح البحث" className="text-muted-foreground hover:text-foreground">
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {chips.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setFilter(c.id)}
+                className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                  filter === c.id
+                    ? 'brand-gradient text-white shadow-md shadow-primary/25'
+                    : 'border border-border bg-card/60 text-foreground/70 backdrop-blur-sm hover:border-accent/40'
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Toolbar: result count + controls */}
+        {!loading && (
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              {resultBooks > 0
+                ? <>تم العثور على <span className="font-semibold text-foreground">{resultBooks}</span> كتابًا في <span className="font-semibold text-foreground">{visible.length}</span> مجالات</>
+                : 'لا توجد نتائج'}
+              {isFiltered && (
+                <button type="button" onClick={clearAll} className="mr-3 text-primary underline-offset-4 hover:underline">
+                  مسح الكل
+                </button>
+              )}
+            </p>
+            {!searching && visible.length > 0 && (
+              <div className="flex gap-2">
+                <button type="button" onClick={expandAll} className="rounded-full border border-border bg-card/60 px-3.5 py-1.5 text-xs text-primary transition-colors hover:bg-secondary">
+                  فتح الكل
+                </button>
+                <button type="button" onClick={collapseAll} className="rounded-full border border-border bg-card/60 px-3.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary">
+                  طيّ الكل
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Domains */}
+        <section className="mt-4 space-y-4">
+          {loading ? (
+            <SkeletonList />
+          ) : visible.length === 0 ? (
+            <div className="rounded-3xl border border-border bg-card/60 py-20 text-center backdrop-blur-md">
+              <p className="text-lg text-muted-foreground">لا توجد نتائج مطابقة لبحثك.</p>
+              {isFiltered && (
+                <button type="button" onClick={clearAll} className="mt-3 rounded-full border border-border px-5 py-2 text-sm text-primary transition-colors hover:bg-secondary">
+                  مسح الكل
+                </button>
+              )}
+            </div>
+          ) : (
+            visible.map((d) => (
+              <div key={d.id} className="animate-[fadeIn_0.4s_ease]">
+                <DomainAccordion
+                  domain={d}
+                  open={openDomains.has(d.id)}
+                  onToggle={() => toggleDomain(d.id)}
+                  openCats={openCats}
+                  toggleCat={toggleCat}
+                  forceOpen={searching}
+                  query={q}
+                  onAsk={onAskBook}
+                />
+              </div>
+            ))
+          )}
+        </section>
+      </main>
+
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}`}</style>
+    </div>
+  )
+}
+```
+
+---
+
+## ④ ربط الصفحة (مثال `src/App.tsx`)
+
+> لو عندك App بالفعل، خُد منه فكرة `view` state وربط `KnowledgeBase`. زر "اسأل زاد عنه"
+> بيحتاج ملفات المحادثة في القسم ⑤. لو مش عايز المحادثة، مرّر `onAskBook={() => {}}`.
+
+```tsx
+import { useEffect, useState } from 'react'
+import ChatScreen from './components/chat/ChatScreen'
+import KnowledgeBase from './components/knowledge/KnowledgeBase'
+import type { Book } from './components/knowledge/data'
+
+type View = 'home' | 'chat' | 'knowledge'
+
+export default function App() {
+  const [view, setView] = useState<View>('knowledge')
+  const [pendingQuestion, setPendingQuestion] = useState<string | undefined>()
+
+  useEffect(() => {
+    document.documentElement.dir = 'rtl'
+    document.documentElement.lang = 'ar'
+  }, [])
+
+  const askAboutBook = (book: Book) => {
+    setPendingQuestion(`حدّثني عن كتاب "${book.title}" للمؤلف ${book.author}، وما أبرز موضوعاته؟`)
+    setView('chat')
+  }
+
+  if (view === 'chat') {
+    return (
+      <ChatScreen
+        onExit={() => setView('knowledge')}
+        onOpenVoice={() => {}}
+        initialQuestion={pendingQuestion}
+        onConsumeInitial={() => setPendingQuestion(undefined)}
+      />
+    )
+  }
+
+  return <KnowledgeBase onExit={() => setView('home')} onAskBook={askAboutBook} />
+}
+```
+
+---
+
+## ⑤ ملفات المحادثة (اختياري — لتشغيل زر "اسأل زاد عنه")
+
+### `src/components/chat/data.ts`
+
+```ts
+export type Role = 'user' | 'assistant'
+
+export type Message = {
+  id: string
+  role: Role
+  text: string
+}
+
+export type Conversation = {
+  id: string
+  title: string
+  group: string
+  messages: Message[]
+}
+
+export const DOMAINS = [
+  { id: 'auto', label: 'تحديد تلقائي' },
+  { id: 'fiqh', label: 'الفقه' },
+  { id: 'aqeedah', label: 'العقيدة' },
+  { id: 'tafsir', label: 'التفسير' },
+  { id: 'hadith', label: 'الحديث' },
+  { id: 'seerah', label: 'السيرة' },
+  { id: 'quran', label: 'علوم القرآن' },
+] as const
+
+export type DomainId = (typeof DOMAINS)[number]['id']
+
+let counter = 0
+export const uid = (prefix = 'id') => `${prefix}-${Date.now()}-${counter++}`
+
+export const seedConversations: Conversation[] = []
+
+export const GROUP_ORDER = ['الآن', 'اليوم', 'أمس', 'منذ يومين', 'منذ ٣ أيام']
+
+const domainLabel: Record<DomainId, string> = {
+  auto: 'العلوم الشرعية',
+  fiqh: 'الفقه',
+  aqeedah: 'العقيدة',
+  tafsir: 'التفسير',
+  hadith: 'الحديث',
+  seerah: 'السيرة والتاريخ',
+  quran: 'علوم القرآن',
+}
+
+/**
+ * Local placeholder responder for the demo. Replace the body with a real API
+ * call (e.g. Claude via a backend) to connect the actual Zad model.
+ */
+export function demoReply(question: string, domain: DomainId): string {
+  const trimmed = question.trim()
+  const field = domainLabel[domain]
+  return (
+    `سؤالك في ${field} سؤالٌ طيّب. باختصار: «${trimmed}» — ` +
+    'الإجابة المُحكمة تعتمد على الأدلة من الكتاب والسنّة وأقوال أهل العلم المعتبرين. ' +
+    'أنصحك بالرجوع إلى المصادر الموثوقة، ويسعدني أن أفصّل لك المسألة بأدلّتها إن أردت.\n\n' +
+    'ملاحظة: هذه نسخة تجريبية — يمكن ربطها بنموذج زاد الكامل لإجاباتٍ مصدَّقة.'
+  )
+}
+```
+
+### `src/components/chat/ChatScreen.tsx`
+> ملف المحادثة الكامل موجود في مشروعك تحت هذا المسار — انسخه كما هو من مشروعك.
+> أهم جزء للربط: البروب `initialQuestion` يُرسَل تلقائيًا مرة واحدة:
+>
+> ```tsx
+> useEffect(() => {
+>   if (initialQuestion) {
+>     send(initialQuestion)
+>     onConsumeInitial?.()
+>   }
+> }, [initialQuestion])
+> ```
+
+---
+
+## ملاحظات نهائية
+- **الأصول:** الشعار `@/imports/WhiteLogo.png` — تأكّد من وجوده أو استبدله.
+- **الخطوط:** Cairo و Aref Ruqaa من Google Fonts (مضمّنة في `index.css`، لا تحتاج تنزيل).
+- **التوسّع:** أضف كتبًا/تصنيفات/مجالات في `data.ts` فقط — التصميم يتكيّف تلقائيًا.
+- **Tailwind v4:** بدون ملف config؛ الألوان معرّفة داخل `@theme` في `index.css`.
+```
