@@ -1,6 +1,6 @@
 import {
   ChevronLeft, ChevronRight, Award, MessageCircle,
-  CheckCircle2, Lightbulb, LogOut
+  CheckCircle2, XCircle, BookOpen, LogOut
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Question } from '../../../../../contexts/StudyContext'
@@ -69,34 +69,56 @@ export function QuizActiveView({
   ) => {
     if (!isAnswered || !showFeedback) return null
     return (
-      <div className={`mt-4 p-4 rounded-2xl border text-xs leading-relaxed animate-in fade-in duration-300 flex flex-col gap-2 ${
-        isCorrect
-          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-          : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-      }`}>
-        <div className="flex items-center justify-between gap-2">
-          <p className="font-bold flex items-center gap-1.5">
+      <div className="mt-4 space-y-3 animate-in fade-in duration-300">
+        {/* Status Pill */}
+        <div className={`px-4 py-2 rounded-xl border text-xs font-bold flex items-center justify-between ${
+          isCorrect
+            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+            : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+        }`}>
+          <span className="flex items-center gap-1.5">
             {isCorrect ? (
-              <><CheckCircle2 size={14} className="text-emerald-400" /><span>إجابة صحيحة! أحسنت 👏</span></>
+              <><CheckCircle2 size={15} className="text-emerald-400" /><span>إجابة صحيحة! أحسنت 👏</span></>
             ) : (
-              <><Lightbulb size={14} className="text-amber-400" /><span>إجابة خاطئة</span></>
+              <><XCircle size={15} className="text-rose-400" /><span>إجابة خاطئة</span></>
             )}
-          </p>
-          <p className="mt-1 text-xs opacity-90">{q.explanation}</p>
+          </span>
+          {!isCorrect && (
+            <button
+              onClick={() => onDiscuss(
+                q,
+                selectedOpt !== undefined
+                  ? q.options[selectedOpt]
+                  : (q.type === 'matching' ? 'إجابات التوصيل والربط الخاصة بي' : 'لم يتم الإجابة')
+              )}
+              className="text-xs font-bold text-[#38bdf8] hover:underline flex items-center gap-1.5 bg-[#38bdf8]/10 px-2.5 py-1 rounded-lg border border-[#38bdf8]/20 cursor-pointer"
+            >
+              <MessageCircle size={13} />
+              <span>تناقش مع زاد</span>
+            </button>
+          )}
         </div>
-        {!isCorrect && (
-          <button
-            onClick={() => onDiscuss(
-              q,
-              selectedOpt !== undefined
-                ? q.options[selectedOpt]
-                : (q.type === 'matching' ? 'إجابات التوصيل والربط الخاصة بي' : 'لم يتم الإجابة')
-            )}
-            className="self-end text-xs font-bold text-[#38bdf8] hover:underline flex items-center gap-1.5 bg-[#38bdf8]/10 px-3 py-1.5 rounded-lg border border-[#38bdf8]/20 cursor-pointer"
-          >
-            <MessageCircle size={14} />
-            <span>تناقش مع زاد حول هذا السؤال</span>
-          </button>
+
+        {/* Scholarly Explanation Callout */}
+        {q.explanation && (
+          <div className="pt-2">
+            <div className="w-full border-t border-amber-500/25 my-2" />
+            <div className={`p-4 rounded-l-2xl border-r-4 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.12)] transition-all ${
+              isDark
+                ? 'bg-gradient-to-l from-amber-500/30 via-amber-500/15 to-amber-500/5 text-amber-100/95'
+                : 'bg-gradient-to-l from-amber-200/80 via-amber-100/50 to-amber-50/30 text-slate-900 border-amber-500 shadow-sm'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-black bg-amber-400/25 text-amber-300 border border-amber-400/40 shadow-sm">
+                  <BookOpen size={13} className="text-amber-400" />
+                  <span>التوضيح والتفسير الشرعي</span>
+                </span>
+              </div>
+              <p className="text-xs md:text-sm leading-relaxed opacity-95 pr-1">
+                {q.explanation}
+              </p>
+            </div>
+          </div>
         )}
       </div>
     )

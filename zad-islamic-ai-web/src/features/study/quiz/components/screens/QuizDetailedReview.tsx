@@ -1,4 +1,4 @@
-import { List, ChevronLeft, CheckCircle2, XCircle, Lightbulb, MessageCircle } from 'lucide-react'
+import { List, ChevronLeft, CheckCircle2, XCircle, BookOpen, MessageCircle } from 'lucide-react'
 import type { Question } from '../../../../../contexts/StudyContext'
 import { isMatchingFullyAnswered, isMatchingCorrect } from '../../utils/quizEvaluator'
 import { QuestionCardContent } from '../QuestionCardContent'
@@ -52,16 +52,25 @@ export function QuizDetailedReview({
             return (
               <div
                 key={idx}
-                className={`p-5 rounded-3xl border shadow-lg space-y-3 ${
-                  isDark ? 'bg-[#12041f]/80 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                className={`p-5 md:p-6 rounded-3xl border shadow-xl space-y-4 transition-all ${
+                  isDark
+                    ? 'bg-[#1c0836] border-purple-500/30 text-white shadow-purple-950/50 ring-1 ring-white/5'
+                    : 'bg-white border-slate-300 text-slate-900 shadow-md ring-1 ring-slate-900/5'
                 }`}
               >
-                <div className="flex items-center justify-between gap-2 border-b border-current/10 pb-3">
-                  <span className="text-xs font-bold text-emerald-400">سؤال {idx + 1} من {totalQuestions}</span>
-                  <span className={`px-2.5 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 ${
+                <div className={`p-3 rounded-2xl flex items-center justify-between gap-2 border ${
+                  isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center justify-center text-xs font-black">
+                      {idx + 1}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-400">سؤال {idx + 1} من {totalQuestions}</span>
+                  </div>
+                  <span className={`px-3 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-sm ${
                     isCorrect
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                      : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
                   }`}>
                     {isCorrect ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
                     <span>{isCorrect ? 'إجابة صحيحة' : 'إجابة خاطئة'}</span>
@@ -80,15 +89,27 @@ export function QuizDetailedReview({
                   correctMatchingPairs={q.matching_pairs}
                 />
 
-                <div className={`p-4 rounded-2xl border text-xs leading-relaxed transition-all ${
-                  isDark ? 'bg-white/5 border-white/10 text-white/90 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-800'
-                }`}>
-                  <div className="flex items-center gap-1.5 text-amber-400 font-extrabold mb-1.5">
-                    <Lightbulb size={16} className="text-amber-400 animate-pulse" />
-                    <span>التوضيح والتفسير الشرعي:</span>
+                {/* Scholarly Explanation Callout */}
+                {q.explanation && (
+                  <div className="pt-2">
+                    <div className="w-full border-t border-amber-500/25 my-2" />
+                    <div className={`p-4 rounded-l-2xl border-r-4 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.12)] transition-all ${
+                      isDark
+                        ? 'bg-gradient-to-l from-amber-500/30 via-amber-500/15 to-amber-500/5 text-amber-100/95'
+                        : 'bg-gradient-to-l from-amber-200/80 via-amber-100/50 to-amber-50/30 text-slate-900 border-amber-500 shadow-sm'
+                    }`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-black bg-amber-400/25 text-amber-300 border border-amber-400/40 shadow-sm">
+                          <BookOpen size={13} className="text-amber-400" />
+                          <span>التوضيح والتفسير الشرعي</span>
+                        </span>
+                      </div>
+                      <p className="text-xs md:text-sm leading-relaxed opacity-95 pr-1">
+                        {q.explanation}
+                      </p>
+                    </div>
                   </div>
-                  <p className="leading-relaxed opacity-90">{q.explanation}</p>
-                </div>
+                )}
 
                 {!isCorrect && (
                   <div className="pt-1 flex justify-end">
