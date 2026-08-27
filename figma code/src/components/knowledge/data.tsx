@@ -1,3 +1,7 @@
+import React from 'react'
+import type { ReactNode } from 'react'
+import { Scale, HeartHandshake, BookOpenText, Sparkles, Moon, Landmark, Languages } from 'lucide-react'
+
 export type Book = {
   title: string
   author: string
@@ -12,7 +16,7 @@ export type Category = {
 export type Domain = {
   id: string
   name: string
-  icon: string
+  icon: ReactNode
   categories: Category[]
 }
 
@@ -32,7 +36,7 @@ export const domains: Domain[] = [
   {
     id: 'fiqh',
     name: 'الفقه',
-    icon: '📚',
+    icon: <Scale className="h-6 w-6" />,
     categories: [
       {
         id: 'hanbali',
@@ -67,7 +71,7 @@ export const domains: Domain[] = [
   {
     id: 'aqeedah',
     name: 'العقيدة',
-    icon: '🕌',
+    icon: <HeartHandshake className="h-6 w-6" />,
     categories: [
       {
         id: 'tawheed',
@@ -84,7 +88,7 @@ export const domains: Domain[] = [
   {
     id: 'hadith',
     name: 'الحديث',
-    icon: '📜',
+    icon: <BookOpenText className="h-6 w-6" />,
     categories: [
       {
         id: 'sahih',
@@ -104,7 +108,7 @@ export const domains: Domain[] = [
   {
     id: 'tafsir',
     name: 'التفسير',
-    icon: '✨',
+    icon: <Sparkles className="h-6 w-6" />,
     categories: [
       {
         id: 'athari-tafsir',
@@ -121,7 +125,7 @@ export const domains: Domain[] = [
   {
     id: 'seerah',
     name: 'السيرة النبوية',
-    icon: '🌙',
+    icon: <Moon className="h-6 w-6" />,
     categories: [
       {
         id: 'classic-seerah',
@@ -136,7 +140,7 @@ export const domains: Domain[] = [
   {
     id: 'history',
     name: 'التاريخ الإسلامي',
-    icon: '🏛️',
+    icon: <Landmark className="h-6 w-6" />,
     categories: [
       {
         id: 'general-history',
@@ -148,7 +152,7 @@ export const domains: Domain[] = [
   {
     id: 'grammar',
     name: 'النحو والصرف',
-    icon: '🖋️',
+    icon: <Languages className="h-6 w-6" />,
     categories: [
       {
         id: 'nahw',

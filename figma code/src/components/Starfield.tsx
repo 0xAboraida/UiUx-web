@@ -30,8 +30,8 @@ export default function Starfield({ count = 44 }: { count?: number }) {
   }, [count])
 
   const shooters = [
-    { top: 12, left: 82, style: { '--shoot-dur': '7s', '--shoot-delay': '2s' } as StarStyle },
-    { top: 26, left: 96, style: { '--shoot-dur': '9s', '--shoot-delay': '6s' } as StarStyle },
+    { top: 12, left: 15, style: { '--shoot-dur': '7s', '--shoot-delay': '2s' } as StarStyle },
+    { top: 26, left: 5, style: { '--shoot-dur': '9s', '--shoot-delay': '6s' } as StarStyle },
   ]
 
   return (

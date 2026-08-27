@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { BookOpen, Library, Search, X, Folder, FolderOpen, Pen, ChevronDown } from 'lucide-react'
 import whiteLogo from '@/imports/WhiteLogo.png'
+import darkLogo from '@/imports/ZadDarkLogo.png'
 import { countBooks, domains, type Book, type Category, type Domain } from './data'
 
 const norm = (s: string) => s.trim().toLowerCase()
@@ -48,15 +50,15 @@ function BookCard({ book, query, onAsk }: { book: Book; query: string; onAsk: (b
   return (
     <div className="group relative rounded-2xl border border-border bg-card/70 p-4 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:border-accent/40 hover:shadow-[0_16px_40px_-18px_rgba(122,23,201,0.5)]">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-lg transition-colors group-hover:bg-primary">
-          📖
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-brand-blue transition-colors group-hover:bg-primary group-hover:text-white">
+          <BookOpen className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
           <h4 className="truncate font-display text-lg text-foreground">
             <Highlight text={book.title} query={query} />
           </h4>
-          <p className="mt-0.5 truncate text-sm text-muted-foreground">
-            ✍️ <Highlight text={book.author} query={query} />
+          <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-muted-foreground">
+            <Pen className="h-3.5 w-3.5" /> <Highlight text={book.author} query={query} />
           </p>
         </div>
       </div>
@@ -101,22 +103,24 @@ function CategoryBlock({
         onClick={onToggle}
         aria-expanded={open}
         aria-controls={panelId}
-        className="flex w-full items-center gap-3 px-4 py-3 text-right transition-colors hover:bg-secondary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="group flex w-full items-center gap-3 px-4 py-3 text-right transition-colors hover:bg-secondary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        <span className="text-accent" aria-hidden>├──</span>
+        <span className="text-accent" aria-hidden="true">
+          {open ? <FolderOpen className="h-5 w-5" /> : <Folder className="h-5 w-5" />}
+        </span>
         <span className="flex-1 font-medium text-foreground">
           <Highlight text={cat.name} query={query} />
         </span>
         <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-secondary-foreground">
           {cat.books.length}
         </span>
-        <span className={`text-muted-foreground transition-transform duration-300 ${open ? 'rotate-180' : ''}`} aria-hidden>
-          ⌄
+        <span className={`flex h-7 w-7 items-center justify-center rounded-full bg-secondary/60 text-muted-foreground transition-all duration-300 group-hover:bg-secondary ${open ? 'rotate-180 bg-primary/15 text-primary group-hover:bg-primary/25' : ''}`} aria-hidden>
+          <ChevronDown className="h-4 w-4" />
         </span>
       </button>
       <div id={panelId} className={`grid transition-all duration-300 ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
         <div className="overflow-hidden">
-          <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 px-4 pb-4 pt-3 sm:grid-cols-2 lg:grid-cols-3">
             {shown.map((b) => (
               <BookCard key={b.title} book={b} query={query} onAsk={onAsk} />
             ))}
@@ -168,7 +172,7 @@ function DomainAccordion({
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls={panelId}
-        className="flex w-full items-center gap-4 p-5 text-right transition-colors hover:bg-secondary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="group flex w-full items-center gap-4 p-5 text-right transition-colors hover:bg-secondary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         <span className="brand-gradient flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl text-white shadow-lg shadow-primary/25">
           {domain.icon}
@@ -181,14 +185,14 @@ function DomainAccordion({
             {domain.categories.length} تصنيفات · {bookCount} كتاب
           </p>
         </div>
-        <span className={`text-xl text-accent transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} aria-hidden>
-          ⌄
+        <span className={`flex h-9 w-9 items-center justify-center rounded-full bg-secondary/60 text-muted-foreground transition-all duration-300 group-hover:bg-secondary ${isOpen ? 'rotate-180 bg-accent/15 text-accent group-hover:bg-accent/25' : ''}`} aria-hidden>
+          <ChevronDown className="h-5 w-5" />
         </span>
       </button>
 
       <div id={panelId} className={`grid transition-all duration-300 ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
         <div className="overflow-hidden">
-          <div className="space-y-3 px-5 pb-5">
+          <div className="space-y-4 px-5 pb-5 pt-2">
             {domain.categories.map((cat) => (
               <CategoryBlock
                 key={cat.id}
@@ -227,9 +231,11 @@ function SkeletonList() {
 export default function KnowledgeBase({
   onExit,
   onAskBook,
+  theme = 'light',
 }: {
   onExit: () => void
   onAskBook: (book: Book) => void
+  theme?: 'dark' | 'light'
 }) {
   // restore persisted state
   const persisted = (() => {
@@ -316,7 +322,7 @@ export default function KnowledgeBase({
   const chips = [{ id: 'all', name: 'الكل' }, ...domains.map((d) => ({ id: d.id, name: d.name }))]
 
   return (
-    <div dir="rtl" className="relative min-h-screen bg-background text-foreground">
+    <div dir="rtl" className={`relative min-h-screen bg-background text-foreground transition-colors duration-300 ${theme === 'dark' ? 'dark' : ''}`}>
       <div
         className="pointer-events-none fixed inset-0 opacity-[0.04]"
         style={{
@@ -328,51 +334,75 @@ export default function KnowledgeBase({
       <div className="pointer-events-none fixed -right-32 top-0 h-96 w-96 rounded-full bg-brand-magenta/10 blur-[130px]" />
       <div className="pointer-events-none fixed -left-32 top-40 h-96 w-96 rounded-full bg-brand-blue/10 blur-[130px]" />
 
-      <header className="sticky top-0 z-30 border-b border-border bg-background/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <div className="flex items-center gap-2.5">
-            <span className="brand-gradient flex h-9 w-9 items-center justify-center rounded-xl">
-              <img src={whiteLogo} alt="زاد" className="h-6 w-6 object-contain" />
-            </span>
-            <span className="font-display text-2xl text-primary">زاد</span>
-          </div>
-          <button
-            type="button"
-            onClick={onExit}
-            className="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary"
-          >
-            → العودة إلى الموقع
-          </button>
-        </div>
-      </header>
+      <div className="absolute right-5 top-5 z-40">
+        <button
+          type="button"
+          onClick={onExit}
+          className="rounded-full border border-border bg-background/50 px-4 py-2 text-sm text-muted-foreground backdrop-blur-md transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          → العودة إلى الموقع
+        </button>
+      </div>
 
       <main className="relative mx-auto max-w-6xl px-5 pb-24">
         {/* Hero */}
-        <section className="grid items-center gap-8 py-12 md:grid-cols-[1.4fr_1fr] md:py-16">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-1.5 text-sm text-primary backdrop-blur-sm">
-              <span className="h-2 w-2 rounded-full bg-accent" /> Zad-AI · المصادر المعتمدة
-            </span>
-            <h1 className="mt-5 font-display text-5xl text-foreground md:text-6xl">
-              قاعدة <span className="brand-text-gradient">المعرفة</span>
+        <section className="grid items-center gap-8 pt-20 pb-12 md:grid-cols-[1.4fr_1fr] md:py-16">
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
+            <h1 className="font-display text-5xl text-foreground md:text-7xl">
+              <span className="brand-text-gradient drop-shadow-sm">المكتبة</span>
             </h1>
-            <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              تضم قاعدة المعرفة في Zad-AI مجموعة مختارة بعناية من أمهات الكتب في مختلف العلوم
+            
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+              تضم المكتبة في Zad-AI مجموعة مختارة بعناية من أمهات الكتب في مختلف العلوم
               الشرعية، جرى تنظيمها وتصنيفها لتوفير تجربة بحث واسترجاع دقيقة وموثوقة.
             </p>
-            <p className="mt-5 font-display text-lg text-primary">
-              +{totalBooks} كتاب · {domains.length} مجالات علمية
-            </p>
+            
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/40 px-5 py-3 backdrop-blur-md transition-transform hover:scale-105">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue/20 text-brand-blue">
+                  <BookOpen className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-display text-2xl text-foreground">+{totalBooks}</p>
+                  <p className="text-xs text-muted-foreground">كتاب ومجلد</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/40 px-5 py-3 backdrop-blur-md transition-transform hover:scale-105">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-magenta/20 text-brand-magenta">
+                  <Library className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-display text-2xl text-foreground">{domains.length}</p>
+                  <p className="text-xs text-muted-foreground">مجال علمي</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="mx-auto w-full max-w-xs rounded-[2rem] border border-border bg-card/50 p-6 backdrop-blur-md">
-            <LibraryArt />
+          
+          <div 
+            className="relative mx-auto flex w-full max-w-xs items-center justify-center p-6 animate-in fade-in zoom-in duration-1000 delay-300 fill-mode-both"
+            style={{ animation: 'float 6s ease-in-out infinite' }}
+          >
+            <div className="absolute inset-0 rounded-full bg-brand-magenta/20 blur-[80px]" style={{ animation: 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+            <img 
+              src={theme === 'dark' ? whiteLogo : darkLogo} 
+              alt="شعار مكتبة زاد" 
+              className={`relative z-10 h-56 w-56 object-contain drop-shadow-2xl md:h-72 md:w-72 transition-transform duration-300 ${theme === 'light' ? 'scale-[1.4]' : ''}`} 
+            />
+            <style>{`
+              @keyframes float {
+                0% { transform: translateY(0px); }
+                50% { transform: translateY(-15px); }
+                100% { transform: translateY(0px); }
+              }
+            `}</style>
           </div>
         </section>
 
         {/* Search */}
-        <div className="sticky top-[73px] z-20 -mx-5 bg-background/70 px-5 py-4 backdrop-blur-xl">
+        <div className="mb-2">
           <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/70 px-5 py-3.5 shadow-sm backdrop-blur-md focus-within:border-accent/50">
-            <span className="text-xl text-muted-foreground" aria-hidden>🔍</span>
+            <Search className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -381,7 +411,7 @@ export default function KnowledgeBase({
             />
             {query && (
               <button type="button" onClick={() => setQuery('')} aria-label="مسح البحث" className="text-muted-foreground hover:text-foreground">
-                ✕
+                <X className="h-5 w-5" />
               </button>
             )}
           </div>

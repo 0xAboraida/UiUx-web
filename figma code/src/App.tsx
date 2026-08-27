@@ -49,7 +49,7 @@ export default function App() {
     return <VoiceScreen onExit={() => setView('home')} onOpenText={() => setView('chat')} />
   }
   if (view === 'knowledge') {
-    return <KnowledgeBase onExit={() => setView('home')} onAskBook={askAboutBook} />
+    return <KnowledgeBase onExit={() => setView('home')} onAskBook={askAboutBook} theme={heroTheme} />
   }
   if (view === 'study') {
     return <StudyMode onExit={() => setView('home')} />
@@ -65,12 +65,13 @@ export default function App() {
   const openAdmin = () => setView('admin')
 
   return (
-    <div dir="rtl" className="min-h-screen bg-background text-foreground">
+    <div dir="rtl" className={`min-h-screen bg-background text-foreground transition-colors duration-300 ${heroTheme === 'dark' ? 'dark' : ''}`}>
       <Navbar
         onTryChat={openChat}
         onOpenKnowledge={openKnowledge}
         onOpenStudy={openStudy}
         onOpenAdmin={openAdmin}
+        onOpenVoiceChat={openVoice}
         heroTheme={heroTheme}
         onToggleTheme={() => setHeroTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
       />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 type Feature = {
   id: string
@@ -38,87 +38,169 @@ const features: Feature[] = [
     detail: 'تخريج الأحاديث وبيان درجتها من الصحّة والضعف مع ذكر المصدر ورقم الحديث.',
   },
   {
-    id: 'seerah',
-    title: 'السيرة والتاريخ',
-    icon: '🌙',
-    short: 'أحداثٌ من سيرة خير الأنام.',
-    detail: 'سردٌ لأحداث السيرة النبوية وتاريخ الأمّة مع الدروس والعبر المستفادة.',
+    id: 'quran_sciences',
+    title: 'علوم القرآن',
+    icon: '🌟',
+    short: 'دراسات حول الكتاب المبين.',
+    detail: 'مباحث تتعلق بنزول القرآن، وجمعه، وقراءاته، والمكي والمدني، والناسخ والمنسوخ وغير ذلك من علوم القرآن الكريم.',
   },
   {
-    id: 'voice',
-    title: 'المساعد الصوتي',
-    icon: '🎙️',
-    short: 'اسأل بصوتك، يجيبك زاد.',
-    detail: 'اضغط للتحدّث واطرح سؤالك صوتيًا، ليحوّله زاد إلى إجابةٍ منطوقة ومكتوبة في لحظات.',
+    id: 'seerah',
+    title: 'السيرة النبوية',
+    icon: '🌙',
+    short: 'أحداثٌ من سيرة خير الأنام.',
+    detail: 'سردٌ لأحداث السيرة النبوية العطرة مع استخلاص الدروس والعبر المستفادة من حياة النبي ﷺ.',
+  },
+  {
+    id: 'history',
+    title: 'التاريخ الإسلامي',
+    icon: '🏛️',
+    short: 'نافذة على أمجاد الماضي.',
+    detail: 'تغطية شاملة لأبرز المحطات في التاريخ الإسلامي وحضارته عبر العصور المختلفة.',
+  },
+  {
+    id: 'language_sciences',
+    title: 'علوم اللغة',
+    icon: '📝',
+    short: 'لغة الضاد وجمالياتها.',
+    detail: 'قواعد النحو والصرف، والبلاغة، ومفردات اللغة العربية التي تعين على فهم النصوص الشرعية.',
+  },
+  {
+    id: 'tajweed',
+    title: 'التجويد والقراءات',
+    icon: '📗',
+    short: 'إتقان تلاوة كتاب الله.',
+    detail: 'أحكام التجويد ومخارج الحروف، والتعريف بالقراءات المتواترة ورواياتها.',
+  },
+  {
+    id: 'adab',
+    title: 'الرقائق والآداب والأذكار',
+    icon: '📿',
+    short: 'تزكية النفس وتهذيب الأخلاق.',
+    detail: 'مواضيع ترقق القلوب، وآداب إسلامية في الحياة اليومية، مع أذكار المسلم المستحبة.',
+  },
+  {
+    id: 'poetry',
+    title: 'الدواوين الشعرية',
+    icon: '✒️',
+    short: 'روائع الشعر العربي.',
+    detail: 'مختارات من عيون الشعر العربي والإسلامي، متضمنةً الحِكَم والقصائد الخالدة.',
+  },
+  {
+    id: 'fatwa',
+    title: 'الفتاوى',
+    icon: '⚖️',
+    short: 'نوازل وقضايا معاصرة.',
+    detail: 'مجموعة من الفتاوى الموثقة للعلماء الثقات لبيان الحكم الشرعي في مختلف نواحي الحياة.',
   },
 ]
 
 export default function FeatureCards() {
-  const [active, setActive] = useState<string | null>('fiqh')
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+
+  // Auto-rotation effect
+  useEffect(() => {
+    if (isPaused) return
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % features.length)
+    }, 4000)
+    return () => clearInterval(timer)
+  }, [isPaused])
 
   return (
-    <section id="features" className="mx-auto max-w-6xl px-5 py-24 md:py-32">
+    <section id="features" className="relative mx-auto max-w-6xl px-5 py-24 md:py-32">
       <div className="mx-auto max-w-2xl text-center">
-        <span className="text-sm font-semibold uppercase tracking-wider text-accent">المميزات</span>
+        {/* <span className="text-sm font-semibold uppercase tracking-wider text-accent">المجالات المعرفية</span> */}
         <h2 className="mt-3 font-display text-4xl text-foreground md:text-5xl">
           علمٌ موثوق <span className="brand-text-gradient">بين يديك</span>
         </h2>
         <p className="mt-4 text-lg text-muted-foreground">
-          يغطّي زاد المجالات الشرعية الأساسية بإجاباتٍ دقيقة ومصادر معتمدة. اضغط على البطاقة لمعرفة المزيد.
+          يغطّي زاد المجالات الشرعية الأساسية بإجاباتٍ دقيقة ومصادر معتمدة.
         </p>
       </div>
 
-      <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {features.map((f) => {
-          const isActive = active === f.id
-          return (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setActive(isActive ? null : f.id)}
-              aria-expanded={isActive}
-              className={`group relative overflow-hidden rounded-3xl border p-6 text-right transition-all duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-                isActive
-                  ? 'border-transparent bg-card shadow-[0_24px_60px_-24px_rgba(122,23,201,0.55)] -translate-y-1'
-                  : 'border-border bg-card/70 hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl'
-              }`}
-            >
-              <span
-                className={`pointer-events-none absolute -left-10 -top-10 h-28 w-28 rounded-full blur-2xl transition-opacity duration-300 ${
-                  isActive ? 'bg-accent/25 opacity-100' : 'bg-accent/20 opacity-0 group-hover:opacity-100'
-                }`}
-              />
-              <div className="relative flex items-start justify-between gap-3">
-                <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-2xl text-2xl transition-colors ${
-                    isActive ? 'brand-gradient text-white' : 'bg-secondary'
-                  }`}
-                >
+      <div className="mt-16 flex flex-col items-center">
+        {/* Main Showcase Container */}
+        <div 
+          className="animate-float-subtle relative w-full max-w-xl overflow-hidden rounded-[2.6rem] bg-border/40 p-[2.5px] shadow-[0_0_40px_rgba(173,70,255,0.1)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_80px_-24px_rgba(173,70,255,0.3)]"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
+        >
+          {/* Spinning 'Meteor' Element for the racing border animation */}
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div 
+              className="h-[900px] w-[900px] shrink-0 animate-[spin_20s_linear_infinite]" 
+              style={{
+                background: 'conic-gradient(from 0deg, transparent 0%, transparent 85%, #2b7fff 96%, #c020f0 100%)'
+              }} 
+            />
+          </div>
+
+          <div className="relative z-10 h-[440px] w-full overflow-hidden rounded-[2.5rem] bg-card/95 backdrop-blur-xl">
+          {/* Ambient Glowing Background */}
+          <div className="animate-orbit pointer-events-none absolute -left-20 -top-20 h-64 w-64 rounded-full bg-accent/20 blur-[100px] transition-opacity" />
+          <div className="animate-orbit pointer-events-none absolute -bottom-20 -right-20 h-64 w-64 rounded-full bg-brand-blue/20 blur-[100px] transition-opacity" style={{ animationDirection: 'reverse', animationDuration: '20s' }} />
+
+          {features.map((f, index) => {
+            let stateClass = ''
+            if (index === activeIndex) {
+              stateClass = 'translate-y-0 opacity-100 z-10 pointer-events-auto scale-100'
+            } else if (index < activeIndex) {
+              stateClass = '-translate-y-16 opacity-0 z-0 pointer-events-none scale-95'
+            } else {
+              stateClass = 'translate-y-16 opacity-0 z-0 pointer-events-none scale-95'
+            }
+
+            return (
+              <div 
+                key={f.id} 
+                className={`absolute inset-0 flex flex-col items-center justify-center p-8 text-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${stateClass}`}
+              >
+                <div className={`brand-gradient mb-6 flex h-24 w-24 items-center justify-center rounded-3xl text-5xl text-white shadow-xl shadow-primary/30 transition-transform duration-700 delay-100 ${index === activeIndex ? 'scale-100' : 'scale-75'}`}>
                   {f.icon}
                 </div>
-                <span
-                  className={`mt-1 text-2xl leading-none text-accent transition-transform duration-300 ${
-                    isActive ? 'rotate-45' : ''
-                  }`}
-                  aria-hidden
-                >
-                  +
-                </span>
-              </div>
+                <h3 className={`mb-4 font-display text-4xl text-foreground transition-all duration-700 delay-150 ${index === activeIndex ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>{f.title}</h3>
+                <p className={`mb-2 text-xl font-medium text-accent transition-all duration-700 delay-200 ${index === activeIndex ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>{f.short}</p>
+                <p className={`mb-8 max-w-sm text-base leading-relaxed text-muted-foreground transition-all duration-700 delay-300 ${index === activeIndex ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                  {f.detail}
+                </p>
 
-              <h3 className="relative mt-5 font-display text-2xl text-foreground">{f.title}</h3>
-              <p className="relative mt-2 text-muted-foreground">{f.short}</p>
-
-              <div
-                className={`relative grid transition-all duration-300 ${
-                  isActive ? 'mt-3 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                }`}
-              >
-                <p className="overflow-hidden text-sm leading-relaxed text-foreground/70">{f.detail}</p>
+                <button className={`group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-secondary px-6 py-2.5 text-sm font-semibold text-secondary-foreground transition-all duration-500 delay-500 hover:bg-primary hover:text-white hover:shadow-lg hover:shadow-primary/25 ${index === activeIndex ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                  <span className="relative z-10">استكشف المجال</span>
+                  <svg className="relative z-10 h-4 w-4 -scale-x-100 transition-transform group-hover:-translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
+                </button>
               </div>
-            </button>
-          )
-        })}
+            )
+          })}
+          </div>
+        </div>
+
+        {/* Navigation Indicator (Modern Dots) */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5 px-4">
+          {features.map((f, index) => (
+            <button
+              key={f.id}
+              onClick={() => {
+                setActiveIndex(index)
+                // Pause rotation temporarily when user manually clicks to allow them to read
+                setIsPaused(true)
+                setTimeout(() => setIsPaused(false), 8000)
+              }}
+              aria-label={`الذهاب إلى ${f.title}`}
+              className={`h-2.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                index === activeIndex 
+                  ? 'w-8 bg-accent' 
+                  : 'w-2.5 bg-border hover:bg-muted-foreground/50'
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </section>
   )
