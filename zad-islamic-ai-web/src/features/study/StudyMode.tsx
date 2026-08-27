@@ -116,8 +116,16 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
     setChunkText('جاري تحميل بيانات الجلسة والنص الاصلي...')
     setLoading(true)
 
-    setIsDocumentOpen(true)
-    setIsChatOpen(true)
+    if (isMobile) {
+      setIsDocumentOpen(true)
+      setIsChatOpen(false)
+      setIsSidebarOpen(false)
+      setIsMindmapOpen(false)
+      setIsQuizOpen(false)
+    } else {
+      setIsDocumentOpen(true)
+      setIsChatOpen(true)
+    }
 
     try {
       // 1. Fetch chunk document text
@@ -307,8 +315,17 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
     setQuizFlowState(defaultQuizFlowState(null))
     setMindmapLoading(false)
     setQuizLoading(false)
-    setIsDocumentOpen(true)
-    setIsChatOpen(true)
+
+    if (isMobile) {
+      setIsDocumentOpen(true)
+      setIsChatOpen(false)
+      setIsSidebarOpen(false)
+      setIsMindmapOpen(false)
+      setIsQuizOpen(false)
+    } else {
+      setIsDocumentOpen(true)
+      setIsChatOpen(true)
+    }
 
     try {
       // 1. Start or resume session in Backend SQL database
@@ -917,7 +934,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
       <header className={`relative z-30 flex w-full items-center justify-between border-b px-2.5 sm:px-6 backdrop-blur-xl transition-all duration-500 ${isHeaderCollapsed ? 'h-0 py-0 opacity-0 border-b-0 pointer-events-none overflow-hidden' : 'h-14 sm:h-16 opacity-100'
         } ${isDark ? 'border-white/10 bg-[#12041f]/80 text-white' : 'border-slate-200 bg-white/90 text-slate-800 shadow-sm'
         }`}>
-        <div className="flex items-center gap-2 sm:gap-4 max-w-[70vw] sm:max-w-none overflow-hidden">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <div className="flex items-center gap-2 shrink-0">
             <span className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-sm transition-all ${isDark
               ? 'brand-gradient shadow-primary/20'
@@ -925,37 +942,28 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
               }`}>
               <img src={isDark ? whiteLogo : darkLogo} alt="زاد" className="w-full h-full object-contain drop-shadow-sm" />
             </span>
-            <div className="hidden md:block">
+            <div className="hidden xs:block">
               <h1 className={`font-sans text-xs sm:text-base font-black leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 وضع المُدارَسة
               </h1>
             </div>
           </div>
 
-          {/* All 5 Separate Independent Openable Panel Toggles (Horizontally scrollable on mobile) */}
-          <div className={`flex items-center gap-1.5 sm:gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden py-1 sm:mr-4 sm:border-r sm:pr-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+          {/* Desktop Only 5 Separate Panel Toggles */}
+          <div className={`hidden md:flex items-center gap-2 mr-4 border-r pr-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
             {/* 1. الفهرس */}
             <button
               onClick={() => {
-                if (isMobile) {
+                if (!isSidebarOpen) {
                   setIsSidebarOpen(true)
-                  setIsDocumentOpen(false)
-                  setIsChatOpen(false)
-                  setIsMindmapOpen(false)
-                  setIsQuizOpen(false)
+                  focusPanel('sidebar')
+                } else if (focusTarget?.panel !== 'sidebar') {
                   focusPanel('sidebar')
                 } else {
-                  if (!isSidebarOpen) {
-                    setIsSidebarOpen(true)
-                    focusPanel('sidebar')
-                  } else if (focusTarget?.panel !== 'sidebar') {
-                    focusPanel('sidebar')
-                  } else {
-                    setIsSidebarOpen(false)
-                  }
+                  setIsSidebarOpen(false)
                 }
               }}
-              className={`flex h-8 sm:h-9 shrink-0 items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isSidebarOpen
+              className={`flex h-9 items-center justify-center gap-2 rounded-xl px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isSidebarOpen
                 ? isDark
                   ? 'bg-[#a855f7]/25 border border-[#a855f7]/50 text-white shadow-lg shadow-[#a855f7]/25 font-extrabold scale-[1.02] ring-1 ring-[#a855f7]/30'
                   : 'bg-gradient-to-b from-white/90 via-purple-50/60 to-purple-100/70 backdrop-blur-xl border border-purple-300/80 text-purple-950 shadow-md shadow-purple-500/10 font-extrabold scale-[1.02]'
@@ -965,32 +973,23 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 }`}
               title={isSidebarOpen ? 'الفهرس' : 'فتح الفهرس'}
             >
-              <Menu size={15} className="text-teal-500 shrink-0 stroke-[2.2]" />
-              <span className="whitespace-nowrap">الفهرس</span>
+              <Menu size={16} className="text-teal-500 shrink-0 stroke-[2.2]" />
+              <span>الفهرس</span>
             </button>
 
             {/* 2. النص الأصلي */}
             <button
               onClick={() => {
-                if (isMobile) {
+                if (!isDocumentOpen) {
                   setIsDocumentOpen(true)
-                  setIsSidebarOpen(false)
-                  setIsChatOpen(false)
-                  setIsMindmapOpen(false)
-                  setIsQuizOpen(false)
+                  focusPanel('document')
+                } else if (focusTarget?.panel !== 'document') {
                   focusPanel('document')
                 } else {
-                  if (!isDocumentOpen) {
-                    setIsDocumentOpen(true)
-                    focusPanel('document')
-                  } else if (focusTarget?.panel !== 'document') {
-                    focusPanel('document')
-                  } else {
-                    setIsDocumentOpen(false)
-                  }
+                  setIsDocumentOpen(false)
                 }
               }}
-              className={`flex h-8 sm:h-9 shrink-0 items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isDocumentOpen
+              className={`flex h-9 items-center justify-center gap-2 rounded-xl px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isDocumentOpen
                 ? isDark
                   ? 'bg-[#a855f7]/25 border border-[#a855f7]/50 text-white shadow-lg shadow-[#a855f7]/25 font-extrabold scale-[1.02] ring-1 ring-[#a855f7]/30'
                   : 'bg-gradient-to-b from-white/90 via-purple-50/60 to-purple-100/70 backdrop-blur-xl border border-purple-300/80 text-purple-950 shadow-md shadow-purple-500/10 font-extrabold scale-[1.02]'
@@ -1000,32 +999,23 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 }`}
               title={isDocumentOpen ? 'النص الأصلي' : 'فتح النص الأصلي'}
             >
-              <BookOpen size={15} className="text-sky-500 shrink-0 stroke-[2.2]" />
-              <span className="whitespace-nowrap">النص الأصلي</span>
+              <BookOpen size={16} className="text-sky-500 shrink-0 stroke-[2.2]" />
+              <span>النص الأصلي</span>
             </button>
 
             {/* 3. المحادثة */}
             <button
               onClick={() => {
-                if (isMobile) {
+                if (!isChatOpen) {
                   setIsChatOpen(true)
-                  setIsSidebarOpen(false)
-                  setIsDocumentOpen(false)
-                  setIsMindmapOpen(false)
-                  setIsQuizOpen(false)
+                  focusPanel('chat')
+                } else if (focusTarget?.panel !== 'chat') {
                   focusPanel('chat')
                 } else {
-                  if (!isChatOpen) {
-                    setIsChatOpen(true)
-                    focusPanel('chat')
-                  } else if (focusTarget?.panel !== 'chat') {
-                    focusPanel('chat')
-                  } else {
-                    setIsChatOpen(false)
-                  }
+                  setIsChatOpen(false)
                 }
               }}
-              className={`flex h-8 sm:h-9 shrink-0 items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isChatOpen
+              className={`flex h-9 items-center justify-center gap-2 rounded-xl px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isChatOpen
                 ? isDark
                   ? 'bg-[#a855f7]/25 border border-[#a855f7]/50 text-white shadow-lg shadow-[#a855f7]/25 font-extrabold scale-[1.02] ring-1 ring-[#a855f7]/30'
                   : 'bg-gradient-to-b from-white/90 via-purple-50/60 to-purple-100/70 backdrop-blur-xl border border-purple-300/80 text-purple-950 shadow-md shadow-purple-500/10 font-extrabold scale-[1.02]'
@@ -1035,32 +1025,23 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 }`}
               title={isChatOpen ? 'المحادثة' : 'فتح محادثة زاد'}
             >
-              <MessageCircle size={15} className="text-purple-500 shrink-0 stroke-[2.2]" />
-              <span className="whitespace-nowrap">المحادثة</span>
+              <MessageCircle size={16} className="text-purple-500 shrink-0 stroke-[2.2]" />
+              <span>المحادثة</span>
             </button>
 
             {/* 4. الخريطة الذهنية */}
             <button
               onClick={() => {
-                if (isMobile) {
+                if (!isMindmapOpen) {
                   setIsMindmapOpen(true)
-                  setIsSidebarOpen(false)
-                  setIsDocumentOpen(false)
-                  setIsChatOpen(false)
-                  setIsQuizOpen(false)
+                  focusPanel('mindmap')
+                } else if (focusTarget?.panel !== 'mindmap') {
                   focusPanel('mindmap')
                 } else {
-                  if (!isMindmapOpen) {
-                    setIsMindmapOpen(true)
-                    focusPanel('mindmap')
-                  } else if (focusTarget?.panel !== 'mindmap') {
-                    focusPanel('mindmap')
-                  } else {
-                    setIsMindmapOpen(false)
-                  }
+                  setIsMindmapOpen(false)
                 }
               }}
-              className={`flex h-8 sm:h-9 shrink-0 items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isMindmapOpen
+              className={`flex h-9 items-center justify-center gap-2 rounded-xl px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isMindmapOpen
                 ? isDark
                   ? 'bg-[#a855f7]/25 border border-[#a855f7]/50 text-white shadow-lg shadow-[#a855f7]/25 font-extrabold scale-[1.02] ring-1 ring-[#a855f7]/30'
                   : 'bg-gradient-to-b from-white/90 via-purple-50/60 to-purple-100/70 backdrop-blur-xl border border-purple-300/80 text-purple-950 shadow-md shadow-purple-500/10 font-extrabold scale-[1.02]'
@@ -1070,32 +1051,23 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 }`}
               title={isMindmapOpen ? 'الخريطة الذهنية' : 'فتح الخريطة الذهنية'}
             >
-              <Brain size={15} className="text-sky-500 shrink-0 stroke-[2.2]" />
-              <span className="whitespace-nowrap">الخريطة</span>
+              <Brain size={16} className="text-sky-500 shrink-0 stroke-[2.2]" />
+              <span>الخريطة</span>
             </button>
 
             {/* 5. التقييم */}
             <button
               onClick={() => {
-                if (isMobile) {
+                if (!isQuizOpen) {
                   setIsQuizOpen(true)
-                  setIsSidebarOpen(false)
-                  setIsDocumentOpen(false)
-                  setIsChatOpen(false)
-                  setIsMindmapOpen(false)
+                  focusPanel('quiz')
+                } else if (focusTarget?.panel !== 'quiz') {
                   focusPanel('quiz')
                 } else {
-                  if (!isQuizOpen) {
-                    setIsQuizOpen(true)
-                    focusPanel('quiz')
-                  } else if (focusTarget?.panel !== 'quiz') {
-                    focusPanel('quiz')
-                  } else {
-                    setIsQuizOpen(false)
-                  }
+                  setIsQuizOpen(false)
                 }
               }}
-              className={`flex h-8 sm:h-9 shrink-0 items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isQuizOpen
+              className={`flex h-9 items-center justify-center gap-2 rounded-xl px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isQuizOpen
                 ? isDark
                   ? 'bg-[#a855f7]/25 border border-[#a855f7]/50 text-white shadow-lg shadow-[#a855f7]/25 font-extrabold scale-[1.02] ring-1 ring-[#a855f7]/30'
                   : 'bg-gradient-to-b from-white/90 via-purple-50/60 to-purple-100/70 backdrop-blur-xl border border-purple-300/80 text-purple-950 shadow-md shadow-purple-500/10 font-extrabold scale-[1.02]'
@@ -1105,13 +1077,13 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 }`}
               title={isQuizOpen ? 'اختبار التقييم' : 'فتح اختبار التقييم'}
             >
-              <ClipboardList size={15} className="text-emerald-500 shrink-0 stroke-[2.2]" />
-              <span className="whitespace-nowrap">التقييم</span>
+              <ClipboardList size={16} className="text-emerald-500 shrink-0 stroke-[2.2]" />
+              <span>التقييم</span>
             </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* مؤقت الدراسة والتركيز الذكي */}
           <StudyTimerWidget isDark={isDark} />
 
@@ -1120,40 +1092,40 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
             type="button"
             onClick={toggleTheme}
             aria-label={isDark ? 'الوضع النهاري' : 'الوضع الليلي'}
-            className={`flex h-11 w-11 items-center justify-center rounded-full transition-all shadow-lg ${isDark
-              ? 'bg-[#a855f7]/15 backdrop-blur-md border border-[#a855f7]/30 hover:bg-[#a855f7]/25 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] text-purple-100'
+            className={`flex h-8 w-8 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all shadow-lg ${isDark
+              ? 'bg-[#a855f7]/15 backdrop-blur-md border border-[#a855f7]/30 hover:bg-[#a855f7]/25 text-purple-100'
               : 'bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 shadow-md'
               }`}
             title={isDark ? 'التحويل للوضع النهاري' : 'التحويل للوضع الليلي'}
           >
             <div className={`transition-all duration-700 ${isDark ? 'rotate-0' : 'rotate-[360deg] scale-110'}`}>
-              {isDark ? <Sun size={20} strokeWidth={2.5} /> : <Moon size={20} strokeWidth={2.5} />}
+              {isDark ? <Sun size={17} strokeWidth={2.5} /> : <Moon size={17} strokeWidth={2.5} />}
             </div>
           </button>
 
-          {/* سجل الجلسات والإحصائيات (أيقونة فقط بجوار زر الإضاءة) */}
+          {/* سجل الجلسات والإحصائيات */}
           <button
             type="button"
             onClick={() => setIsHistoryModalOpen(true)}
             aria-label="سجل الجلسات والأداء"
-            className={`flex h-11 w-11 items-center justify-center rounded-full transition-all shadow-lg ${isDark
-              ? 'bg-[#a855f7]/15 backdrop-blur-md border border-[#a855f7]/30 hover:bg-[#a855f7]/25 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] text-purple-100'
+            className={`flex h-8 w-8 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all shadow-lg ${isDark
+              ? 'bg-[#a855f7]/15 backdrop-blur-md border border-[#a855f7]/30 hover:bg-[#a855f7]/25 text-purple-100'
               : 'bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 shadow-md'
               }`}
             title="سجل الجلسات والأداء"
           >
             <div className="transition-all duration-300 hover:rotate-12">
-              <History size={20} strokeWidth={2.5} className={isDark ? 'text-purple-100' : 'text-purple-700'} />
+              <History size={17} strokeWidth={2.5} className={isDark ? 'text-purple-100' : 'text-purple-700'} />
             </div>
           </button>
 
-          {/* Fullscreen Toggle Button */}
+          {/* Fullscreen Toggle Button (Hidden on tiny screens) */}
           <button
             type="button"
             onClick={toggleFullscreen}
             aria-label={isFullscreen ? 'الخروج من الشاشة الكاملة' : 'وضع الشاشة الكاملة'}
-            className={`flex h-11 w-11 items-center justify-center rounded-full transition-all shadow-lg ${isDark
-              ? 'bg-[#a855f7]/15 backdrop-blur-md border border-[#a855f7]/30 hover:bg-[#a855f7]/25 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] text-purple-100'
+            className={`hidden sm:flex h-11 w-11 items-center justify-center rounded-full transition-all shadow-lg ${isDark
+              ? 'bg-[#a855f7]/15 backdrop-blur-md border border-[#a855f7]/30 hover:bg-[#a855f7]/25 text-purple-100'
               : 'bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 shadow-md'
               }`}
             title={isFullscreen ? 'الخروج من الشاشة الكاملة (Esc)' : 'وضع الشاشة الكاملة'}
@@ -1166,22 +1138,22 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
           <button
             onClick={() => setConfirmClose(true)}
             title="إعادة تعيين الدرس والخروج للرئيسية"
-            className={`flex h-11 w-11 items-center justify-center rounded-full text-lg transition-all shadow-lg ${isDark
-              ? 'bg-red-500/15 backdrop-blur-md border border-red-500/30 hover:bg-red-500/25 hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] text-red-300'
+            className={`flex h-8 w-8 sm:h-11 sm:w-11 items-center justify-center rounded-full text-lg transition-all shadow-lg ${isDark
+              ? 'bg-red-500/15 backdrop-blur-md border border-red-500/30 hover:bg-red-500/25 text-red-300'
               : 'bg-white border border-red-200 hover:bg-red-50 text-red-600 shadow-md'
               }`}
           >
-            <X size={22} strokeWidth={2.5} />
+            <X size={18} strokeWidth={2.5} />
           </button>
           <button
             onClick={onExit}
             title="الرجوع للرئيسية (مع حفظ تقدمك)"
-            className={`flex h-11 w-11 items-center justify-center rounded-full text-lg transition-all shadow-lg ${isDark
-              ? 'bg-[#a855f7]/15 backdrop-blur-md border border-[#a855f7]/30 hover:bg-[#a855f7]/25 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] text-purple-100'
+            className={`flex h-8 w-8 sm:h-11 sm:w-11 items-center justify-center rounded-full text-lg transition-all shadow-lg ${isDark
+              ? 'bg-[#a855f7]/15 backdrop-blur-md border border-[#a855f7]/30 hover:bg-[#a855f7]/25 text-purple-100'
               : 'bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 shadow-md'
               }`}
           >
-            <ArrowLeft size={22} strokeWidth={2.5} />
+            <ArrowLeft size={18} strokeWidth={2.5} />
           </button>
 
           {/* Collapse Header Button (Focus Mode Toggle) */}
@@ -1189,18 +1161,145 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
             type="button"
             onClick={toggleHeaderCollapse}
             aria-label="طي الشريط العلوي (وضع التركيز)"
-            className={`flex h-11 w-11 items-center justify-center rounded-full transition-all shadow-lg ${isDark
-              ? 'bg-[#a855f7]/15 backdrop-blur-md border border-[#a855f7]/30 hover:bg-[#a855f7]/25 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] text-purple-100'
+            className={`flex h-8 w-8 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all shadow-lg ${isDark
+              ? 'bg-[#a855f7]/15 backdrop-blur-md border border-[#a855f7]/30 hover:bg-[#a855f7]/25 text-purple-100'
               : 'bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 shadow-md'
               }`}
             title="طي الشريط العلوي (وضع التركيز)"
           >
             <div className="transition-all duration-300 hover:-translate-y-0.5">
-              <ChevronUp size={22} strokeWidth={2.5} />
+              <ChevronUp size={18} strokeWidth={2.5} />
             </div>
           </button>
         </div>
       </header>
+
+      {/* Dedicated Mobile Navigation Bar (< 768px) */}
+      {!isHeaderCollapsed && (
+        <div className={`flex md:hidden w-full items-center justify-around px-2 py-1.5 border-b backdrop-blur-xl z-30 shrink-0 gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden ${
+          isDark ? 'bg-[#12041f]/95 border-white/10 text-white shadow-lg' : 'bg-white/95 border-slate-200 text-slate-800 shadow-md'
+        }`}>
+          {/* 1. الفهرس */}
+          <button
+            onClick={() => {
+              setIsSidebarOpen(true)
+              setIsDocumentOpen(false)
+              setIsChatOpen(false)
+              setIsMindmapOpen(false)
+              setIsQuizOpen(false)
+              focusPanel('sidebar')
+            }}
+            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${
+              isSidebarOpen
+                ? isDark
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 ring-1 ring-purple-400'
+                  : 'bg-purple-600 text-white shadow-md'
+                : isDark
+                  ? 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                  : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <Menu size={14} className={isSidebarOpen ? 'text-white' : 'text-teal-400'} />
+            <span>الفهرس</span>
+          </button>
+
+          {/* 2. النص الأصلي */}
+          <button
+            onClick={() => {
+              setIsDocumentOpen(true)
+              setIsSidebarOpen(false)
+              setIsChatOpen(false)
+              setIsMindmapOpen(false)
+              setIsQuizOpen(false)
+              focusPanel('document')
+            }}
+            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${
+              isDocumentOpen
+                ? isDark
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 ring-1 ring-purple-400'
+                  : 'bg-purple-600 text-white shadow-md'
+                : isDark
+                  ? 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                  : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <BookOpen size={14} className={isDocumentOpen ? 'text-white' : 'text-sky-400'} />
+            <span>النص الأصلي</span>
+          </button>
+
+          {/* 3. المحادثة */}
+          <button
+            onClick={() => {
+              setIsChatOpen(true)
+              setIsSidebarOpen(false)
+              setIsDocumentOpen(false)
+              setIsMindmapOpen(false)
+              setIsQuizOpen(false)
+              focusPanel('chat')
+            }}
+            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${
+              isChatOpen
+                ? isDark
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 ring-1 ring-purple-400'
+                  : 'bg-purple-600 text-white shadow-md'
+                : isDark
+                  ? 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                  : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <MessageCircle size={14} className={isChatOpen ? 'text-white' : 'text-purple-400'} />
+            <span>المحادثة</span>
+          </button>
+
+          {/* 4. الخريطة */}
+          <button
+            onClick={() => {
+              setIsMindmapOpen(true)
+              setIsSidebarOpen(false)
+              setIsDocumentOpen(false)
+              setIsChatOpen(false)
+              setIsQuizOpen(false)
+              focusPanel('mindmap')
+            }}
+            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${
+              isMindmapOpen
+                ? isDark
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 ring-1 ring-purple-400'
+                  : 'bg-purple-600 text-white shadow-md'
+                : isDark
+                  ? 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                  : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <Brain size={14} className={isMindmapOpen ? 'text-white' : 'text-sky-400'} />
+            <span>الخريطة</span>
+          </button>
+
+          {/* 5. التقييم */}
+          <button
+            onClick={() => {
+              setIsQuizOpen(true)
+              setIsSidebarOpen(false)
+              setIsDocumentOpen(false)
+              setIsChatOpen(false)
+              setIsMindmapOpen(false)
+              focusPanel('quiz')
+            }}
+            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${
+              isQuizOpen
+                ? isDark
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 ring-1 ring-purple-400'
+                  : 'bg-purple-600 text-white shadow-md'
+                : isDark
+                  ? 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                  : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <ClipboardList size={14} className={isQuizOpen ? 'text-white' : 'text-emerald-400'} />
+            <span>التقييم</span>
+          </button>
+        </div>
+      )}
 
       {/* Floating Trigger in Top-Left Corner to expand header back */}
       <AnimatePresence>
