@@ -202,8 +202,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
     else if (panelKey === 'quiz') startWidth = quizWidth
 
     const handleMouseMove = (moveEv: MouseEvent) => {
-      // Uniform RTL delta: dragging mouse LEFT (smaller clientX) expands panel width.
-      // Dragging mouse RIGHT (larger clientX) shrinks panel width.
+      // RTL delta calculation: dragging mouse left (smaller clientX) increases width
       const deltaX = startX - moveEv.clientX
       const newWidth = startWidth + deltaX
 
@@ -212,11 +211,6 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
       else if (panelKey === 'chat') setChatWidth(Math.max(300, Math.min(newWidth, 1400)))
       else if (panelKey === 'mindmap') setMindmapWidth(Math.max(320, Math.min(newWidth, 1400)))
       else if (panelKey === 'quiz') setQuizWidth(Math.max(280, Math.min(newWidth, 1200)))
-
-      const panelEl = document.getElementById(`panel-${panelKey}`)
-      if (panelEl) {
-        panelEl.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' })
-      }
     }
 
     const handleMouseUp = () => {
@@ -909,15 +903,14 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
       )}
 
       {/* Top Header Bar (Collapsible Focus Mode) */}
-      <header className={`relative z-30 flex w-full items-center justify-between border-b px-6 backdrop-blur-xl transition-all duration-500 ${
-        isHeaderCollapsed ? 'h-0 py-0 opacity-0 border-b-0 pointer-events-none overflow-hidden' : 'h-16 opacity-100'
-      } ${isDark ? 'border-white/10 bg-[#12041f]/80 text-white' : 'border-slate-200 bg-white/90 text-slate-800 shadow-sm'
+      <header className={`relative z-30 flex w-full items-center justify-between border-b px-6 backdrop-blur-xl transition-all duration-500 ${isHeaderCollapsed ? 'h-0 py-0 opacity-0 border-b-0 pointer-events-none overflow-hidden' : 'h-16 opacity-100'
+        } ${isDark ? 'border-white/10 bg-[#12041f]/80 text-white' : 'border-slate-200 bg-white/90 text-slate-800 shadow-sm'
         }`}>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <span className={`flex h-10 w-10 items-center justify-center rounded-2xl p-2 shadow-sm transition-all ${isDark
-                ? 'brand-gradient shadow-primary/20'
-                : 'bg-purple-100/90 border border-purple-200/80 shadow-purple-500/10'
+              ? 'brand-gradient shadow-primary/20'
+              : 'bg-purple-100/90 border border-purple-200/80 shadow-purple-500/10'
               }`}>
               <img src={isDark ? whiteLogo : darkLogo} alt="زاد" className="w-full h-full object-contain drop-shadow-sm" />
             </span>
@@ -1162,11 +1155,10 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
             exit={{ scale: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={toggleHeaderCollapse}
-            className={`absolute top-3 left-4 z-40 flex h-10 w-10 items-center justify-center rounded-full shadow-lg backdrop-blur-xl transition-all hover:scale-110 active:scale-95 ${
-              isDark
-                ? 'bg-[#12041f]/90 border border-purple-500/30 text-purple-200 shadow-purple-950/60 hover:bg-[#12041f] hover:border-purple-400'
-                : 'bg-white/95 border border-purple-200 text-purple-900 shadow-purple-500/20 hover:bg-white hover:border-purple-300'
-            }`}
+            className={`absolute top-3 left-4 z-40 flex h-10 w-10 items-center justify-center rounded-full shadow-lg backdrop-blur-xl transition-all hover:scale-110 active:scale-95 ${isDark
+              ? 'bg-[#12041f]/90 border border-purple-500/30 text-purple-200 shadow-purple-950/60 hover:bg-[#12041f] hover:border-purple-400'
+              : 'bg-white/95 border border-purple-200 text-purple-900 shadow-purple-500/20 hover:bg-white hover:border-purple-300'
+              }`}
             title="إظهار الشريط العلوي (خروج من وضع التركيز)"
           >
             <ChevronDown size={20} className="text-purple-500 stroke-[2.5]" />
@@ -1404,16 +1396,14 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 15 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className={`w-full max-w-md rounded-3xl p-6 shadow-2xl border flex flex-col gap-4.5 ${
-                isDark
-                  ? 'bg-[#160628]/95 border-purple-500/30 text-white shadow-[0_20px_60px_rgba(0,0,0,0.7)]'
-                  : 'bg-white/95 border-purple-200 text-slate-900 shadow-2xl'
-              }`}
+              className={`w-full max-w-md rounded-3xl p-6 shadow-2xl border flex flex-col gap-4.5 ${isDark
+                ? 'bg-[#160628]/95 border-purple-500/30 text-white shadow-[0_20px_60px_rgba(0,0,0,0.7)]'
+                : 'bg-white/95 border-purple-200 text-slate-900 shadow-2xl'
+                }`}
             >
               <div className="flex items-center gap-3.5">
-                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-                  isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-100 text-amber-800 border border-amber-300'
-                }`}>
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-100 text-amber-800 border border-amber-300'
+                  }`}>
                   <AlertCircle size={26} strokeWidth={2.2} />
                 </div>
                 <div>
@@ -1426,9 +1416,8 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 </div>
               </div>
 
-              <div className={`p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed font-bold ${
-                isDark ? 'bg-white/5 border-white/10 text-slate-300' : 'bg-purple-50/70 border-purple-200 text-purple-950'
-              }`}>
+              <div className={`p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed font-bold ${isDark ? 'bg-white/5 border-white/10 text-slate-300' : 'bg-purple-50/70 border-purple-200 text-purple-950'
+                }`}>
                 سيتم الانفصال عن سياق الدرس الحالي والبدء في درس جديد. ستعمل محادثة زاد والخريطة الذهنية والاختبارات مباشرةً على موضوع الدرس المحدد.
               </div>
 
@@ -1436,11 +1425,10 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 <button
                   type="button"
                   onClick={() => setPendingChunkSwitch(null)}
-                  className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                    isDark
-                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-                  }`}
+                  className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${isDark
+                    ? 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                    }`}
                 >
                   إلغاء
                 </button>
@@ -1467,25 +1455,22 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 15 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className={`w-full max-w-md rounded-3xl p-6 shadow-2xl border flex flex-col gap-4 ${
-                isDark
-                  ? 'bg-[#160628]/95 border-purple-500/30 text-white shadow-[0_20px_60px_rgba(0,0,0,0.7)]'
-                  : 'bg-white/95 border-purple-200 text-slate-900 shadow-2xl'
-              }`}
+              className={`w-full max-w-md rounded-3xl p-6 shadow-2xl border flex flex-col gap-4 ${isDark
+                ? 'bg-[#160628]/95 border-purple-500/30 text-white shadow-[0_20px_60px_rgba(0,0,0,0.7)]'
+                : 'bg-white/95 border-purple-200 text-slate-900 shadow-2xl'
+                }`}
             >
               <div className="flex items-center gap-3 text-red-500">
-                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-                  isDark ? 'bg-red-500/20 border border-red-500/30 text-red-400' : 'bg-red-100 border border-red-200 text-red-700'
-                }`}>
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${isDark ? 'bg-red-500/20 border border-red-500/30 text-red-400' : 'bg-red-100 border border-red-200 text-red-700'
+                  }`}>
                   <AlertCircle size={26} strokeWidth={2.2} />
                 </div>
                 <h3 className={`text-base sm:text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   تأكيد إنهاء الدرس والخروج
                 </h3>
               </div>
-              <p className={`text-xs sm:text-sm leading-relaxed font-bold p-4 rounded-2xl border ${
-                isDark ? 'bg-white/5 border-white/10 text-slate-300' : 'bg-red-50/60 border-red-200 text-slate-800'
-              }`}>
+              <p className={`text-xs sm:text-sm leading-relaxed font-bold p-4 rounded-2xl border ${isDark ? 'bg-white/5 border-white/10 text-slate-300' : 'bg-red-50/60 border-red-200 text-slate-800'
+                }`}>
                 عند الخروج باستخدام زر (X)، سيتم إنهاء الدرس الحالي وتصفير المحادثة والأسئلة والتقدم الحالي، والعودة للشاشة الرئيسية.
                 <br /><br />
                 <span className={isDark ? 'text-purple-300' : 'text-purple-800'}>💡 ملاحظة: إذا أردت العودة للرئيسية مع حفظ تقدمك دون مسحه، يمكنك استخدام زر السهم (الرجوع).</span>
@@ -1494,11 +1479,10 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 <button
                   type="button"
                   onClick={() => setConfirmClose(false)}
-                  className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                    isDark
-                      ? 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-                  }`}
+                  className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${isDark
+                    ? 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                    }`}
                 >
                   إلغاء
                 </button>

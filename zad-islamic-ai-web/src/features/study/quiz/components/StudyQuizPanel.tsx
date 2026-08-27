@@ -404,7 +404,7 @@ export function StudyQuizPanel({
         )}
 
         {/* ── Content Area ── */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] flex flex-col justify-center items-center w-full">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] flex flex-col justify-start items-center w-full">
           <AnimatePresence mode="wait">
 
             {loading ? (
