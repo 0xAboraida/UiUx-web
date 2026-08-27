@@ -201,12 +201,10 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
     else if (panelKey === 'mindmap') startWidth = mindmapWidth
     else if (panelKey === 'quiz') startWidth = quizWidth
 
-    const isLast = panelKey === lastOpenPanel
     const handleMouseMove = (moveEv: MouseEvent) => {
-      // If this is the last open panel (on the far left edge of RTL layout),
-      // dragging mouse to the RIGHT (larger clientX, pulling handle into the screen) increases its width.
-      // For inner panels, dragging mouse to the LEFT (smaller clientX) increases width.
-      const deltaX = isLast ? (moveEv.clientX - startX) : (startX - moveEv.clientX)
+      // Uniform RTL delta: dragging mouse LEFT (smaller clientX) expands panel width.
+      // Dragging mouse RIGHT (larger clientX) shrinks panel width.
+      const deltaX = startX - moveEv.clientX
       const newWidth = startWidth + deltaX
 
       if (panelKey === 'sidebar') setSidebarWidth(Math.max(220, Math.min(newWidth, 800)))
