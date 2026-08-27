@@ -501,6 +501,10 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
   const handleStepComplete = async (completedStepId: number) => {
     if (!currentChunkId) return
     const keyId = activeSessionId || currentChunkId
+
+    // Mark step completed immediately in studyPlanManager
+    studyPlanManager.markStepCompleted(keyId, completedStepId, true)
+
     const currentProgress = studyPlanManager.getSessionProgress(keyId)
     if (!currentProgress) return
 

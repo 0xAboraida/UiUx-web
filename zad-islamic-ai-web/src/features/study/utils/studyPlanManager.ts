@@ -96,25 +96,41 @@ export const studyPlanManager = {
     let activeStepId: number | null = null
     let extractedSteps: string[] = []
 
-    // 1. Parse JSON metadata block from native Gemini Tool Function call
-    const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/i) || content.match(/(\{[\s\S]*"(?:plan_steps|active_step_id|completed_step_id)"[\s\S]*\})/i)
+    // 1. Parse JSON metadata block from native Gemini Tool Function call or inline JSON
+    const jsonMatch = 
+      content.match(/```json\s*([\s\S]*?)\s*```/i) || 
+      content.match(/(\{[\s\S]*?"(?:plan_steps|active_step_id|completed_step_id|completed_step_index|next_step_index|action)"[\s\S]*?\})/i)
+
     if (jsonMatch) {
       try {
         const jsonStr = jsonMatch[1] || jsonMatch[0]
         const parsed = JSON.parse(jsonStr)
+
         if (parsed.plan_steps && Array.isArray(parsed.plan_steps)) {
           extractedSteps = parsed.plan_steps.map((s: any) => String(s).trim()).filter(Boolean)
         }
+
+        // Handle 1-indexed (completed_step_id) vs 0-indexed (completed_step_index)
         if (parsed.completed_step_id !== undefined && parsed.completed_step_id !== null) {
           stepCompletedId = parseInt(parsed.completed_step_id, 10)
+        } else if (parsed.completed_step_index !== undefined && parsed.completed_step_index !== null) {
+          stepCompletedId = parseInt(parsed.completed_step_index, 10) + 1
         }
+
+        // Handle 1-indexed (active_step_id) vs 0-indexed (next_step_index)
         if (parsed.active_step_id !== undefined && parsed.active_step_id !== null) {
           activeStepId = parseInt(parsed.active_step_id, 10)
+        } else if (parsed.next_step_index !== undefined && parsed.next_step_index !== null) {
+          activeStepId = parseInt(parsed.next_step_index, 10) + 1
         }
+
         if (parsed.reply) {
           cleanText = parsed.reply
         } else {
-          cleanText = cleanText.replace(/```json\s*[\s\S]*?\s*```/gi, '').trim()
+          cleanText = cleanText
+            .replace(/```json\s*[\s\S]*?\s*```/gi, '')
+            .replace(/\{[\s\S]*?"(?:plan_steps|active_step_id|completed_step_id|completed_step_index|next_step_index|action)"[\s\S]*?\}/gi, '')
+            .trim()
         }
       } catch (e) {
         console.warn('Failed parsing JSON plan block from LLM:', e)
@@ -126,7 +142,9 @@ export const studyPlanManager = {
     if (currentProgress && currentProgress.steps.length > 0) {
       if (stepCompletedId && stepCompletedId > 0) {
         this.markStepCompleted(keyId, stepCompletedId, true)
-      } else if (activeStepId && activeStepId > 1) {
+      }
+      
+      if (activeStepId && activeStepId > 1) {
         // Mark all steps prior to activeStepId as completed
         for (let i = 1; i < activeStepId; i++) {
           this.markStepCompleted(keyId, i, true)
