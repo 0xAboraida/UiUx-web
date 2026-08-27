@@ -211,6 +211,11 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
       else if (panelKey === 'chat') setChatWidth(Math.max(300, Math.min(newWidth, 1400)))
       else if (panelKey === 'mindmap') setMindmapWidth(Math.max(320, Math.min(newWidth, 1400)))
       else if (panelKey === 'quiz') setQuizWidth(Math.max(280, Math.min(newWidth, 1200)))
+
+      const panelEl = document.getElementById(`panel-${panelKey}`)
+      if (panelEl) {
+        panelEl.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' })
+      }
     }
 
     const handleMouseUp = () => {
