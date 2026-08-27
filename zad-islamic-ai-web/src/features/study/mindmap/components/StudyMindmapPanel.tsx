@@ -29,6 +29,7 @@ export function StudyMindmapPanel({
     return (mindmapData && Array.isArray(mindmapData) && mindmapData.length > 0) ? 'visual' : 'menu'
   })
 
+  const [filterScope, setFilterScope] = useState<'current' | 'all'>('current')
   const [myMindmaps, setMyMindmaps] = useState<StudyMindmapDto[]>([])
   const [communityMindmaps, setCommunityMindmaps] = useState<StudyMindmapDto[]>([])
   const [loadingLists, setLoadingLists] = useState<boolean>(false)
@@ -41,37 +42,72 @@ export function StudyMindmapPanel({
       prevMindmapRef.current = mindmapData
       setActiveMindmap(mindmapData)
       setViewMode('visual')
+
+      // Save newly generated mindmap to localStorage fallback
+      try {
+        const newMindmapObj: StudyMindmapDto = {
+          id: Date.now(),
+          chunkId: currentChunkId || 'general',
+          title: `خريطة ذهنية للدرس`,
+          treeData: mindmapData,
+          authorName: 'طالب زاد',
+          createdAt: new Date().toISOString()
+        }
+        const storedStr = localStorage.getItem('zad_saved_mindmaps')
+        const storedList: StudyMindmapDto[] = storedStr ? JSON.parse(storedStr) : []
+        const exists = storedList.some(m => m.chunkId === currentChunkId && JSON.stringify(m.treeData) === JSON.stringify(mindmapData))
+        if (!exists) {
+          storedList.unshift(newMindmapObj)
+          localStorage.setItem('zad_saved_mindmaps', JSON.stringify(storedList.slice(0, 50)))
+        }
+      } catch (e) {}
+
       loadMindmaps()
     }
   }, [mindmapData])
 
-  // Load saved mindmaps from API whenever currentChunkId changes or panel mounts
+  // Load saved mindmaps from API and localStorage fallback
   const loadMindmaps = async () => {
     setLoadingLists(true)
     try {
       const [userRes, commRes] = await Promise.all([
-        studyApi.getMindmapsByChunk(currentChunkId || ''),
-        studyApi.getCommunityMindmapsByChunk(currentChunkId || '')
+        studyApi.getMindmapsByChunk(currentChunkId || '').catch(() => [] as StudyMindmapDto[]),
+        studyApi.getCommunityMindmapsByChunk(currentChunkId || '').catch(() => [] as StudyMindmapDto[])
       ])
 
       let myFiltered = Array.isArray(userRes) ? userRes : []
       let commFiltered = Array.isArray(commRes) ? commRes : []
 
-      // Strict chunk isolation if chunk selected
-      if (currentChunkId) {
-        const decChunk = decodeURIComponent(currentChunkId)
-        myFiltered = myFiltered.filter(m => m.chunkId === currentChunkId || m.chunkId === decChunk)
-        commFiltered = commFiltered.filter(m => m.chunkId === currentChunkId || m.chunkId === decChunk)
-      }
+      // Merge local storage cached mindmaps
+      try {
+        const storedStr = localStorage.getItem('zad_saved_mindmaps')
+        if (storedStr) {
+          const localList: StudyMindmapDto[] = JSON.parse(storedStr)
+          if (Array.isArray(localList)) {
+            myFiltered = [...localList, ...myFiltered]
+          }
+        }
+      } catch (e) {}
 
       // Deduplicate
-      const myIds = new Set(myFiltered.map(m => m.id))
-      commFiltered = commFiltered.filter(m => !myIds.has(m.id))
+      const seenIds = new Set<number>()
+      const uniqueMy: StudyMindmapDto[] = []
+      for (const m of myFiltered) {
+        if (m && m.id && !seenIds.has(m.id)) {
+          seenIds.add(m.id)
+          uniqueMy.push(m)
+        } else if (m && !m.id) {
+          uniqueMy.push(m)
+        }
+      }
 
-      setMyMindmaps(myFiltered)
-      setCommunityMindmaps(commFiltered)
+      const commIds = new Set(uniqueMy.map(m => m.id))
+      const uniqueComm = commFiltered.filter(m => m && (m.id ? !commIds.has(m.id) : true))
+
+      setMyMindmaps(uniqueMy)
+      setCommunityMindmaps(uniqueComm)
     } catch (err) {
-      console.warn('Failed to load mindmaps from backend API:', err)
+      console.warn('Failed to load mindmaps:', err)
     } finally {
       setLoadingLists(false)
     }
@@ -117,6 +153,16 @@ export function StudyMindmapPanel({
   }
 
   const renderMindmapList = (items: StudyMindmapDto[], title: string) => {
+    const isMindmapMatchingChunk = (m: StudyMindmapDto) => {
+      if (!currentChunkId) return true
+      const decChunk = decodeURIComponent(currentChunkId)
+      return m.chunkId === currentChunkId || m.chunkId === decChunk
+    }
+    const filteredItems = items.filter(m => {
+      if (filterScope === 'all') return true
+      return isMindmapMatchingChunk(m)
+    })
+
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -135,7 +181,7 @@ export function StudyMindmapPanel({
         <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         {/* Header Bar */}
-        <div className="flex items-center justify-between w-full mb-5 relative z-10 border-b pb-3.5 border-white/10 gap-2">
+        <div className="flex items-center justify-between w-full mb-3 relative z-10 border-b pb-3.5 border-white/10 gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className={`p-2 rounded-xl flex-shrink-0 ${isDark ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30' : 'bg-sky-100 text-sky-700'}`}>
               <Brain size={20} />
@@ -144,7 +190,7 @@ export function StudyMindmapPanel({
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className={`text-base sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-800'}`}>{title}</h3>
                 <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold shadow-sm ${isDark ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-sky-100 text-sky-800'}`}>
-                  {items.length} خريطة
+                  {filteredItems.length} خريطة
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5 hidden sm:block">استعرض الشجرات الذهنية المحفوظة لتعميق الفهم البصري</p>
@@ -160,6 +206,32 @@ export function StudyMindmapPanel({
           </button>
         </div>
 
+        {/* Scope Filter Switcher */}
+        <div className="w-full flex items-center justify-center gap-2 mb-4 relative z-10">
+          <div className={`p-1 rounded-2xl border flex items-center gap-1 ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
+            <button
+              onClick={() => setFilterScope('current')}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                filterScope === 'current'
+                  ? 'bg-gradient-to-r from-sky-500 to-cyan-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              الدرس الحالي
+            </button>
+            <button
+              onClick={() => setFilterScope('all')}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                filterScope === 'all'
+                  ? 'bg-gradient-to-r from-sky-500 to-cyan-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              جميع الدروس ({items.length})
+            </button>
+          </div>
+        </div>
+
         {/* Content List */}
         <div className="w-full relative z-10 max-h-[380px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           {loadingLists ? (
@@ -167,7 +239,7 @@ export function StudyMindmapPanel({
               <Loader2 className="animate-spin text-sky-400" size={32} />
               <p className={`text-xs font-semibold ${isDark ? 'text-white/70' : 'text-slate-500'}`}>جاري استرجاع الخرائط الذهنية...</p>
             </div>
-          ) : items.length === 0 ? (
+          ) : filteredItems.length === 0 ? (
             <div className={`w-full py-14 rounded-2xl border text-center relative z-10 flex flex-col items-center justify-center gap-2.5 ${
               isDark ? 'bg-white/5 border-white/10 text-white/60' : 'bg-slate-50 border-slate-200 text-slate-500'
             }`}>
@@ -177,7 +249,7 @@ export function StudyMindmapPanel({
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3">
-              {items.map((item, index) => {
+              {filteredItems.map((item, index) => {
                 const createdDate = item.createdAt ? new Date(item.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }) : 'مؤخراً'
                 const nodesList = parseTreeNodes(item.treeData)
                 const nodeCount = nodesList.length > 0 ? (nodesList[0]?.children?.length || 1) + 1 : 1
