@@ -1215,7 +1215,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   />
                 </motion.div>
 
-                {lastOpenPanel !== 'sidebar' && (
+                {openPanelNames.length > 1 && (
                   <PanelResizer
                     onMouseDown={(e) => startResizingPanel('sidebar', e)}
                     isDark={isDark}
@@ -1254,7 +1254,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   />
                 </motion.div>
 
-                {lastOpenPanel !== 'document' && (
+                {openPanelNames.length > 1 && (
                   <PanelResizer
                     onMouseDown={(e) => startResizingPanel('document', e)}
                     isDark={isDark}
@@ -1297,7 +1297,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   />
                 </motion.div>
 
-                {lastOpenPanel !== 'chat' && (
+                {openPanelNames.length > 1 && (
                   <PanelResizer
                     onMouseDown={(e) => startResizingPanel('chat', e)}
                     isDark={isDark}
@@ -1331,7 +1331,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   />
                 </motion.div>
 
-                {lastOpenPanel !== 'mindmap' && (
+                {openPanelNames.length > 1 && (
                   <PanelResizer
                     onMouseDown={(e) => startResizingPanel('mindmap', e)}
                     isDark={isDark}
@@ -1376,7 +1376,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   </PanelErrorBoundary>
                 </motion.div>
 
-                {lastOpenPanel !== 'quiz' && (
+                {openPanelNames.length > 1 && (
                   <PanelResizer
                     onMouseDown={(e) => startResizingPanel('quiz', e)}
                     isDark={isDark}
