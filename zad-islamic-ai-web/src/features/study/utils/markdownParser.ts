@@ -90,6 +90,14 @@ export function formatMarkdown(text: string, isTurathText: boolean = true, isDar
     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-[#8a17c9]">$1</strong>')
     .replace(/\*(.*?)\*/g, '<em class="italic text-white/80">$1</em>')
 
+    // Turath / Quote Special Markers & Double-Quoted Matn phrases
+    .replace(/«([^»]+)»/g, '<span class="inline-flex items-center px-2 py-0.5 mx-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-[#fcd34d] font-semibold">«$1»</span>')
+    .replace(/@([^@]+)@/g, '<span class="inline-flex items-center px-2 py-0.5 mx-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-[#fcd34d] font-semibold">$1</span>')
+    .replace(/%([^%]+)%/g, '<span class="inline-flex items-center px-2 py-0.5 mx-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-[#34d399] font-semibold">$1</span>')
+    .replace(/&amp;([^&]+)&amp;/g, '<span class="inline-flex items-center px-2 py-0.5 mx-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-[#34d399] font-semibold">$1</span>')
+    .replace(/\$([^\$]+)\$/g, '<span class="inline-flex items-center px-2 py-0.5 mx-0.5 rounded-md bg-purple-500/10 border border-purple-500/30 text-[#c084fc] font-semibold">$1</span>')
+    .replace(/"([^"\n]{2,120})"/g, '"<span class="text-[#fcd34d] font-semibold">$1</span>"')
+
     // Lists (using div/span to avoid <li> numbering issues without <ul>/<ol>)
     .replace(/^[-*] (.*$)/gim, '<div class="flex gap-2 mr-2 mb-1"><span class="font-bold text-[#38bdf8]">•</span> <span>$1</span></div>')
     .replace(/^(\d+\.) (.*$)/gim, '<div class="flex gap-2 mr-2 mb-1"><span class="font-bold text-[#38bdf8] w-5 shrink-0">$1</span> <span>$2</span></div>')
