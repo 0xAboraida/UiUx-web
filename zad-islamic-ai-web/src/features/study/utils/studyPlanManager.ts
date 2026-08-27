@@ -70,10 +70,36 @@ export const studyPlanManager = {
     const sessionProgress = all[keyId]
     if (!sessionProgress) return null
 
-    const step = sessionProgress.steps.find(s => s.id === stepId)
-    if (step) {
-      step.isCompleted = isCompleted
-    }
+    // Ensure sequential progression: mark target step AND all preceding steps as completed
+    sessionProgress.steps.forEach(s => {
+      if (s.id <= stepId) {
+        s.isCompleted = isCompleted
+      }
+    })
+
+    sessionProgress.completedSteps = sessionProgress.steps.filter(s => s.isCompleted).length
+    sessionProgress.updatedAt = new Date().toISOString()
+    all[keyId] = sessionProgress
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(all))
+    window.dispatchEvent(new Event('storage'))
+    window.dispatchEvent(new Event('zad_plan_updated'))
+    return sessionProgress
+  },
+
+  markStepActive(keyId: number | string, activeStepId: number): SessionPlanProgress | null {
+    const all = this.getAllProgress()
+    const sessionProgress = all[keyId]
+    if (!sessionProgress) return null
+
+    // Mark all preceding steps completed, and ensure activeStepId is uncompleted
+    sessionProgress.steps.forEach(s => {
+      if (s.id < activeStepId) {
+        s.isCompleted = true
+      } else if (s.id === activeStepId) {
+        s.isCompleted = false
+      }
+    })
+
     sessionProgress.completedSteps = sessionProgress.steps.filter(s => s.isCompleted).length
     sessionProgress.updatedAt = new Date().toISOString()
     all[keyId] = sessionProgress
@@ -137,7 +163,7 @@ export const studyPlanManager = {
       }
     }
 
-    // 2. Strict State Updates based on JSON Metadata
+    // 2. Strict Sequential State Updates based on JSON Metadata
     const currentProgress = this.getSessionProgress(keyId)
     if (currentProgress && currentProgress.steps.length > 0) {
       if (stepCompletedId && stepCompletedId > 0) {
@@ -145,10 +171,7 @@ export const studyPlanManager = {
       }
       
       if (activeStepId && activeStepId > 1) {
-        // Mark all steps prior to activeStepId as completed
-        for (let i = 1; i < activeStepId; i++) {
-          this.markStepCompleted(keyId, i, true)
-        }
+        this.markStepActive(keyId, activeStepId)
       }
     }
 
