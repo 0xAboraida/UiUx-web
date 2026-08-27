@@ -48,7 +48,7 @@ export function StudyDocument({
           width: isDocumentOpen ? (documentWidth ? documentWidth : '100%') : 0,
           opacity: isDocumentOpen ? 1 : 0
         }}
-        className={`hidden flex-col backdrop-blur-xl lg:flex shrink-0 overflow-hidden ${isDark
+        className={`flex flex-col backdrop-blur-xl shrink-0 overflow-hidden ${isDark
             ? 'bg-[#12041f]/40 border-white/10 text-white'
             : 'bg-white/95 border-slate-200 text-slate-900 shadow-sm'
           } ${isDocumentOpen ? 'border-l' : 'border-transparent'}`}
