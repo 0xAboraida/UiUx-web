@@ -54,17 +54,6 @@ export function QuizHomeScreen({ currentChunkId, isDark, onStartSetup, onLoadQui
         else if (Array.isArray(resObj.items)) fetchedMy = resObj.items
       }
 
-      // Merge local storage fallback quizzes
-      try {
-        const storedStr = localStorage.getItem('zad_saved_quizzes')
-        if (storedStr) {
-          const localList = JSON.parse(storedStr)
-          if (Array.isArray(localList)) {
-            fetchedMy = [...localList, ...fetchedMy]
-          }
-        }
-      } catch (e) {}
-
       let fetchedCommunity: any[] = []
       if (Array.isArray(communityResult)) {
         fetchedCommunity = communityResult
@@ -124,10 +113,7 @@ export function QuizHomeScreen({ currentChunkId, isDark, onStartSetup, onLoadQui
 
   const renderQuizList = (quizzes: QuizDto[], title: string) => {
     const safeQuizzes = Array.isArray(quizzes) ? quizzes : []
-    const filteredQuizzes = safeQuizzes.filter(q => {
-      if (filterScope === 'all') return true
-      return q && isQuizMatchingChunk(q, currentChunkId)
-    })
+    const filteredQuizzes = safeQuizzes.filter(q => q && isQuizMatchingChunk(q, currentChunkId))
 
     return (
       <motion.div
@@ -146,7 +132,7 @@ export function QuizHomeScreen({ currentChunkId, isDark, onStartSetup, onLoadQui
         <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         {/* Header Bar */}
-        <div className="flex items-center justify-between w-full mb-3 relative z-10 border-b pb-3.5 border-white/10">
+        <div className="flex items-center justify-between w-full mb-4 relative z-10 border-b pb-3.5 border-white/10">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className={`p-2 rounded-xl flex-shrink-0 ${isDark ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-700'}`}>
               <Brain size={20} />
@@ -168,32 +154,6 @@ export function QuizHomeScreen({ currentChunkId, isDark, onStartSetup, onLoadQui
           >
             <ChevronLeft size={15} /> العودة
           </button>
-        </div>
-
-        {/* Scope Filter Switcher */}
-        <div className="w-full flex items-center justify-center gap-2 mb-4 relative z-10">
-          <div className={`p-1 rounded-2xl border flex items-center gap-1 ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
-            <button
-              onClick={() => setFilterScope('current')}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                filterScope === 'current'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              الدرس الحالي
-            </button>
-            <button
-              onClick={() => setFilterScope('all')}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                filterScope === 'all'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              جميع الدروس ({safeQuizzes.length})
-            </button>
-          </div>
         </div>
 
 

@@ -80,6 +80,17 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
   const [isQuizOpen, setIsQuizOpen] = useState(false)
   const [quizWidth, setQuizWidth] = useState(500)
 
+  const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth < 768)
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const [confirmClose, setConfirmClose] = useState(false)
   const [pendingChunkSwitch, setPendingChunkSwitch] = useState<{ chunkId: string; title: string; fullPath: string } | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -903,39 +914,48 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
       )}
 
       {/* Top Header Bar (Collapsible Focus Mode) */}
-      <header className={`relative z-30 flex w-full items-center justify-between border-b px-6 backdrop-blur-xl transition-all duration-500 ${isHeaderCollapsed ? 'h-0 py-0 opacity-0 border-b-0 pointer-events-none overflow-hidden' : 'h-16 opacity-100'
+      <header className={`relative z-30 flex w-full items-center justify-between border-b px-2.5 sm:px-6 backdrop-blur-xl transition-all duration-500 ${isHeaderCollapsed ? 'h-0 py-0 opacity-0 border-b-0 pointer-events-none overflow-hidden' : 'h-14 sm:h-16 opacity-100'
         } ${isDark ? 'border-white/10 bg-[#12041f]/80 text-white' : 'border-slate-200 bg-white/90 text-slate-800 shadow-sm'
         }`}>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <span className={`flex h-10 w-10 items-center justify-center rounded-2xl p-2 shadow-sm transition-all ${isDark
+        <div className="flex items-center gap-2 sm:gap-4 max-w-[70vw] sm:max-w-none overflow-hidden">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-sm transition-all ${isDark
               ? 'brand-gradient shadow-primary/20'
               : 'bg-purple-100/90 border border-purple-200/80 shadow-purple-500/10'
               }`}>
               <img src={isDark ? whiteLogo : darkLogo} alt="زاد" className="w-full h-full object-contain drop-shadow-sm" />
             </span>
-            <div>
-              <h1 className={`font-sans text-sm sm:text-base font-black leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <div className="hidden md:block">
+              <h1 className={`font-sans text-xs sm:text-base font-black leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 وضع المُدارَسة
               </h1>
             </div>
           </div>
 
-          {/* All 5 Separate Independent Openable Panel Toggles */}
-          <div className={`flex items-center gap-2 mr-4 border-r pr-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+          {/* All 5 Separate Independent Openable Panel Toggles (Horizontally scrollable on mobile) */}
+          <div className={`flex items-center gap-1.5 sm:gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden py-1 sm:mr-4 sm:border-r sm:pr-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
             {/* 1. الفهرس */}
             <button
               onClick={() => {
-                if (!isSidebarOpen) {
+                if (isMobile) {
                   setIsSidebarOpen(true)
-                  focusPanel('sidebar')
-                } else if (focusTarget?.panel !== 'sidebar') {
+                  setIsDocumentOpen(false)
+                  setIsChatOpen(false)
+                  setIsMindmapOpen(false)
+                  setIsQuizOpen(false)
                   focusPanel('sidebar')
                 } else {
-                  setIsSidebarOpen(false)
+                  if (!isSidebarOpen) {
+                    setIsSidebarOpen(true)
+                    focusPanel('sidebar')
+                  } else if (focusTarget?.panel !== 'sidebar') {
+                    focusPanel('sidebar')
+                  } else {
+                    setIsSidebarOpen(false)
+                  }
                 }
               }}
-              className={`flex h-9 items-center justify-center gap-2 rounded-xl px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isSidebarOpen
+              className={`flex h-8 sm:h-9 shrink-0 items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isSidebarOpen
                 ? isDark
                   ? 'bg-[#a855f7]/25 border border-[#a855f7]/50 text-white shadow-lg shadow-[#a855f7]/25 font-extrabold scale-[1.02] ring-1 ring-[#a855f7]/30'
                   : 'bg-gradient-to-b from-white/90 via-purple-50/60 to-purple-100/70 backdrop-blur-xl border border-purple-300/80 text-purple-950 shadow-md shadow-purple-500/10 font-extrabold scale-[1.02]'
@@ -945,23 +965,32 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 }`}
               title={isSidebarOpen ? 'الفهرس' : 'فتح الفهرس'}
             >
-              <Menu size={16} className="text-teal-500 shrink-0 stroke-[2.2]" />
-              <span>الفهرس</span>
+              <Menu size={15} className="text-teal-500 shrink-0 stroke-[2.2]" />
+              <span className="whitespace-nowrap">الفهرس</span>
             </button>
 
             {/* 2. النص الأصلي */}
             <button
               onClick={() => {
-                if (!isDocumentOpen) {
+                if (isMobile) {
                   setIsDocumentOpen(true)
-                  focusPanel('document')
-                } else if (focusTarget?.panel !== 'document') {
+                  setIsSidebarOpen(false)
+                  setIsChatOpen(false)
+                  setIsMindmapOpen(false)
+                  setIsQuizOpen(false)
                   focusPanel('document')
                 } else {
-                  setIsDocumentOpen(false)
+                  if (!isDocumentOpen) {
+                    setIsDocumentOpen(true)
+                    focusPanel('document')
+                  } else if (focusTarget?.panel !== 'document') {
+                    focusPanel('document')
+                  } else {
+                    setIsDocumentOpen(false)
+                  }
                 }
               }}
-              className={`flex h-9 items-center justify-center gap-2 rounded-xl px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isDocumentOpen
+              className={`flex h-8 sm:h-9 shrink-0 items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isDocumentOpen
                 ? isDark
                   ? 'bg-[#a855f7]/25 border border-[#a855f7]/50 text-white shadow-lg shadow-[#a855f7]/25 font-extrabold scale-[1.02] ring-1 ring-[#a855f7]/30'
                   : 'bg-gradient-to-b from-white/90 via-purple-50/60 to-purple-100/70 backdrop-blur-xl border border-purple-300/80 text-purple-950 shadow-md shadow-purple-500/10 font-extrabold scale-[1.02]'
@@ -971,23 +1000,32 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 }`}
               title={isDocumentOpen ? 'النص الأصلي' : 'فتح النص الأصلي'}
             >
-              <BookOpen size={16} className="text-sky-500 shrink-0 stroke-[2.2]" />
-              <span>النص الأصلي</span>
+              <BookOpen size={15} className="text-sky-500 shrink-0 stroke-[2.2]" />
+              <span className="whitespace-nowrap">النص الأصلي</span>
             </button>
 
             {/* 3. المحادثة */}
             <button
               onClick={() => {
-                if (!isChatOpen) {
+                if (isMobile) {
                   setIsChatOpen(true)
-                  focusPanel('chat')
-                } else if (focusTarget?.panel !== 'chat') {
+                  setIsSidebarOpen(false)
+                  setIsDocumentOpen(false)
+                  setIsMindmapOpen(false)
+                  setIsQuizOpen(false)
                   focusPanel('chat')
                 } else {
-                  setIsChatOpen(false)
+                  if (!isChatOpen) {
+                    setIsChatOpen(true)
+                    focusPanel('chat')
+                  } else if (focusTarget?.panel !== 'chat') {
+                    focusPanel('chat')
+                  } else {
+                    setIsChatOpen(false)
+                  }
                 }
               }}
-              className={`flex h-9 items-center justify-center gap-2 rounded-xl px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isChatOpen
+              className={`flex h-8 sm:h-9 shrink-0 items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isChatOpen
                 ? isDark
                   ? 'bg-[#a855f7]/25 border border-[#a855f7]/50 text-white shadow-lg shadow-[#a855f7]/25 font-extrabold scale-[1.02] ring-1 ring-[#a855f7]/30'
                   : 'bg-gradient-to-b from-white/90 via-purple-50/60 to-purple-100/70 backdrop-blur-xl border border-purple-300/80 text-purple-950 shadow-md shadow-purple-500/10 font-extrabold scale-[1.02]'
@@ -997,23 +1035,32 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 }`}
               title={isChatOpen ? 'المحادثة' : 'فتح محادثة زاد'}
             >
-              <MessageCircle size={16} className="text-purple-500 shrink-0 stroke-[2.2]" />
-              <span>المحادثة</span>
+              <MessageCircle size={15} className="text-purple-500 shrink-0 stroke-[2.2]" />
+              <span className="whitespace-nowrap">المحادثة</span>
             </button>
 
             {/* 4. الخريطة الذهنية */}
             <button
               onClick={() => {
-                if (!isMindmapOpen) {
+                if (isMobile) {
                   setIsMindmapOpen(true)
-                  focusPanel('mindmap')
-                } else if (focusTarget?.panel !== 'mindmap') {
+                  setIsSidebarOpen(false)
+                  setIsDocumentOpen(false)
+                  setIsChatOpen(false)
+                  setIsQuizOpen(false)
                   focusPanel('mindmap')
                 } else {
-                  setIsMindmapOpen(false)
+                  if (!isMindmapOpen) {
+                    setIsMindmapOpen(true)
+                    focusPanel('mindmap')
+                  } else if (focusTarget?.panel !== 'mindmap') {
+                    focusPanel('mindmap')
+                  } else {
+                    setIsMindmapOpen(false)
+                  }
                 }
               }}
-              className={`flex h-9 items-center justify-center gap-2 rounded-xl px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isMindmapOpen
+              className={`flex h-8 sm:h-9 shrink-0 items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isMindmapOpen
                 ? isDark
                   ? 'bg-[#a855f7]/25 border border-[#a855f7]/50 text-white shadow-lg shadow-[#a855f7]/25 font-extrabold scale-[1.02] ring-1 ring-[#a855f7]/30'
                   : 'bg-gradient-to-b from-white/90 via-purple-50/60 to-purple-100/70 backdrop-blur-xl border border-purple-300/80 text-purple-950 shadow-md shadow-purple-500/10 font-extrabold scale-[1.02]'
@@ -1023,23 +1070,32 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 }`}
               title={isMindmapOpen ? 'الخريطة الذهنية' : 'فتح الخريطة الذهنية'}
             >
-              <Brain size={16} className="text-sky-500 shrink-0 stroke-[2.2]" />
-              <span>الخريطة</span>
+              <Brain size={15} className="text-sky-500 shrink-0 stroke-[2.2]" />
+              <span className="whitespace-nowrap">الخريطة</span>
             </button>
 
             {/* 5. التقييم */}
             <button
               onClick={() => {
-                if (!isQuizOpen) {
+                if (isMobile) {
                   setIsQuizOpen(true)
-                  focusPanel('quiz')
-                } else if (focusTarget?.panel !== 'quiz') {
+                  setIsSidebarOpen(false)
+                  setIsDocumentOpen(false)
+                  setIsChatOpen(false)
+                  setIsMindmapOpen(false)
                   focusPanel('quiz')
                 } else {
-                  setIsQuizOpen(false)
+                  if (!isQuizOpen) {
+                    setIsQuizOpen(true)
+                    focusPanel('quiz')
+                  } else if (focusTarget?.panel !== 'quiz') {
+                    focusPanel('quiz')
+                  } else {
+                    setIsQuizOpen(false)
+                  }
                 }
               }}
-              className={`flex h-9 items-center justify-center gap-2 rounded-xl px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isQuizOpen
+              className={`flex h-8 sm:h-9 shrink-0 items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-3.5 text-xs font-bold transition-all backdrop-blur-xl ${isQuizOpen
                 ? isDark
                   ? 'bg-[#a855f7]/25 border border-[#a855f7]/50 text-white shadow-lg shadow-[#a855f7]/25 font-extrabold scale-[1.02] ring-1 ring-[#a855f7]/30'
                   : 'bg-gradient-to-b from-white/90 via-purple-50/60 to-purple-100/70 backdrop-blur-xl border border-purple-300/80 text-purple-950 shadow-md shadow-purple-500/10 font-extrabold scale-[1.02]'
@@ -1049,8 +1105,8 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 }`}
               title={isQuizOpen ? 'اختبار التقييم' : 'فتح اختبار التقييم'}
             >
-              <ClipboardList size={16} className="text-emerald-500 shrink-0 stroke-[2.2]" />
-              <span>التقييم</span>
+              <ClipboardList size={15} className="text-emerald-500 shrink-0 stroke-[2.2]" />
+              <span className="whitespace-nowrap">التقييم</span>
             </button>
           </div>
         </div>
@@ -1192,14 +1248,14 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   id="panel-sidebar"
                   key="sidebar-panel"
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: openPanelNames.length === 1 ? '100%' : sidebarWidth }}
+                  animate={{ opacity: 1, width: (isMobile || openPanelNames.length === 1) ? '100%' : sidebarWidth }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={isResizing ? { duration: 0 } : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className={`h-full flex overflow-hidden ${openPanelNames.length === 1 ? 'flex-1 w-full' : 'shrink-0'}`}
+                  className={`h-full flex overflow-hidden ${(isMobile || openPanelNames.length === 1) ? 'flex-1 w-full min-w-full' : 'shrink-0'}`}
                 >
                   <StudySidebar
                     isSidebarOpen={isSidebarOpen}
-                    sidebarWidth={openPanelNames.length === 1 ? undefined : sidebarWidth}
+                    sidebarWidth={(isMobile || openPanelNames.length === 1) ? undefined : sidebarWidth}
                     setIsSidebarOpen={setIsSidebarOpen}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
@@ -1213,7 +1269,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   />
                 </motion.div>
 
-                {openPanelNames.length > 1 && (
+                {openPanelNames.length > 1 && !isMobile && (
                   <PanelResizer
                     onMouseDown={(e) => startResizingPanel('sidebar', e)}
                     isDark={isDark}
@@ -1230,14 +1286,14 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   id="panel-document"
                   key="document-panel"
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: openPanelNames.length === 1 ? '100%' : documentWidth }}
+                  animate={{ opacity: 1, width: (isMobile || openPanelNames.length === 1) ? '100%' : documentWidth }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={isResizing ? { duration: 0 } : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className={`h-full flex overflow-hidden ${openPanelNames.length === 1 ? 'flex-1 w-full' : 'shrink-0'}`}
+                  className={`h-full flex overflow-hidden ${(isMobile || openPanelNames.length === 1) ? 'flex-1 w-full min-w-full' : 'shrink-0'}`}
                 >
                   <StudyDocument
                     isDocumentOpen={isDocumentOpen}
-                    documentWidth={openPanelNames.length === 1 ? undefined : documentWidth}
+                    documentWidth={(isMobile || openPanelNames.length === 1) ? undefined : documentWidth}
                     setIsDocumentOpen={setIsDocumentOpen}
                     currentChunkId={currentChunkId}
                     chunkMeta={chunkMeta}
@@ -1252,7 +1308,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   />
                 </motion.div>
 
-                {openPanelNames.length > 1 && (
+                {openPanelNames.length > 1 && !isMobile && (
                   <PanelResizer
                     onMouseDown={(e) => startResizingPanel('document', e)}
                     isDark={isDark}
@@ -1269,10 +1325,10 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   id="panel-chat"
                   key="chat-panel"
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: openPanelNames.length === 1 ? '100%' : chatWidth }}
+                  animate={{ opacity: 1, width: (isMobile || openPanelNames.length === 1) ? '100%' : chatWidth }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={isResizing ? { duration: 0 } : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className={`h-full flex overflow-hidden ${openPanelNames.length === 1 ? 'flex-1 w-full' : 'shrink-0'}`}
+                  className={`h-full flex overflow-hidden ${(isMobile || openPanelNames.length === 1) ? 'flex-1 w-full min-w-full' : 'shrink-0'}`}
                 >
                   <StudyChatPanel
                     messages={messages}
@@ -1289,13 +1345,13 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                     pendingPlanSteps={pendingPlanSteps}
                     onApprovePlan={handleApprovePlan}
                     onStepComplete={handleStepComplete}
-                    panelWidth={openPanelNames.length === 1 ? undefined : chatWidth}
+                    panelWidth={(isMobile || openPanelNames.length === 1) ? undefined : chatWidth}
                     startResizing={() => { }}
                     isDark={isDark}
                   />
                 </motion.div>
 
-                {openPanelNames.length > 1 && (
+                {openPanelNames.length > 1 && !isMobile && (
                   <PanelResizer
                     onMouseDown={(e) => startResizingPanel('chat', e)}
                     isDark={isDark}
@@ -1312,10 +1368,10 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   id="panel-mindmap"
                   key="mindmap-panel"
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: openPanelNames.length === 1 ? '100%' : mindmapWidth }}
+                  animate={{ opacity: 1, width: (isMobile || openPanelNames.length === 1) ? '100%' : mindmapWidth }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={isResizing ? { duration: 0 } : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className={`h-full flex overflow-hidden ${openPanelNames.length === 1 ? 'flex-1 w-full' : 'shrink-0'}`}
+                  className={`h-full flex overflow-hidden ${(isMobile || openPanelNames.length === 1) ? 'flex-1 w-full min-w-full' : 'shrink-0'}`}
                 >
                   <StudyMindmapPanel
                     mindmapData={mindmapData}
@@ -1323,13 +1379,13 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                     currentChunkId={currentChunkId}
                     handleGenerateMindmap={handleGenerateMindmap}
                     onClose={() => setIsMindmapOpen(false)}
-                    panelWidth={openPanelNames.length === 1 ? undefined : mindmapWidth}
+                    panelWidth={(isMobile || openPanelNames.length === 1) ? undefined : mindmapWidth}
                     startResizing={() => { }}
                     isDark={isDark}
                   />
                 </motion.div>
 
-                {openPanelNames.length > 1 && (
+                {openPanelNames.length > 1 && !isMobile && (
                   <PanelResizer
                     onMouseDown={(e) => startResizingPanel('mindmap', e)}
                     isDark={isDark}
@@ -1346,10 +1402,10 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                   id="panel-quiz"
                   key="quiz-panel"
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: openPanelNames.length === 1 ? '100%' : quizWidth }}
+                  animate={{ opacity: 1, width: (isMobile || openPanelNames.length === 1) ? '100%' : quizWidth }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={isResizing ? { duration: 0 } : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className={`h-full flex overflow-hidden ${openPanelNames.length === 1 ? 'flex-1 w-full' : 'shrink-0'}`}
+                  className={`h-full flex overflow-hidden ${(isMobile || openPanelNames.length === 1) ? 'flex-1 w-full min-w-full' : 'shrink-0'}`}
                 >
                   <PanelErrorBoundary panelName="اختبار التقييم" isDark={isDark} onReset={() => setQuizQuestions(null)}>
                     <StudyQuizPanel
@@ -1362,7 +1418,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                       handleGenerateQuiz={handleGenerateQuiz}
                       onResetQuiz={() => setQuizQuestions(null)}
                       onClose={() => setIsQuizOpen(false)}
-                      panelWidth={openPanelNames.length === 1 ? undefined : quizWidth}
+                      panelWidth={(isMobile || openPanelNames.length === 1) ? undefined : quizWidth}
                       startResizing={() => { }}
                       isDark={isDark}
                       flowState={quizFlowState}
