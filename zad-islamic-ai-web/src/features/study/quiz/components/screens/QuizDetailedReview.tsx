@@ -52,25 +52,22 @@ export function QuizDetailedReview({
             return (
               <div
                 key={idx}
-                className={`p-5 md:p-6 rounded-3xl border shadow-xl space-y-4 transition-all ${
+                className={`p-6 pt-7 md:p-8 md:pt-8 rounded-3xl border shadow-xl space-y-4 transition-all relative ${
                   isDark
                     ? 'bg-[#1c0836] border-purple-500/30 text-white shadow-purple-950/50 ring-1 ring-white/5'
                     : 'bg-white border-slate-300 text-slate-900 shadow-md ring-1 ring-slate-900/5'
                 }`}
               >
-                <div className={`p-3 rounded-2xl flex items-center justify-between gap-2 border ${
-                  isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center justify-center text-xs font-black">
-                      {idx + 1}
-                    </span>
-                    <span className="text-xs font-bold text-emerald-400">سؤال {idx + 1} من {totalQuestions}</span>
-                  </div>
-                  <span className={`px-3 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-sm ${
+                {/* Floating Question Number & Answer Status Badges Outside Top-Right Corner */}
+                <div className="absolute -top-4 right-5 z-10 flex items-center gap-2" dir="rtl">
+                  <span className="px-3.5 py-1 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 border border-emerald-300/40 flex items-center gap-1">
+                    سؤال {idx + 1} من {totalQuestions}
+                  </span>
+
+                  <span className={`px-3 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-lg ${
                     isCorrect
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                      : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                      ? 'bg-emerald-500 text-white border border-emerald-300/40 shadow-emerald-500/20'
+                      : 'bg-rose-500 text-white border border-rose-300/40 shadow-rose-500/20'
                   }`}>
                     {isCorrect ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
                     <span>{isCorrect ? 'إجابة صحيحة' : 'إجابة خاطئة'}</span>

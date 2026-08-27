@@ -374,8 +374,6 @@ export function MatchingRenderer({
                   </span>
                   <span className="font-bold leading-relaxed text-xs md:text-sm">{rightLabel}</span>
                 </div>
-
-               
               </motion.button>
             )
           })}
