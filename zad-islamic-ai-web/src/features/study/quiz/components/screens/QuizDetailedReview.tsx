@@ -39,7 +39,7 @@ export function QuizDetailedReview({
         </div>
 
         {/* Questions */}
-        <div className="space-y-4">
+        <div className="space-y-8 pb-8">
           {localQuestions.map((q, idx) => {
             const selectedOpt = selectedAnswers[idx]
             const isAnswered = q.type === 'matching'

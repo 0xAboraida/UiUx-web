@@ -375,9 +375,7 @@ export function MatchingRenderer({
                   <span className="font-bold leading-relaxed text-xs md:text-sm">{rightLabel}</span>
                 </div>
 
-                {!isLinked && activeRightIndex === rightIdx && !showFeedback && (
-                  <span className="text-[10px] text-purple-400 font-black animate-pulse shrink-0">حدد المصطلح 👉</span>
-                )}
+               
               </motion.button>
             )
           })}

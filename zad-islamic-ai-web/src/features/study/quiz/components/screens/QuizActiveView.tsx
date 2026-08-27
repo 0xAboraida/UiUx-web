@@ -288,7 +288,7 @@ export function QuizActiveView({
         </div>
       ) : (
         // ─── LIST VIEW ───
-        <div className="space-y-6 w-full max-w-3xl mx-auto pb-6 flex flex-col items-center">
+        <div className="space-y-10 w-full max-w-3xl mx-auto pb-8 flex flex-col items-center">
 
           {localQuestions.map((q, idx) => {
             const selectedOpt = selectedAnswers[idx]
