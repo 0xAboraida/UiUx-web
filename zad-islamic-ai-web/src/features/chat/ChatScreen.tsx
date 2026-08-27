@@ -391,7 +391,7 @@ export default function ChatScreen({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 z-10 relative custom-scrollbar" ref={scrollRef}>
+      <div className="flex-1 overflow-y-auto px-2 sm:px-4 z-10 relative custom-scrollbar" ref={scrollRef}>
         {!hasChatStarted && (
           <div className="flex h-full flex-col items-center justify-center">
             {/* The orb occupies this space physically to push text down */}

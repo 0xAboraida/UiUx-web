@@ -80,7 +80,7 @@ export function StudyChatPanel({
         />
 
         {/* Messages & Welcome Options Scroll Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 space-y-4 sm:space-y-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {/* Initial Welcome 3 Interactive Action Cards */}
           {currentChunkId && onSelectStartOption && messages.length <= 1 && (
             <StudyWelcomeActionCards

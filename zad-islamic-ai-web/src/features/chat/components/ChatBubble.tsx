@@ -356,10 +356,11 @@ export function Bubble({ message, dark, avatarRef, lessonTitle }: { message: Mes
 
   return (
     <div className={`flex w-full animate-in fade-in slide-in-from-bottom-2 duration-500 ${isUser ? 'justify-start' : 'justify-end'}`}>
-      <div className={`flex items-start gap-3 ${isUser ? 'max-w-[88%] md:max-w-[80%]' : 'w-full max-w-[97%] md:max-w-[96%] flex-row-reverse'}`}>
+      <div className={`flex items-start gap-1.5 sm:gap-3 ${isUser ? 'max-w-[92%] sm:max-w-[88%] md:max-w-[80%]' : 'w-full max-w-[100%] sm:max-w-[97%] md:max-w-[96%] flex-row-reverse'}`}>
         {isUser ? (
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full brand-gradient text-white shadow-lg shadow-primary/30 -mt-3">
-            <User size={22} strokeWidth={2.5} />
+          <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full brand-gradient text-white shadow-lg shadow-primary/30 -mt-2 sm:-mt-3">
+            <User size={18} className="sm:hidden" strokeWidth={2.5} />
+            <User size={22} className="hidden sm:block" strokeWidth={2.5} />
           </div>
         ) : (
           <span ref={avatarRef}>
@@ -367,14 +368,14 @@ export function Bubble({ message, dark, avatarRef, lessonTitle }: { message: Mes
           </span>
         )}
         {isUser ? (
-          <div className="rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed shadow-sm brand-gradient rounded-tr-sm text-white whitespace-pre-line">
+          <div className="rounded-2xl px-3.5 sm:px-5 py-2.5 sm:py-3.5 text-sm sm:text-[15px] leading-relaxed shadow-sm brand-gradient rounded-tr-sm text-white whitespace-pre-line">
             {message.text}
           </div>
         ) : (
-          <div className="flex flex-col w-full max-w-full pt-1">
+          <div className="flex flex-col w-full max-w-full pt-0.5 sm:pt-1">
             <div
               ref={messageContentRef}
-              className={`relative px-5 py-5 border overflow-hidden transition-all duration-300 hover:shadow-2xl rounded-3xl rounded-tl-sm flex flex-col gap-4 ${dark
+              className={`relative px-3 sm:px-5 py-3.5 sm:py-5 border overflow-hidden transition-all duration-300 hover:shadow-2xl rounded-2xl sm:rounded-3xl rounded-tl-sm flex flex-col gap-3 sm:gap-4 ${dark
                 ? 'bg-black/30 backdrop-blur-2xl border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.15)]'
                 : 'bg-[#FAF9FC] border-primary/15 shadow-[0_4px_20px_rgba(124,58,237,0.04)]'
                 }`}
@@ -669,7 +670,7 @@ export function Bubble({ message, dark, avatarRef, lessonTitle }: { message: Mes
                 return structuredFrames.map((mainFrame, idx) => (
                   <div
                     key={idx}
-                    className={`p-5 rounded-2xl border overflow-hidden transition-all duration-300 flex flex-col gap-2 ${dark
+                    className={`p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border overflow-hidden transition-all duration-300 flex flex-col gap-2 ${dark
                       ? 'bg-white/[0.02] hover:bg-white/[0.04] border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
                       : 'bg-white hover:bg-purple-50/40 border-purple-200/50 shadow-[0_2px_12px_rgba(124,58,237,0.03)]'
                       }`}
@@ -686,11 +687,11 @@ export function Bubble({ message, dark, avatarRef, lessonTitle }: { message: Mes
                     )}
 
                     {mainFrame.children.length > 0 && (
-                      <div className={`flex flex-col gap-4 ${mainFrame.content.trim().length > 0 ? 'mt-2' : ''}`}>
+                      <div className={`flex flex-col gap-3 sm:gap-4 ${mainFrame.content.trim().length > 0 ? 'mt-2' : ''}`}>
                         {mainFrame.children.map((childContent, cIdx) => (
                           <div
                             key={cIdx}
-                            className={`p-5 rounded-2xl border overflow-hidden transition-all ${dark ? 'bg-black/20 border-white/10 shadow-inner' : 'bg-[#FAF9FC] border-slate-200/80 shadow-sm'}`}
+                            className={`p-3 sm:p-5 rounded-xl sm:rounded-2xl border overflow-hidden transition-all ${dark ? 'bg-black/20 border-white/10 shadow-inner' : 'bg-[#FAF9FC] border-slate-200/80 shadow-sm'}`}
                           >
                             <div dir="rtl" className="w-full text-right font-sans">
                               <ReactMarkdown
