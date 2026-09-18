@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { apiClient } from '../api/client'
 
 export interface User {
   id: string
@@ -40,6 +41,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setIsLoading(false)
   }, [])
+
+  useEffect(() => {
+    if (token) {
+      // Prefetch sessions into cache for instant history loading without waiting
+      apiClient('/api/Chat/sessions').catch(() => {})
+      apiClient('/api/study/sessions').catch(() => {})
+    }
+  }, [token])
 
   const login = (newToken: string, userData: User) => {
     setToken(newToken)

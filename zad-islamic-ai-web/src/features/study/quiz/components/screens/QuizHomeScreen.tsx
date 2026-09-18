@@ -12,11 +12,12 @@ interface QuizHomeScreenProps {
   isDark: boolean
   onStartSetup: () => void
   onLoadQuiz?: (quizDto: any) => void
+  chunkLoading?: boolean
 }
 
 type ViewMode = 'menu' | 'my_quizzes' | 'community_quizzes'
 
-export function QuizHomeScreen({ currentChunkId, isDark, onStartSetup, onLoadQuiz }: QuizHomeScreenProps) {
+export function QuizHomeScreen({ currentChunkId, isDark, onStartSetup, onLoadQuiz, chunkLoading }: QuizHomeScreenProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('menu')
   const [filterScope, setFilterScope] = useState<'current' | 'all'>('current')
 
@@ -437,14 +438,19 @@ export function QuizHomeScreen({ currentChunkId, isDark, onStartSetup, onLoadQui
             </div>
 
             <button
+              disabled={!currentChunkId || chunkLoading}
               onClick={() => {
-                if (!currentChunkId) {
-                  alert('الرجاء اختيار درس من الفهرس الجانبي أولاً لإنشاء وتخصيص اختبار جديد حوله.')
+                if (!currentChunkId || chunkLoading) {
+                  if (!currentChunkId) alert('الرجاء اختيار درس من الفهرس الجانبي أولاً لإنشاء وتخصيص اختبار جديد حوله.')
                   return
                 }
                 onStartSetup()
               }}
-              className="w-full mt-1 py-3.5 px-5 rounded-2xl font-black text-xs sm:text-sm transition-all duration-200 shadow-xl flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] border border-emerald-400/30"
+              className={`w-full mt-1 py-3.5 px-5 rounded-2xl font-black text-xs sm:text-sm transition-all duration-200 shadow-xl flex items-center justify-center gap-2 ${
+                (!currentChunkId || chunkLoading)
+                  ? 'opacity-50 cursor-not-allowed bg-slate-500/20 text-white/50 border border-white/10 shadow-none'
+                  : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] border border-emerald-400/30'
+              }`}
             >
               <Plus size={18} className="stroke-[2.5]" />
               <span>إنشاء وتخصيص اختبار جديد</span>

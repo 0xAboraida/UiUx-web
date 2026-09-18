@@ -29,8 +29,8 @@ export interface VoiceOption {
 export const AVAILABLE_VOICES: VoiceOption[] = [
   {
     id: 'Charon',
-    name: 'زاد',
-    description: 'نبرة عميقة ووقورة للعلوم والتفسير',
+    name: 'عبد الله',
+    description: 'نبرة حماسية وقوية للمراجعات الملخصة والبودكاست',
     gender: 'male',
   },
   {
@@ -41,8 +41,8 @@ export const AVAILABLE_VOICES: VoiceOption[] = [
   },
   {
     id: 'Orus',
-    name: 'عبد الله',
-    description: 'نبرة حماسية وقوية للمراجعات الملخصة والبودكاست',
+    name: 'زاد',
+    description: 'نبرة عميقة ووقورة للعلوم والتفسير',
     gender: 'male',
   },
   {

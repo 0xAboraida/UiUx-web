@@ -23,12 +23,23 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     localStorage.setItem('zad_theme', theme);
+    const themeColor = theme === 'dark' ? '#12041f' : '#faf7ff';
+
     // Add/remove dark class from HTML body if needed for global Tailwind classes
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    // Dynamic browser header status bar color for mobile Chrome/Safari/Edge
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement('meta');
+      metaThemeColor.setAttribute('name', 'theme-color');
+      document.head.appendChild(metaThemeColor);
+    }
+    metaThemeColor.setAttribute('content', themeColor);
   }, [theme]);
 
   const toggleTheme = () => {

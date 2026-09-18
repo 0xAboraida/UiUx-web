@@ -21,6 +21,11 @@ interface AudioReaderButtonProps {
   dark?: boolean
   className?: string
   showTextLabel?: boolean
+  hidePodcast?: boolean
+  onStateChange?: (isPlaying: boolean) => void
+  colorTheme?: 'emerald' | 'purple'
+  orientation?: 'horizontal' | 'vertical'
+  menuPlacement?: 'top' | 'left' | 'right'
 }
 
 const SPEED_OPTIONS = [1.0, 1.25, 1.5, 2.0, 0.8]
@@ -30,6 +35,11 @@ export function AudioReaderButton({
   dark = true,
   className = '',
   showTextLabel = true,
+  hidePodcast = false,
+  onStateChange,
+  colorTheme = 'emerald',
+  orientation = 'horizontal',
+  menuPlacement = 'top',
 }: AudioReaderButtonProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
@@ -45,6 +55,14 @@ export function AudioReaderButton({
   const [showVoiceMenu, setShowVoiceMenu] = useState(false)
 
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const usePurple = isPodcastMode || colorTheme === 'purple'
+
+  useEffect(() => {
+    if (onStateChange) {
+      onStateChange(isPlaying || isPaused || isLoading)
+    }
+  }, [isPlaying, isPaused, isLoading, onStateChange])
 
   useEffect(() => {
     return () => {
@@ -262,8 +280,8 @@ export function AudioReaderButton({
       {isPlaying || isPaused || isLoading ? (
         /* Full Interactive Audio Controls Bar (Dynamically Styled for Podcast Mode vs Standard Speech) */
         <div
-          className={`flex items-center gap-1.5 p-1 rounded-xl shadow-lg border backdrop-blur-md transition-all duration-300 ${
-            isPodcastMode
+          className={`flex ${orientation === 'vertical' ? 'flex-col items-center' : 'items-center'} gap-1.5 p-1 rounded-xl shadow-lg border backdrop-blur-md transition-all duration-300 ${
+            usePurple
               ? dark
                 ? 'bg-slate-900/90 border-purple-500/40 text-purple-100 shadow-purple-950/30'
                 : 'bg-white/95 border-purple-300 text-purple-900 shadow-md'
@@ -276,10 +294,10 @@ export function AudioReaderButton({
           <button
             onClick={() => (isPodcastMode ? handleStartPodcast() : handleStartOrToggleSpeech())}
             type="button"
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-bold transition-all duration-200 ${
+            className={`flex items-center justify-center gap-1.5 ${orientation === 'vertical' ? 'p-1.5 w-8 h-8' : 'px-2.5 py-1'} rounded-lg text-[12px] font-bold transition-all duration-200 ${
               isPaused
                 ? 'text-amber-400 bg-amber-500/20 border border-amber-500/30'
-                : isPodcastMode
+                : usePurple
                 ? 'text-purple-300 bg-purple-500/20 border border-purple-500/30 shadow-sm'
                 : 'text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 shadow-sm'
             }`}
@@ -287,7 +305,7 @@ export function AudioReaderButton({
             {isPaused ? (
               <Play size={13} className="fill-current text-amber-400" />
             ) : (
-              <Pause size={13} className={`fill-current ${isPodcastMode ? 'text-purple-400' : 'text-emerald-400'}`} />
+              <Pause size={13} className={`fill-current ${usePurple ? 'text-purple-400' : 'text-emerald-400'}`} />
             )}
             {showTextLabel && <span>{isPaused ? 'استئناف' : isPodcastMode ? 'البودكاست' : 'مؤقت'}</span>}
           </button>
@@ -301,8 +319,8 @@ export function AudioReaderButton({
             }}
             type="button"
             title="تغيير شخصية المعلم الصوتي"
-            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[12px] font-bold transition-all duration-200 ${
-              isPodcastMode
+            className={`flex items-center justify-center gap-1 ${orientation === 'vertical' ? 'p-1.5 w-8 h-8' : 'px-2 py-1'} rounded-lg text-[12px] font-bold transition-all duration-200 ${
+              usePurple
                 ? dark
                   ? 'text-purple-300 hover:bg-purple-500/20 border border-purple-500/20'
                   : 'text-purple-800 hover:bg-purple-100 border border-purple-200'
@@ -311,7 +329,7 @@ export function AudioReaderButton({
                 : 'text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
             }`}
           >
-            <span>{selectedVoiceObj.name}</span>
+            {orientation === 'vertical' ? <UserCheck size={14} /> : <span>{selectedVoiceObj.name}</span>}
           </button>
 
           {/* Mute Button */}
@@ -319,10 +337,10 @@ export function AudioReaderButton({
             onClick={handleToggleMute}
             type="button"
             title={isMuted ? 'إلغاء كتم الصوت' : 'كتم الصوت'}
-            className={`p-1.5 rounded-lg text-[12px] font-bold transition-all duration-200 ${
+            className={`flex items-center justify-center p-1.5 ${orientation === 'vertical' ? 'w-8 h-8' : ''} rounded-lg text-[12px] font-bold transition-all duration-200 ${
               isMuted
                 ? 'text-amber-400 bg-amber-500/20'
-                : isPodcastMode
+                : usePurple
                 ? dark
                   ? 'text-purple-400 hover:bg-purple-500/20'
                   : 'text-purple-700 hover:bg-purple-100'
@@ -343,8 +361,8 @@ export function AudioReaderButton({
             }}
             type="button"
             title="تغيير سرعة القراءة"
-            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[12px] font-extrabold transition-all duration-200 ${
-              isPodcastMode
+            className={`flex ${orientation === 'vertical' ? 'flex-col justify-center' : 'items-center'} gap-0.5 ${orientation === 'vertical' ? 'p-1.5 w-8 h-8' : 'px-2 py-1'} rounded-lg text-[12px] font-extrabold transition-all duration-200 ${
+              usePurple
                 ? dark
                   ? 'text-purple-300 hover:bg-purple-500/20 border border-purple-500/20'
                   : 'text-purple-800 hover:bg-purple-100 border border-purple-200'
@@ -353,8 +371,8 @@ export function AudioReaderButton({
                 : 'text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
             }`}
           >
-            <Gauge size={12} className={isPodcastMode ? 'text-purple-400' : 'text-emerald-400'} />
-            <span>{currentSpeed}x</span>
+            {orientation !== 'vertical' && <Gauge size={12} className={usePurple ? 'text-purple-400' : 'text-emerald-400'} />}
+            <span className={orientation === 'vertical' ? 'text-[9px] leading-none' : ''}>{currentSpeed}x</span>
           </button>
 
           {/* Download Audio Button with Confirmation Prompt */}
@@ -362,12 +380,12 @@ export function AudioReaderButton({
             onClick={triggerDownloadConfirmation}
             type="button"
             title="تحميل المقطع الصوتي كـ WAV"
-            className={`p-1.5 rounded-lg text-[12px] font-bold transition-all duration-200 ${
+            className={`flex items-center justify-center p-1.5 ${orientation === 'vertical' ? 'w-8 h-8' : ''} rounded-lg text-[12px] font-bold transition-all duration-200 ${
               isDownloaded
-                ? isPodcastMode
+                ? usePurple
                   ? 'text-purple-400 bg-purple-500/20'
                   : 'text-emerald-400 bg-emerald-500/20'
-                : isPodcastMode
+                : usePurple
                 ? dark
                   ? 'text-purple-400 hover:bg-purple-500/20'
                   : 'text-purple-700 hover:bg-purple-100'
@@ -377,9 +395,9 @@ export function AudioReaderButton({
             }`}
           >
             {isDownloading ? (
-              <Loader2 size={13} className={`animate-spin ${isPodcastMode ? 'text-purple-400' : 'text-emerald-400'}`} />
+              <Loader2 size={13} className={`animate-spin ${usePurple ? 'text-purple-400' : 'text-emerald-400'}`} />
             ) : isDownloaded ? (
-              <Check size={13} className={isPodcastMode ? 'text-purple-400' : 'text-emerald-400'} />
+              <Check size={13} className={usePurple ? 'text-purple-400' : 'text-emerald-400'} />
             ) : (
               <Download size={13} />
             )}
@@ -390,7 +408,7 @@ export function AudioReaderButton({
             onClick={handleFullStopSpeech}
             type="button"
             title="إنهاء القراءة"
-            className={`p-1.5 rounded-lg text-[12px] font-bold transition-all duration-200 ${
+            className={`flex items-center justify-center p-1.5 ${orientation === 'vertical' ? 'w-8 h-8' : ''} rounded-lg text-[12px] font-bold transition-all duration-200 ${
               dark
                 ? 'text-rose-400 hover:bg-rose-500/20'
                 : 'text-rose-700 hover:bg-rose-100'
@@ -401,7 +419,7 @@ export function AudioReaderButton({
         </div>
       ) : (
         /* Idle State: Clean Action Buttons (Full Read + Podcast Only) */
-        <div className="flex items-center gap-1.5">
+        <div className={`flex ${orientation === 'vertical' ? 'flex-col' : 'items-center'} gap-1.5`}>
           {/* Main Full Read Button */}
           <button
             onClick={() => handleStartOrToggleSpeech()}
@@ -426,27 +444,29 @@ export function AudioReaderButton({
           </button>
 
           {/* Podcast 60s Summary Button */}
-          <button
-            onClick={handleStartPodcast}
-            type="button"
-            title="بودكاست سريع (ملخص 60 ثانية)"
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-[12px] font-bold transition-all duration-300 hover:scale-105 ${
-              dark
-                ? 'text-purple-300 hover:text-purple-100 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20'
-                : 'text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200'
-            }`}
-          >
-            <Radio size={13} className="text-purple-400 animate-pulse" />
-            <span>بودكاست 60ث</span>
-          </button>
+          {!hidePodcast && (
+            <button
+              onClick={handleStartPodcast}
+              type="button"
+              title="بودكاست سريع (ملخص 60 ثانية)"
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-[12px] font-bold transition-all duration-300 hover:scale-105 ${
+                dark
+                  ? 'text-emerald-300 hover:text-emerald-100 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20'
+                  : 'text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
+              }`}
+            >
+              <Radio size={13} className="text-emerald-400 animate-pulse" />
+              <span>بودكاست سريع</span>
+            </button>
+          )}
         </div>
       )}
 
       {/* Speed Selector Dropdown Menu */}
       {showSpeedMenu && (
         <div
-          className={`absolute bottom-full mb-1.5 left-0 z-50 p-1.5 rounded-xl shadow-xl border flex gap-1 animate-in fade-in zoom-in-95 duration-150 ${
-            isPodcastMode
+          className={`absolute ${menuPlacement === 'top' ? 'bottom-full mb-1.5 left-0' : menuPlacement === 'left' ? 'top-0 right-full mr-1.5' : 'top-0 left-full ml-1.5'} z-50 p-1.5 rounded-xl shadow-xl border flex gap-1 animate-in fade-in zoom-in-95 duration-150 ${
+            usePurple
               ? dark
                 ? 'bg-slate-900/95 border-purple-500/40 text-slate-200 backdrop-blur-md'
                 : 'bg-white border-purple-200 text-slate-800'
@@ -462,12 +482,12 @@ export function AudioReaderButton({
               type="button"
               className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
                 currentSpeed === speed
-                  ? isPodcastMode
+                  ? usePurple
                     ? 'bg-purple-600 text-white shadow-sm'
                     : 'bg-emerald-500 text-white shadow-sm'
                   : dark
                   ? 'hover:bg-slate-800 text-slate-300'
-                  : isPodcastMode
+                  : usePurple
                   ? 'hover:bg-purple-50 text-purple-900'
                   : 'hover:bg-emerald-50 text-emerald-900'
               }`}
@@ -481,8 +501,8 @@ export function AudioReaderButton({
       {/* Voice Selector Popover Menu */}
       {showVoiceMenu && (
         <div
-          className={`absolute bottom-full mb-1.5 left-0 z-50 w-64 p-2 rounded-2xl shadow-2xl border flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-150 ${
-            isPodcastMode
+          className={`absolute ${menuPlacement === 'top' ? 'bottom-full mb-1.5 left-0' : menuPlacement === 'left' ? 'top-0 right-full mr-1.5' : 'top-0 left-full ml-1.5'} z-50 w-64 p-2 rounded-2xl shadow-2xl border flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-150 ${
+            usePurple
               ? dark
                 ? 'bg-slate-900/95 border-purple-500/40 text-slate-100 backdrop-blur-md'
                 : 'bg-white border-purple-200 text-slate-800'
@@ -493,7 +513,7 @@ export function AudioReaderButton({
         >
           <div
             className={`px-2.5 py-1 text-[11px] font-bold mb-1 flex items-center justify-between border-b ${
-              isPodcastMode
+              usePurple
                 ? 'text-purple-400 border-purple-500/20'
                 : 'text-emerald-400 border-emerald-500/20'
             }`}
@@ -508,12 +528,12 @@ export function AudioReaderButton({
               type="button"
               className={`flex items-start gap-2.5 p-2 rounded-xl text-right transition-all duration-200 ${
                 currentVoice === v.id
-                  ? isPodcastMode
+                  ? usePurple
                     ? 'bg-purple-500/25 border border-purple-500/40 text-purple-200 shadow-sm'
                     : 'bg-emerald-500/25 border border-emerald-500/40 text-emerald-200 shadow-sm'
                   : dark
                   ? 'hover:bg-slate-800/80 text-slate-300'
-                  : isPodcastMode
+                  : usePurple
                   ? 'hover:bg-purple-50 text-slate-700'
                   : 'hover:bg-emerald-50 text-slate-700'
               }`}
@@ -538,7 +558,7 @@ export function AudioReaderButton({
             >
               <div
                 className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border ${
-                  isPodcastMode
+                  usePurple
                     ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
                     : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                 }`}
@@ -549,7 +569,7 @@ export function AudioReaderButton({
               <h3 className="mb-2 font-display text-lg font-bold">تأكيد تحميل المقطع الصوتي</h3>
 
               <p className="mb-6 text-sm leading-relaxed opacity-90">
-                هل أنت تأكد من رغبتك في تحميل هذا المقطع الصوتي بصوت <span className={`font-bold ${isPodcastMode ? 'text-purple-400' : 'text-emerald-400'}`}>"{selectedVoiceObj.name}"</span>؟
+                هل أنت تأكد من رغبتك في تحميل هذا المقطع الصوتي بصوت <span className={`font-bold ${usePurple ? 'text-purple-400' : 'text-emerald-400'}`}>"{selectedVoiceObj.name}"</span>؟
                 <br />
                 <span className="text-xs opacity-75 mt-1 block">(سيتم التنزيل كملف WAV نقي عالي الجودة على جهازك)</span>
               </p>
@@ -570,7 +590,7 @@ export function AudioReaderButton({
                   onClick={executeConfirmedDownload}
                   type="button"
                   className={`flex-1 rounded-xl py-2.5 text-xs font-bold text-white shadow-lg transition-all hover:scale-[1.02] ${
-                    isPodcastMode
+                    usePurple
                       ? 'bg-purple-600 shadow-purple-600/25 hover:bg-purple-700'
                       : 'bg-emerald-500 shadow-emerald-500/25 hover:bg-emerald-600'
                   }`}

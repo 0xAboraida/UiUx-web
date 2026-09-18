@@ -33,6 +33,7 @@ export function StudyQuizPanel({
   activeQuizId,
   activeSessionId,
   onLoadQuiz,
+  chunkLoading,
 }: StudyQuizPanelProps) {
   const [hasSubmittedAttempt, setHasSubmittedAttempt] = useState(false)
 
@@ -255,28 +256,28 @@ export function StudyQuizPanel({
 
   const handleDiscussWrong = () => {
     const wrongEntries: { idx: number; wrongOptText: string; correctOptText: string }[] = []
-    ;(localQuestions || []).forEach((q, idx) => {
-      if (q.type === 'matching') {
-        if (!isMatchingCorrect(idx, q, flowState.matchingAnswers, flowState.shuffledMatchingOptions)) {
-          wrongEntries.push({
-            idx,
-            wrongOptText: 'إجابات التوصيل والربط الخاصة بي غير مكتملة أو بها أخطاء',
-            correctOptText: q.matching_pairs?.map(p => `${p.left} ⬅️ ${p.right}`).join(', ') || '',
-          })
+      ; (localQuestions || []).forEach((q, idx) => {
+        if (q.type === 'matching') {
+          if (!isMatchingCorrect(idx, q, flowState.matchingAnswers, flowState.shuffledMatchingOptions)) {
+            wrongEntries.push({
+              idx,
+              wrongOptText: 'إجابات التوصيل والربط الخاصة بي غير مكتملة أو بها أخطاء',
+              correctOptText: q.matching_pairs?.map(p => `${p.left} ⬅️ ${p.right}`).join(', ') || '',
+            })
+          }
+        } else {
+          const optIdx = selectedAnswers[idx]
+          const opts = q.options || []
+          const correctIdx = q.correct_answer_index ?? 0
+          if (optIdx === undefined || optIdx !== correctIdx) {
+            wrongEntries.push({
+              idx,
+              wrongOptText: (optIdx !== undefined && opts[optIdx]) ? opts[optIdx] : 'لم يُجب',
+              correctOptText: opts[correctIdx] || '',
+            })
+          }
         }
-      } else {
-        const optIdx = selectedAnswers[idx]
-        const opts = q.options || []
-        const correctIdx = q.correct_answer_index ?? 0
-        if (optIdx === undefined || optIdx !== correctIdx) {
-          wrongEntries.push({
-            idx,
-            wrongOptText: (optIdx !== undefined && opts[optIdx]) ? opts[optIdx] : 'لم يُجب',
-            correctOptText: opts[correctIdx] || '',
-          })
-        }
-      }
-    })
+      })
     if (wrongEntries.length === 1) {
       const item = wrongEntries[0]
       const q = (localQuestions || [])[item.idx]
@@ -324,16 +325,14 @@ export function StudyQuizPanel({
     <>
       <div
         style={{ width: panelWidth || '100%' }}
-        className={`flex-1 w-full min-w-[280px] flex flex-col relative h-full backdrop-blur-xl overflow-hidden ${
-          isDark
-            ? 'bg-[#1a0730]/20 border-l border-white/10 text-white'
-            : 'bg-white/95 border-l border-slate-200 text-slate-900 shadow-sm'
-        }`}
+        className={`flex-1 w-full min-w-[280px] flex flex-col relative h-full overflow-hidden transition-colors bg-transparent border-l ${isDark
+            ? 'border-white/10 text-white'
+            : 'border-slate-200 text-slate-900'
+          }`}
       >
         {/* ── Header ── */}
-        <div className={`flex items-center justify-between px-4 py-3 border-b backdrop-blur-md shrink-0 gap-2 ${
-          isDark ? 'border-white/10 bg-[#12041f]/70 text-white' : 'border-slate-200 bg-slate-50/90 text-slate-800'
-        }`} dir="rtl">
+        <div className={`flex items-center justify-between px-4 py-3 border-b backdrop-blur-md shrink-0 gap-2 ${isDark ? 'border-white/10 bg-[#12041f]/70 text-white' : 'border-slate-200 bg-slate-50/90 text-slate-800'
+          }`} dir="rtl">
           <div className="flex items-center gap-2 text-sm font-bold shrink-0">
             <ClipboardList size={18} className="text-[#10b981]" />
             <span>اختبار التقييم</span>
@@ -341,11 +340,10 @@ export function StudyQuizPanel({
 
           <div className="flex items-center gap-2 shrink-0">
             {flowState.timerMode === 'timed' && isTestStarted && !isQuizCompleted && (
-              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono font-bold border transition-all shadow-sm ${
-                flowState.isTimerStarted && flowState.timeLeft <= 20
+              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono font-bold border transition-all shadow-sm ${flowState.isTimerStarted && flowState.timeLeft <= 20
                   ? 'bg-rose-500/20 border-rose-500/40 text-rose-400 animate-pulse'
                   : 'bg-amber-500/20 border-amber-500/40 text-amber-400'
-              }`}>
+                }`}>
                 <Timer size={14} />
                 <span>{formatTimer(flowState.isTimerStarted ? flowState.timeLeft : totalQuestions * flowState.secondsPerQuestion)}</span>
               </div>
@@ -355,9 +353,8 @@ export function StudyQuizPanel({
                 {isTestStarted && !isQuizCompleted && (
                   <button
                     onClick={() => set({ confirmModal: 'retry' })}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border backdrop-blur-md transition-all active:scale-95 ${
-                      isDark ? 'bg-white/5 hover:bg-white/10 border-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800'
-                    }`}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border backdrop-blur-md transition-all active:scale-95 ${isDark ? 'bg-white/5 hover:bg-white/10 border-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800'
+                      }`}
                     title="إعادة الاختبار"
                   >
                     <RotateCcw size={13} />
@@ -366,11 +363,10 @@ export function StudyQuizPanel({
                 )}
                 <button
                   onClick={() => (flowState.isSetupMode || loading) ? handleExitQuizToHome() : set({ confirmModal: 'exit' })}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border backdrop-blur-md transition-all active:scale-95 ${
-                    isDark
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border backdrop-blur-md transition-all active:scale-95 ${isDark
                       ? 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/30 text-rose-400'
                       : 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600'
-                  }`}
+                    }`}
                   title="خروج"
                 >
                   <LogOut size={13} />
@@ -381,9 +377,8 @@ export function StudyQuizPanel({
             {onClose && (
               <button
                 onClick={onClose}
-                className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
-                  isDark ? 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
-                }`}
+                className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${isDark ? 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+                  }`}
               >
                 <X size={15} />
               </button>
@@ -508,6 +503,7 @@ export function StudyQuizPanel({
                   isDark={isDark}
                   onStartSetup={() => set({ hasExited: false, isHomeScreen: false, isSetupMode: true })}
                   onLoadQuiz={onLoadQuiz}
+                  chunkLoading={chunkLoading}
                 />
               </motion.div>
             )}

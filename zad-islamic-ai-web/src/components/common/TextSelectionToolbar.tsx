@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Volume2, VolumeX, Copy, Check, Pause, Play, Square, Loader2, Gauge, Download } from 'lucide-react'
+import whiteLogo from '@/assets/images/WhiteLogo.png'
+import zadDarkLogo from '@/assets/images/ZadDarkLogo.png'
+import { Volume2, VolumeX, Copy, Check, Pause, Play, Square, Loader2, Gauge, Download, Sparkles, Eraser } from 'lucide-react'
 import {
   speakText,
   stopAllSpeech,
@@ -41,6 +43,36 @@ export function TextSelectionToolbar({ dark = true }: TextSelectionToolbarProps)
 
   const toolbarRef = useRef<HTMLDivElement>(null)
 
+  const [isLibrarySelection, setIsLibrarySelection] = useState(false)
+  const [hasHighlightSelected, setHasHighlightSelected] = useState(false)
+
+  // Global double-click event listener to un-highlight text
+  useEffect(() => {
+    const handleDoubleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null
+      const highlightSpan = target?.closest('[data-user-highlight="true"]') as HTMLElement | null
+      if (highlightSpan) {
+        e.stopPropagation()
+        const parent = highlightSpan.parentNode
+        if (parent) {
+          while (highlightSpan.firstChild) {
+            parent.insertBefore(highlightSpan.firstChild, highlightSpan)
+          }
+          parent.removeChild(highlightSpan)
+          parent.normalize()
+        }
+        window.getSelection()?.removeAllRanges()
+        setPosition(null)
+        setSelectedText('')
+      }
+    }
+
+    document.addEventListener('dblclick', handleDoubleClick)
+    return () => {
+      document.removeEventListener('dblclick', handleDoubleClick)
+    }
+  }, [])
+
   useEffect(() => {
     const handleSelectionChange = () => {
       const selection = window.getSelection()
@@ -48,16 +80,62 @@ export function TextSelectionToolbar({ dark = true }: TextSelectionToolbarProps)
         if (!isPlaying && !isPaused && !isLoading) {
           setPosition(null)
           setSelectedText('')
+          setIsLibrarySelection(false)
+          setHasHighlightSelected(false)
         }
         return
       }
 
       const text = selection.toString().trim()
-      if (text.length < 2) return
+      if (text.length < 2) {
+        if (!isPlaying && !isPaused && !isLoading) {
+          setPosition(null)
+          setSelectedText('')
+          setIsLibrarySelection(false)
+          setHasHighlightSelected(false)
+        }
+        return
+      }
 
+      if (selection.rangeCount === 0) return
       const range = selection.getRangeAt(0)
-      const rect = range.getBoundingClientRect()
 
+      let containerNode: Node | null = range.commonAncestorContainer
+      if (containerNode.nodeType === Node.TEXT_NODE) {
+        containerNode = containerNode.parentElement
+      }
+      const targetElement = containerNode as HTMLElement | null
+
+      // Check if selection is within an allowed selectable container (AI response bubble or library text)
+      const selectableParent = targetElement?.closest('[data-selectable="true"]') ||
+                               targetElement?.closest('.selectable-content') ||
+                               targetElement?.closest('.ai-response-bubble') ||
+                               targetElement?.closest('.library-reader-content') ||
+                               targetElement?.closest('.study-reader-content');
+
+      if (!selectableParent) {
+        if (!isPlaying && !isPaused && !isLoading) {
+          setPosition(null)
+          setSelectedText('')
+          setIsLibrarySelection(false)
+          setHasHighlightSelected(false)
+        }
+        return
+      }
+
+      // Check if selection is within Library reader specifically (to show "اشرح لي")
+      const isLibrary = targetElement?.closest('[data-library-content="true"]') !== null ||
+                        targetElement?.closest('.library-reader-content') !== null ||
+                        targetElement?.closest('.study-reader-content') !== null;
+
+      setIsLibrarySelection(isLibrary)
+
+      // Check if selection contains or is inside a highlight
+      const isHighlighted = targetElement?.closest('[data-user-highlight="true"]') !== null ||
+                            targetElement?.querySelector('[data-user-highlight="true"]') !== null;
+      setHasHighlightSelected(isHighlighted)
+
+      const rect = range.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) return
 
       // Fixed positioning is relative to viewport (no window.scrollY needed)
@@ -109,6 +187,73 @@ export function TextSelectionToolbar({ dark = true }: TextSelectionToolbarProps)
     navigator.clipboard.writeText(selectedText)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const applyHighlight = (color: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      const selection = window.getSelection()
+      if (!selection || selection.rangeCount === 0) return
+      
+      const range = selection.getRangeAt(0)
+      const span = document.createElement('span')
+      span.style.backgroundColor = color
+      span.style.color = '#0e0e0e' // dark text for readability
+      span.style.borderRadius = '4px'
+      span.style.padding = '2px 4px'
+      span.className = 'transition-all duration-300 cursor-pointer'
+      span.setAttribute('data-user-highlight', 'true')
+      span.setAttribute('title', 'انقر مرتين لإزالة التظليل')
+      
+      const content = range.extractContents()
+      span.appendChild(content)
+      range.insertNode(span)
+      
+      selection.removeAllRanges()
+      setPosition(null)
+      setHasHighlightSelected(false)
+    } catch (err) {
+      console.warn("Could not highlight across multiple nodes.", err)
+    }
+  }
+
+  const removeHighlight = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      const selection = window.getSelection()
+      if (!selection || selection.rangeCount === 0) return
+
+      const range = selection.getRangeAt(0)
+      let containerNode: Node | null = range.commonAncestorContainer
+      if (containerNode.nodeType === Node.TEXT_NODE) {
+        containerNode = containerNode.parentElement
+      }
+      const targetElement = containerNode as HTMLElement | null
+
+      const highlightSpans = targetElement?.querySelectorAll('[data-user-highlight="true"]')
+      const parentHighlight = targetElement?.closest('[data-user-highlight="true"]')
+
+      const spansToRemove = new Set<HTMLElement>()
+      if (parentHighlight) spansToRemove.add(parentHighlight as HTMLElement)
+      if (highlightSpans) highlightSpans.forEach(s => spansToRemove.add(s as HTMLElement))
+
+      spansToRemove.forEach(span => {
+        const parent = span.parentNode
+        if (parent) {
+          while (span.firstChild) {
+            parent.insertBefore(span.firstChild, span)
+          }
+          parent.removeChild(span)
+          parent.normalize()
+        }
+      })
+
+      selection.removeAllRanges()
+      setPosition(null)
+      setHasHighlightSelected(false)
+    } catch (err) {
+      console.warn("Could not remove highlight.", err)
+    }
   }
 
   const triggerDownloadConfirmation = (e: React.MouseEvent) => {
@@ -333,8 +478,50 @@ export function TextSelectionToolbar({ dark = true }: TextSelectionToolbarProps)
             </button>
           </div>
         ) : (
-          /* Idle Action Menu (Listen + Copy Only) */
+          /* Idle Action Menu (Listen + Copy + Highlight) */
           <div className="flex items-center gap-1">
+            {/* Highlights */}
+            <div className="flex items-center gap-2 px-3 py-1.5 border-l border-r border-transparent">
+              <button onClick={(e) => applyHighlight('#fde047', e)} className="w-5 h-5 rounded-full bg-yellow-300 hover:scale-110 hover:shadow-md transition-all shadow-sm border border-yellow-400" title="تمييز باللون الأصفر" />
+              <button onClick={(e) => applyHighlight('#86efac', e)} className="w-5 h-5 rounded-full bg-green-300 hover:scale-110 hover:shadow-md transition-all shadow-sm border border-green-400" title="تمييز باللون الأخضر" />
+              <button onClick={(e) => applyHighlight('#f9a8d4', e)} className="w-5 h-5 rounded-full bg-pink-300 hover:scale-110 hover:shadow-md transition-all shadow-sm border border-pink-400" title="تمييز باللون الوردي" />
+              {hasHighlightSelected && (
+                <button
+                  onClick={(e) => removeHighlight(e)}
+                  className={`p-1 rounded-lg transition-all hover:scale-110 ${
+                    dark ? 'text-rose-400 hover:bg-rose-500/20' : 'text-rose-600 hover:bg-rose-100'
+                  }`}
+                  title="إزالة التظليل"
+                >
+                  <Eraser size={15} />
+                </button>
+              )}
+            </div>
+
+            <div className={`h-4 w-[1px] my-auto mx-1 ${dark ? 'bg-slate-700/50' : 'bg-slate-300'}`} />
+
+            {/* Explain Button (Library Only) */}
+            {isLibrarySelection && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.dispatchEvent(new CustomEvent('explainSelectedText', { detail: selectedText }));
+                  }}
+                  type="button"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                    dark
+                      ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/30'
+                      : 'text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 hover:text-emerald-900'
+                  }`}
+                >
+                  <img src={dark ? whiteLogo : zadDarkLogo} alt="Zad" className="h-[14px] object-contain opacity-90" />
+                  <span>اشرح لي</span>
+                </button>
+                <div className={`h-4 w-[1px] my-auto mx-1 ${dark ? 'bg-slate-700/50' : 'bg-slate-300'}`} />
+              </>
+            )}
+
             {/* Listen to Selection Button */}
             <button
               onClick={() => handleStartOrToggleSpeech()}

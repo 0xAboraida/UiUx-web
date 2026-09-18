@@ -48,25 +48,23 @@ export function StudyDocument({
           width: isDocumentOpen ? (documentWidth ? documentWidth : '100%') : 0,
           opacity: isDocumentOpen ? 1 : 0
         }}
-        className={`flex flex-col backdrop-blur-xl shrink-0 overflow-hidden ${isDark
-            ? 'bg-[#12041f]/40 border-white/10 text-white'
-            : 'bg-white/95 border-slate-200 text-slate-900 shadow-sm'
+        className={`flex flex-col shrink-0 overflow-hidden transition-colors bg-transparent ${isDark
+          ? 'border-white/10 text-white'
+          : 'border-slate-200 text-slate-900'
           } ${isDocumentOpen ? 'border-l' : 'border-transparent'}`}
       >
         <div style={{ width: documentWidth ? documentWidth : '100%' }} className="flex h-full flex-col">
           {/* Header Bar matching Chat/Sidebar/Mindmap/Quiz panels */}
-          <div className={`flex items-center justify-between px-4 py-3 border-b backdrop-blur-md ${
-            isDark ? 'border-white/10 bg-[#12041f]/70 text-white' : 'border-slate-200 bg-slate-50/90 text-slate-800'
-          }`}>
+          <div className={`flex items-center justify-between px-4 py-3 border-b backdrop-blur-md ${isDark ? 'border-white/10 bg-[#12041f]/70 text-white' : 'border-slate-200 bg-slate-50/90 text-slate-800'
+            }`}>
             <div className="flex items-center gap-2 text-sm font-bold">
               <BookOpen size={18} className="text-sky-500 shrink-0 stroke-[2.2]" />
               <span>النص الأصلي</span>
             </div>
             <button
               onClick={() => setIsDocumentOpen(false)}
-              className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
-                isDark ? 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
-              }`}
+              className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${isDark ? 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+                }`}
               title="إغلاق النص الأصلي"
             >
               <X size={15} />
@@ -90,7 +88,7 @@ export function StudyDocument({
             ) : (
               <>
                 {chunkMeta && (
-                  <div className={`group mb-8 flex flex-col items-center justify-center rounded-3xl border-2 p-8 text-center backdrop-blur-md opacity-0 animate-[scaleFadeIn_0.5s_ease-out_forwards] transition-all duration-500 hover:-translate-y-1 ${isDark ? 'border-white/10 bg-gradient-to-b from-white/5 to-transparent hover:border-white/20 hover:shadow-[0_8px_30px_rgba(138,23,201,0.15)] shadow-xl' : 'border-[#38bdf8]/50 bg-white/95 hover:border-[#38bdf8]/80 hover:shadow-2xl shadow-xl shadow-[#38bdf8]/15 ring-1 ring-[#38bdf8]/25'
+                  <div className={`group mb-8 flex flex-col items-center justify-center rounded-3xl border-2 p-8 text-center backdrop-blur-md opacity-0 animate-[scaleFadeIn_0.5s_ease-out_forwards] transition-all duration-500 hover:-translate-y-1 ${isDark ? 'border-white/10 bg-white/[0.04] hover:border-white/20 hover:shadow-[0_8px_30px_rgba(138,23,201,0.15)] shadow-xl' : 'border-[#38bdf8]/50 bg-white/95 hover:border-[#38bdf8]/80 hover:shadow-2xl shadow-xl shadow-[#38bdf8]/15 ring-1 ring-[#38bdf8]/25'
                     }`}>
                     <div className="flex flex-col items-center justify-center mb-6 mt-2 relative">
                       <h3 className="font-display text-[38px] font-bold gradient-border bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(138,23,201,0.4)] pb-1 leading-tight text-center relative z-10 px-4">
@@ -208,19 +206,23 @@ export function StudyDocument({
                 )}
 
                 <div className="mt-10 mb-6 flex items-center gap-4 w-full px-2">
-                  <div className="h-px flex-1 bg-gradient-to-l from-transparent via-[#38bdf8]/40 to-transparent"></div>
-                  <div className="group flex items-center gap-3 bg-[#38bdf8]/10 border border-[#38bdf8]/25 px-6 py-2.5 rounded-full shadow-[0_0_20px_rgba(56,189,248,0.15)] backdrop-blur-md relative overflow-hidden transition-all hover:bg-[#38bdf8]/15 hover:shadow-[0_0_25px_rgba(56,189,248,0.25)]">
+                  <div className={`h-px flex-1 bg-gradient-to-l from-transparent ${isDark ? 'via-[#38bdf8]/40' : 'via-sky-500/60'} to-transparent`}></div>
+                  <div className={`group flex items-center gap-3 px-6 py-2.5 rounded-full backdrop-blur-md relative overflow-hidden transition-all ${isDark 
+                    ? 'bg-[#38bdf8]/10 border border-[#38bdf8]/25 shadow-[0_0_20px_rgba(56,189,248,0.15)] hover:bg-[#38bdf8]/15 hover:shadow-[0_0_25px_rgba(56,189,248,0.25)]' 
+                    : 'bg-sky-100 border border-sky-300 shadow-md hover:bg-sky-200 hover:shadow-lg'}`}>
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                    <BookOpen size={18} className="text-[#38bdf8]" />
-                    <span className="font-bold text-[#38bdf8] text-[16px] tracking-wide">النص الأساسي للدرس</span>
+                    <BookOpen size={18} className={isDark ? 'text-[#38bdf8]' : 'text-sky-700'} />
+                    <span className={`font-bold text-[16px] tracking-wide ${isDark ? 'text-[#38bdf8]' : 'text-sky-800'}`}>النص الأساسي للدرس</span>
                   </div>
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#38bdf8]/40 to-transparent"></div>
+                  <div className={`h-px flex-1 bg-gradient-to-r from-transparent ${isDark ? 'via-[#38bdf8]/40' : 'via-sky-500/60'} to-transparent`}></div>
                 </div>
 
                 <div
+                  data-selectable="true"
+                  data-library-content="true"
                   className={`rounded-3xl border-2 p-8 text-[18px] leading-[1.9] font-serif tracking-wide relative overflow-hidden backdrop-blur-md transition-all ${isDark
-                      ? 'border-white/10 bg-gradient-to-b from-white/5 to-transparent text-white/90 shadow-2xl'
-                      : 'border-[#38bdf8]/50 bg-white text-slate-900 shadow-xl shadow-[#38bdf8]/15 ring-1 ring-[#38bdf8]/25 font-sans'
+                    ? 'border-white/10 bg-white/[0.04] text-white/90 shadow-xl'
+                    : 'border-[#38bdf8]/50 bg-white text-slate-900 shadow-xl shadow-[#38bdf8]/15 ring-1 ring-[#38bdf8]/25 font-sans'
                     }`}
                   dangerouslySetInnerHTML={formatMarkdown(chunkText, true, isDark)}
                 />
@@ -230,11 +232,11 @@ export function StudyDocument({
             <div className="mt-12 mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 onClick={handleGenerateMindmap}
-                disabled={!currentChunkId || mindmapLoading}
-                className={`group relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border p-6 transition-all duration-300 ${!currentChunkId || mindmapLoading ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' : 'bg-gradient-to-br from-purple-500/5 to-pink-500/5 border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/10 hover:-translate-y-1 shadow-lg'}`}
+                disabled={!currentChunkId || mindmapLoading || loading}
+                className={`group relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border p-6 transition-all duration-300 ${(!currentChunkId || mindmapLoading || loading) ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' : 'bg-gradient-to-br from-purple-500/5 to-pink-500/5 border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/10 hover:-translate-y-1 shadow-lg'}`}
               >
-                <div className={`rounded-full p-3.5 transition-all duration-300 ${!currentChunkId || mindmapLoading ? 'bg-white/5 text-white/20' : 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20 group-hover:shadow-purple-500/40'}`}>
-                  {mindmapLoading ? <Loader2 size={24} className="animate-spin text-purple-300" /> : <Brain size={24} className={currentChunkId ? "group-hover:scale-110 transition-transform duration-300" : ""} />}
+                <div className={`rounded-full p-3.5 transition-all duration-300 ${(!currentChunkId || mindmapLoading || loading) ? 'bg-white/5 text-white/20' : 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20 group-hover:shadow-purple-500/40'}`}>
+                  {mindmapLoading || loading ? <Loader2 size={24} className="animate-spin text-purple-300" /> : <Brain size={24} className={currentChunkId ? "group-hover:scale-110 transition-transform duration-300" : ""} />}
                 </div>
                 <div className="text-center">
                   <h4 className={`font-bold text-[16px] mb-1.5 ${!currentChunkId ? 'text-white/30' : isDark ? 'text-purple-200 group-hover:text-white' : 'text-purple-800'}`}>
@@ -248,11 +250,11 @@ export function StudyDocument({
 
               <button
                 onClick={handleGenerateQuiz}
-                disabled={!currentChunkId || quizLoading}
-                className={`group relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border p-6 transition-all duration-300 ${!currentChunkId || quizLoading ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' : 'bg-gradient-to-br from-blue-500/5 to-cyan-500/5 border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/10 hover:-translate-y-1 shadow-lg'}`}
+                disabled={!currentChunkId || quizLoading || loading}
+                className={`group relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border p-6 transition-all duration-300 ${(!currentChunkId || quizLoading || loading) ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' : 'bg-gradient-to-br from-blue-500/5 to-cyan-500/5 border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/10 hover:-translate-y-1 shadow-lg'}`}
               >
-                <div className={`rounded-full p-3.5 transition-all duration-300 ${!currentChunkId || quizLoading ? 'bg-white/5 text-white/20' : 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/20 group-hover:shadow-blue-500/40'}`}>
-                  {quizLoading ? <Loader2 size={24} className="animate-spin text-emerald-300" /> : <ClipboardList size={24} className={currentChunkId ? "group-hover:scale-110 transition-transform duration-300" : ""} />}
+                <div className={`rounded-full p-3.5 transition-all duration-300 ${(!currentChunkId || quizLoading || loading) ? 'bg-white/5 text-white/20' : 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/20 group-hover:shadow-blue-500/40'}`}>
+                  {quizLoading || loading ? <Loader2 size={24} className="animate-spin text-emerald-300" /> : <ClipboardList size={24} className={currentChunkId ? "group-hover:scale-110 transition-transform duration-300" : ""} />}
                 </div>
                 <div className="text-center">
                   <h4 className={`font-bold text-[16px] mb-1.5 ${!currentChunkId ? 'text-white/30' : isDark ? 'text-blue-200 group-hover:text-white' : 'text-blue-800'}`}>

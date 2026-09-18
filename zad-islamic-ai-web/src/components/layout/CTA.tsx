@@ -14,7 +14,7 @@ export default function CTA({ onTryChat }: { onTryChat: () => void }) {
             ابدأ رحلتك مع زاد اليوم
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-white/85">
-            حمّل التطبيق مجانًا واجعل طلب العلم الشرعي في متناول يدك أينما كنت.
+            استخدم المنصّة مجانًا واجعل طلب العلم الشرعي في متناول يدك أينما كنت.
           </p>
           <div className="mt-8 flex flex-col items-center gap-5">
             <button

@@ -1,5 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Aref+Ruqaa:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Aref+Ruqaa:wght@400;700&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Scheherazade+New:wght@400;700&family=Noto+Naskh+Arabic:wght@400;600;700&display=swap');
 @import 'tailwindcss';
+
+@variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: 'Cairo', ui-sans-serif, system-ui, sans-serif;
@@ -15,12 +17,12 @@
   --color-secondary-foreground: #5b0e9c;
   --color-muted: #f6f1fb;
   --color-muted-foreground: #6a5b7a;
-  --color-accent: #c020f0;
+  --color-accent: #950bc4;
   --color-accent-foreground: #ffffff;
   --color-brand-blue: #2b7fff;
   --color-brand-deep: #5b0e9c;
-  --color-brand-mid: #8a17c9;
-  --color-brand-magenta: #c020f0;
+  --color-brand-mid: #760bb3;
+  --color-brand-magenta: #950bc4;
   --color-border: #ecd9fb;
   --color-ring: #ad46ff;
 
@@ -43,7 +45,7 @@
   --color-secondary-foreground: #e9d5ff;
   --color-muted: #231042;
   --color-muted-foreground: #a78bfa;
-  --color-accent: #c020f0;
+  --color-accent: #950bc4;
   --color-accent-foreground: #ffffff;
   --color-border: #3d2459;
   --color-ring: #ad46ff;
@@ -75,6 +77,23 @@ body {
 
 .font-display {
   font-family: var(--font-display);
+}
+
+.font-read,
+.font-amiri {
+  font-family: 'Amiri', 'Traditional Arabic', serif;
+}
+
+.font-scheherazade {
+  font-family: 'Scheherazade New', 'Amiri', serif;
+}
+
+.font-noto-naskh {
+  font-family: 'Noto Naskh Arabic', 'Amiri', serif;
+}
+
+.font-cairo {
+  font-family: 'Cairo', sans-serif;
 }
 
 .brand-gradient {
@@ -137,6 +156,7 @@ body {
     opacity: 0;
     transform: translateY(12px) scale(0.98);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -349,6 +369,7 @@ input:-webkit-autofill:active {
 }
 
 @keyframes authLogoFloat {
+
   0%,
   100% {
     transform: translateY(0);
@@ -360,61 +381,72 @@ input:-webkit-autofill:active {
 }
 
 @keyframes authLogoGlow {
+
   0%,
   100% {
     filter:
-      drop-shadow(0 0 18px rgba(192, 32, 240, 0.12))
-      drop-shadow(0 0 35px rgba(138, 23, 201, 0.08));
+      drop-shadow(0 0 18px rgba(192, 32, 240, 0.12)) drop-shadow(0 0 35px rgba(138, 23, 201, 0.08));
   }
 
   50% {
     filter:
-      drop-shadow(0 0 25px rgba(192, 32, 240, 0.22))
-      drop-shadow(0 0 50px rgba(138, 23, 201, 0.14));
+      drop-shadow(0 0 25px rgba(192, 32, 240, 0.22)) drop-shadow(0 0 50px rgba(138, 23, 201, 0.14));
   }
 }
 
 .auth-logo-entrance {
   animation:
-    authLogoEntrance
-    900ms
-    cubic-bezier(0.22, 1, 0.36, 1)
-    both;
+    authLogoEntrance 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .auth-logo {
   animation:
-    authLogoFloat
-    6s
-    ease-in-out
-    900ms
-    infinite,
-    authLogoGlow
-    4s
-    ease-in-out
-    900ms
-    infinite;
+    authLogoFloat 6s ease-in-out 900ms infinite,
+    authLogoGlow 4s ease-in-out 900ms infinite;
 
   will-change: transform, filter;
 }
 
 .auth-scroll {
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0px,
-    black 45px,
-    black 100%
-  );
+  -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0px,
+      black 45px,
+      black 100%);
 
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0px,
-    black 45px,
-    black 100%
-  );
+  mask-image: linear-gradient(to bottom,
+      transparent 0px,
+      black 45px,
+      black 100%);
 }
 
 /* Hide redundant vertical dash inside list items */
 li .strong-vertical-dash {
   display: none !important;
+}
+
+/* Custom Scrollbar for sidebars and specific panels */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(149, 11, 196, 0.4);
+  border-radius: 20px;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(149, 11, 196, 0.7);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(149, 11, 196, 0.5);
+}
+
+.dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(149, 11, 196, 0.8);
 }

@@ -44,13 +44,12 @@ const TreeView = memo(function TreeView({
   return (
     <div className="select-none">
       <div
-        className={`group flex cursor-pointer items-center gap-2 py-2 px-2 rounded-xl transition-all hover:-translate-x-1 ${
-          isActive
+        className={`group flex cursor-pointer items-center gap-2 py-2 px-2 rounded-xl transition-all hover:-translate-x-1 ${isActive
             ? 'font-bold text-teal-500 bg-teal-500/10'
             : isDark
               ? 'text-white/70 hover:bg-white/5'
               : 'text-slate-700 hover:bg-slate-100'
-        }`}
+          }`}
         style={{ paddingRight: `${depth * 1.5}rem` }}
         onClick={handleClick}
       >
@@ -118,25 +117,22 @@ export function StudySidebar({
   return (
     <div
       style={{ width: sidebarWidth ? sidebarWidth : '100%' }}
-      className={`flex h-full flex-col backdrop-blur-xl shrink-0 overflow-hidden ${
-        isDark
-          ? 'bg-[#12041f]/70 border-l border-white/10 text-white'
-          : 'bg-white/95 border-l border-slate-200 text-slate-800 shadow-sm'
-      }`}
+      className={`flex h-full flex-col shrink-0 overflow-hidden transition-colors border-l ${isDark
+          ? 'border-white/10 text-white bg-transparent'
+          : 'border-slate-200 text-slate-800 bg-white/40 backdrop-blur-md shadow-[inset_1px_0_0_rgba(255,255,255,0.5)]'
+        }`}
     >
       {/* Header Bar matching Chat/Mindmap/Quiz panels */}
-      <div className={`flex items-center justify-between px-4 py-3 border-b backdrop-blur-md ${
-        isDark ? 'border-white/10 bg-[#12041f]/70 text-white' : 'border-slate-200 bg-slate-50/90 text-slate-800'
-      }`}>
+      <div className={`flex items-center justify-between px-4 py-3 border-b backdrop-blur-md ${isDark ? 'border-white/10 bg-[#12041f]/70 text-white' : 'border-slate-200 bg-slate-50/90 text-slate-800'
+        }`}>
         <div className="flex items-center gap-2 text-sm font-bold">
           <Menu size={18} className="text-teal-500 shrink-0 stroke-[2.2]" />
           <span>فهرس المحتوى</span>
         </div>
         <button
           onClick={() => setIsSidebarOpen(false)}
-          className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
-            isDark ? 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
-          }`}
+          className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${isDark ? 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+            }`}
           title="إغلاق الفهرس"
         >
           <X size={15} />
@@ -144,19 +140,17 @@ export function StudySidebar({
       </div>
 
       {/* Search Box Container */}
-      <div className={`p-3 border-b ${isDark ? 'border-white/10 bg-[#12041f]/30' : 'border-slate-200 bg-slate-50/50'}`}>
-        <div className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 backdrop-blur-md ${
-          isDark
-            ? 'border-white/10 bg-[#1a0730]/60 text-white'
-            : 'border-slate-200 bg-white text-slate-900 shadow-sm'
-        }`}>
-          <Search size={16} className={isDark ? 'text-white/40' : 'text-slate-400'} />
+      <div className={`p-4 border-b ${isDark ? 'border-white/5 bg-transparent' : 'border-teal-100 bg-gradient-to-b from-teal-50/50 to-transparent'}`}>
+        <div className={`group flex items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 transition-all duration-300 shadow-sm ${isDark
+            ? 'border-white/10 bg-white/5 text-white hover:border-white/20 hover:bg-white/10 focus-within:border-teal-400/70 focus-within:shadow-[0_0_15px_rgba(45,212,191,0.1)] focus-within:bg-[#12041f]/80'
+            : 'border-teal-200 bg-white text-slate-900 hover:border-teal-300 hover:shadow-md focus-within:border-teal-400 focus-within:shadow-[0_4px_20px_rgba(45,212,191,0.15)] focus-within:bg-teal-50/30'
+          }`}>
+          <Search size={16} className={`transition-colors ${isDark ? 'text-white/40 group-focus-within:text-teal-400' : 'text-teal-400 group-focus-within:text-teal-600'}`} />
           <input
             type="text"
             placeholder="بحث في الفهرس..."
-            className={`w-full bg-transparent text-xs outline-none ${
-              isDark ? 'text-white placeholder:text-white/40' : 'text-slate-900 placeholder:text-slate-400'
-            }`}
+            className={`w-full bg-transparent text-[13px] font-medium outline-none transition-colors ${isDark ? 'text-white placeholder:text-white/30' : 'text-teal-900 placeholder:text-teal-700/40'
+              }`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -174,15 +168,15 @@ export function StudySidebar({
               {/* Center icon */}
               <BookOpen className={`w-5 h-5 animate-pulse ${isDark ? 'text-teal-400/80' : 'text-teal-600'}`} />
             </div>
-            
+
             <h3 className={`text-sm font-semibold mb-3 tracking-wide animate-pulse ${isDark ? 'text-teal-100/70' : 'text-slate-600'}`}>
               جاري تجهيز الفهرس...
             </h3>
-            
+
             <div className={`h-1 w-32 rounded-full overflow-hidden ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}>
               <div className={`h-full w-full rounded-full animate-[shimmer_1.5s_infinite] origin-left ${isDark ? 'bg-gradient-to-r from-transparent via-teal-500/60 to-transparent' : 'bg-gradient-to-r from-transparent via-teal-500/60 to-transparent'}`} style={{ transform: 'translateX(-100%)' }}></div>
             </div>
-            
+
             <style>{`
               @keyframes shimmer {
                 100% { transform: translateX(100%); }

@@ -438,20 +438,20 @@ export function StudyHistoryModal({
           className={`relative flex h-[85vh] w-full max-w-4xl flex-col rounded-3xl border shadow-2xl overflow-hidden backdrop-blur-2xl ${
             isDark
               ? 'bg-[#0b1329]/95 border-sky-500/30 text-white shadow-sky-950/60'
-              : 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-300'
+              : 'bg-white/95 border-sky-200 text-slate-900 shadow-sky-200/50'
           }`}
           dir="rtl"
         >
           {/* Top Header */}
           <div className={`flex items-center justify-between border-b px-6 py-4 ${
-            isDark ? 'border-white/10 bg-[#0e1a38]/80' : 'border-slate-200 bg-slate-50'
+            isDark ? 'border-white/10 bg-[#0e1a38]/80' : 'border-sky-100 bg-sky-50/50'
           }`}>
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-600 to-cyan-400 text-white shadow-lg shadow-sky-500/30">
                 <History size={22} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-sky-100">سجل الدراسة والتقدم الأكاديمي</h2>
+                <h2 className={`text-lg font-bold ${isDark ? 'text-sky-100' : 'text-sky-900'}`}>سجل الدراسة والتقدم الأكاديمي</h2>
                 <p className={`text-xs ${isDark ? 'text-sky-200/60' : 'text-slate-500'}`}>
                   تصفح جلساتك الدراسية السابقة واستكمل من حيث توقفت
                 </p>
@@ -483,14 +483,14 @@ export function StudyHistoryModal({
 
           {/* Navigation Tabs & Search */}
           <div className={`flex flex-wrap items-center justify-between border-b px-6 pt-2 gap-4 ${
-            isDark ? 'border-white/10 bg-[#0d1630]/60' : 'border-slate-200 bg-slate-50/50'
+            isDark ? 'border-white/10 bg-[#0d1630]/60' : 'border-sky-100 bg-white/50'
           }`}>
             <div className="flex gap-4">
               <button
                 onClick={() => setActiveTab('sessions')}
                 className={`flex items-center gap-2 border-b-2 pb-3 pt-2 text-sm font-bold transition-all ${
                   activeTab === 'sessions'
-                    ? 'border-sky-400 text-sky-300 font-extrabold'
+                    ? (isDark ? 'border-sky-400 text-sky-300 font-extrabold' : 'border-sky-500 text-sky-700 font-extrabold')
                     : isDark ? 'border-transparent text-white/50 hover:text-white/80' : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
@@ -502,7 +502,7 @@ export function StudyHistoryModal({
                 onClick={() => setActiveTab('progress')}
                 className={`flex items-center gap-2 border-b-2 pb-3 pt-2 text-sm font-bold transition-all ${
                   activeTab === 'progress'
-                    ? 'border-sky-400 text-sky-300 font-extrabold'
+                    ? (isDark ? 'border-sky-400 text-sky-300 font-extrabold' : 'border-sky-500 text-sky-700 font-extrabold')
                     : isDark ? 'border-transparent text-white/50 hover:text-white/80' : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
@@ -576,13 +576,15 @@ export function StudyHistoryModal({
                         className={`group relative flex cursor-pointer flex-col justify-between rounded-3xl border p-5 transition-all shadow-md hover:shadow-xl ${
                           isDark
                             ? 'border-sky-500/25 bg-gradient-to-b from-[#0f1d3a]/70 to-[#0a1327]/90 hover:border-sky-500/50 hover:shadow-sky-950/50'
-                            : 'border-slate-200 bg-white hover:border-sky-300 hover:bg-sky-50/40'
+                            : 'border-sky-200/70 bg-white hover:border-sky-400 hover:bg-sky-50/40 hover:shadow-sky-200/60'
                         }`}
                       >
                         <div>
                           {/* Card Header: Category Tag + Time */}
                           <div className="flex items-start justify-between gap-2 mb-3">
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/15 px-3 py-1 text-[11px] font-extrabold text-sky-300 border border-sky-500/30">
+                            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-extrabold border ${
+                              isDark ? 'bg-sky-500/15 text-sky-300 border-sky-500/30' : 'bg-sky-100 text-sky-700 border-sky-200'
+                            }`}>
                               <BookOpen size={13} />
                               {sess.domain || 'درس أكاديمي'}
                             </span>
@@ -593,7 +595,9 @@ export function StudyHistoryModal({
                           </div>
 
                           {/* Lesson Main Heading */}
-                          <h4 className="text-base font-black mb-1.5 group-hover:text-sky-300 transition-colors leading-snug">
+                          <h4 className={`text-base font-black mb-1.5 transition-colors leading-snug ${
+                            isDark ? 'group-hover:text-sky-300 text-white' : 'group-hover:text-sky-600 text-slate-900'
+                          }`}>
                             {sess.bookTitle || 'جلسة دراسية'}
                           </h4>
 
@@ -612,8 +616,8 @@ export function StudyHistoryModal({
                             return (
                               <div className="mt-3 pt-2.5 border-t border-white/10 space-y-1">
                                 <div className="flex justify-between text-[10px] font-extrabold">
-                                  <span className="text-sky-300">تقدم استيعاب المحاور</span>
-                                  <span className="text-emerald-400">{pct}% ({plan.completedSteps}/{plan.totalSteps})</span>
+                                  <span className={isDark ? 'text-sky-300' : 'text-sky-700'}>تقدم استيعاب المحاور</span>
+                                  <span className={isDark ? 'text-emerald-400' : 'text-emerald-600'}>{pct}% ({plan.completedSteps}/{plan.totalSteps})</span>
                                 </div>
                                 <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
                                   <div
@@ -633,7 +637,11 @@ export function StudyHistoryModal({
                             <span>موقف عند هذا الدرس</span>
                           </span>
 
-                          <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-sky-500/20 text-sky-200 border border-sky-500/30 group-hover:bg-sky-500 group-hover:text-slate-950 transition-all shadow-md group-hover:scale-105 text-xs font-black">
+                          <button className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border transition-all shadow-md group-hover:scale-105 text-xs font-black ${
+                            isDark 
+                              ? 'bg-sky-500/20 text-sky-200 border-sky-500/30 group-hover:bg-sky-500 group-hover:text-slate-950' 
+                              : 'bg-sky-100 text-sky-700 border-sky-200 group-hover:bg-sky-500 group-hover:text-white'
+                          }`}>
                             <Play size={12} fill="currentColor" />
                             <span>استكمال الدرس</span>
                             <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -14,7 +14,7 @@ import { AudioReaderButton } from '@/components/common/AudioReaderButton'
 
 function AvatarLogo({ dark }: { dark: boolean }) {
   return (
-    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center -mt-2">
+    <div className="relative flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center -mt-1 sm:-mt-2">
       <span
         className="absolute inset-0 rounded-full blur-[7px] opacity-90"
         style={{
@@ -26,7 +26,7 @@ function AvatarLogo({ dark }: { dark: boolean }) {
           }`}
         style={{ boxShadow: '0 0 12px rgba(168,85,247, 0.55)' }}
       >
-        <img src={dark ? whiteLogo : zadDarkLogo} alt="Zad" className="h-7 w-7 object-contain drop-shadow-md" />
+        <img src={dark ? whiteLogo : zadDarkLogo} alt="Zad" className="h-5 w-5 sm:h-7 sm:w-7 object-contain drop-shadow-md" />
       </div>
     </div>
   )
@@ -69,6 +69,12 @@ function parseTextIntoFrames(text: string): { content: string, children: string[
   for (const line of lines) {
     const trimmed = line.trim();
 
+    // Standalone horizontal rule --- delimits main frames
+    if (!inCodeBlock && /^---+\s*$/.test(trimmed)) {
+      commitMainFrame();
+      continue;
+    }
+
     if (trimmed.startsWith('```')) {
       inCodeBlock = !inCodeBlock;
       if (writingToChild) {
@@ -80,22 +86,24 @@ function parseTextIntoFrames(text: string): { content: string, children: string[
     }
 
     if (!inCodeBlock) {
-      const isH2orH3 = /^(#{2,3})(?:\s+|[0-9]+\.|[\u0600-\u06FF]+\.)/.test(trimmed);
-      const isH4 = /^####(?:\s+|[0-9]+\.|[\u0600-\u06FF]+\.)/.test(trimmed);
+      // H1, H2, H3 (or numbered H2/H3) start a NEW Main Frame
+      const isMainHeading = /^#{1,3}(?:\s+.*)?$/.test(trimmed);
+      // H4 (or ####sub-headings) start a Child Sub-Frame inside current Main Frame
+      const isChildHeading = /^#{4,}(?:\s+.*)?$/.test(trimmed);
 
-      if (isH2orH3 || isH4) {
-        const isNumbered = /^(#{2,4})\s*(?:[0-9]+|[\u0600-\u06FF])\./.test(trimmed);
+      if (isMainHeading) {
+        commitMainFrame();
+        currentMainContent.push(line);
+        writingToChild = false;
+        continue;
+      }
 
-        if (isH4 || isNumbered) {
-          if (currentChildContent.length > 0 && currentChildContent.some(l => l.trim().length > 0)) {
-            currentChildren.push([...currentChildContent]);
-          }
-          currentChildContent = [line];
-          writingToChild = true;
-        } else {
-          commitMainFrame();
-          currentMainContent.push(line);
+      if (isChildHeading) {
+        if (currentChildContent.length > 0 && currentChildContent.some(l => l.trim().length > 0)) {
+          currentChildren.push([...currentChildContent]);
         }
+        currentChildContent = [line];
+        writingToChild = true;
         continue;
       }
     }
@@ -188,6 +196,14 @@ function preprocessFrameText(frameStr: string): string {
   // Remove standalone lines containing only a period or dot
   text = text.replace(/^\s*[\.\u06D4]\s*$/gm, '');
 
+  // Preprocess citation numbers like [1], [1] [2], [1][2], [1] و [2] into grouped markdown link placeholders
+  text = text.replace(/(?:\[\d+\](?:[\s,،و]*\[\d+\])*)/g, (match) => {
+    const numbers = (match.match(/\d+/g) || []).map(Number);
+    if (numbers.length === 0) return match;
+    const idsStr = numbers.join(',');
+    return `[ZAD_CIT:${idsStr}](#cit-${idsStr})`;
+  });
+
   // 1. Fix missing spaces in headings (e.g., ###1. -> ### 1., ###أ. -> ### أ.)
   text = text.replace(/^(#{1,4})([0-9]+\.|[\u0600-\u06FF]+\.)/gm, '$1 $2');
 
@@ -199,65 +215,107 @@ function preprocessFrameText(frameStr: string): string {
   text = text.replace(/([^\s#])[ \t]+([0-9]+\.[ \t]+\*\*)/g, '$1\n\n$2'); // Numbered lists (with bold title)
   text = text.replace(/([^\s#])[ \t]+([\u0600-\u06FF]\.[ \t]+\*\*)/g, '$1\n\n$2'); // Alphabet lists (with bold title)
   text = text.replace(/\*\*((?:الخلاص[ةه]|توضيح|ملاحظ[ةه]|تنبيه|فائدة).*?)\*\*/g, '**ZAD_BADGE_$1**');
+
+  // Wrap standalone bold lines in a ZAD_FRAME
+  text = text.replace(/^([ \t]*)\*\*([^\*\r\n]+)\*\*([: \t.\u06D4؟\?]*)[ \t]*$/gm, '$1**ZAD_FRAME_$2$3**');
+
   text = text.replace(/([^\s#])[ \t]+(\*[ \t]+\*\*)/g, '$1\n\n$2'); // Bullet lists (with bold title)
   text = text.replace(/([^\s#])[ \t]+(-[ \t]+\*\*)/g, '$1\n\n$2'); // Dash lists (with bold title)
 
-  // Ensure bold sub-headings on standalone lines are followed by double newlines (\n\n) so subsequent text starts on a new line
+  // Ensure list items with bold titles (e.g. "* **Title:**\n Description") split into double newlines so description starts on a new line (but ignore if the next line is a sub-list)
+  text = text.replace(/^([ \t]*)([\*\-\+]|\d+\.|\w+\.)[ \t]*(\*\*[^\*\r\n]+\*\*[: \t.\u06D4]*)[ \t]*\n(?!\n)([ \t]*)(?![ \t]*([\*\-\+]|\d+\.|\w+\.))/gm, (match, indent, bullet, title, nextIndent) => {
+    const spacesNeeded = indent.length + 4;
+    const actualIndent = nextIndent.length >= spacesNeeded ? nextIndent : ' '.repeat(spacesNeeded);
+    return `${indent}${bullet} ${title}\n\n${actualIndent}`;
+  });
+
+  // Ensure bold and italic sub-headings/labels (e.g. *مثال:*, **ملاحظة:**, _تنبيه:_) preceded by single newline get double newline \n\n
+  text = text.replace(/([^\n])\n([ \t]*)(\*[^\*\r\n]+\*[: \t]*|\*\*[^\*\r\n]+\*\*[: \t]*|_[^_\r\n]+_[: \t]*)/g, '$1\n\n$2$3');
+
+  // Ensure bold and italic sub-headings on standalone lines are followed by double newlines (\n\n) so subsequent text starts on a new line
   text = text.replace(/^([ \t]*\*\*[^\*\r\n]+\*\*[: \t]*)\n(?!\n)/gm, '$1\n\n');
+  text = text.replace(/^([ \t]*\*[^\*\r\n]+\*[: \t]*)\n(?!\n)/gm, '$1\n\n');
 
   // Remove horizontal rules generated by AI (--- or ___)
   text = text.replace(/^[\-_]{3,}\s*$/gm, '');
 
-  // Qur'an: &Ayah& -> tagged blockquote (supports multiple on same line)
-  text = text.replace(/^([ \t]*)(.*?)&([^&\r\n]+)&(?:[ \t]*(?:\r?\n[ \t]*)?\^([^\^\r\n]+)\^)?(.*)$/gm, (match, indent, before, quote, ref, after) => {
+  const extractLeadingCitations = (afterText: string) => {
+    let citations = '';
+    let rest = afterText || '';
+    const citMatch = rest.match(/^([ \t\`"'«»:\u061B;,،.\u06D4\s\(\)]*)((\[\s*ZAD_CIT:[^\]]+\s*\]\([^\)]+\)[\s,،و]*)+)/);
+    if (citMatch) {
+      citations = citMatch[2].trim();
+      rest = rest.slice(citMatch[0].length);
+    }
+    return { citations, rest };
+  };
+
+  const cleanBeforeStr = (str: string) => {
+    return str.trim().replace(/[`"'«»]+$/, '').trim();
+  };
+
+  const cleanAfterStr = (str: string) => {
+    return (str || '').replace(/^[.\u06D4\s\`"'«»:\u061B;,،\(\)]+/, '');
+  };
+
+  // Qur'an: &Ayah& or &&Ayah&& -> tagged blockquote (supports multiple on same line)
+  text = text.replace(/^([ \t]*)(.*?)&+([^&\r\n]+)&+(?:[ \t]*(?:\r?\n[ \t]*)?\^+([^\^\r\n]+)\^+)?(.*)$/gm, (match, indent, before, quote, ref, after) => {
+    const { citations, rest } = extractLeadingCitations(after);
+    const cb = cleanBeforeStr(before);
     let res = '';
-    if (before.trim()) res += `${indent}${before.trim()}\n\n`;
-    res += `\n${indent}> [QURAN] ${quote.trim()}`;
+    if (cb) res += `${indent}${cb}\n\n`;
+    res += `\n${indent}> [QURAN] ${quote.trim()}${citations ? ' ' + citations : ''}`;
     if (ref) res += `  \n${indent}> *__REF__${ref.trim()}*`;
     res += '\n';
-    const cleanAfter = (after || '').replace(/^[.\u06D4\s]+/, '');
+    const cleanAfter = cleanAfterStr(rest);
     if (cleanAfter.trim()) res += `\n${indent}${cleanAfter.trim()}\n\n`;
     return res;
   });
 
-  // Hadith: %Hadith% -> tagged blockquote (supports multiple on same line)
-  text = text.replace(/^([ \t]*)(.*?)%([^%\r\n]+)%(?:[ \t]*(?:\r?\n[ \t]*)?\^([^\^\r\n]+)\^)?(.*)$/gm, (match, indent, before, quote, ref, after) => {
+  // Hadith: %Hadith% or %%Hadith%% -> tagged blockquote (supports multiple on same line)
+  text = text.replace(/^([ \t]*)(.*?)%+([^%\r\n]+)%+(?:[ \t]*(?:\r?\n[ \t]*)?\^+([^\^\r\n]+)\^+)?(.*)$/gm, (match, indent, before, quote, ref, after) => {
+    const { citations, rest } = extractLeadingCitations(after);
+    const cb = cleanBeforeStr(before);
     let res = '';
-    if (before.trim()) res += `${indent}${before.trim()}\n\n`;
-    res += `\n${indent}> [HADITH] ${quote.trim()}`;
+    if (cb) res += `${indent}${cb}\n\n`;
+    res += `\n${indent}> [HADITH] ${quote.trim()}${citations ? ' ' + citations : ''}`;
     if (ref) res += `  \n${indent}> *__REF__${ref.trim()}*`;
     res += '\n';
-    const cleanAfter = (after || '').replace(/^[.\u06D4\s]+/, '');
+    const cleanAfter = cleanAfterStr(rest);
     if (cleanAfter.trim()) res += `\n${indent}${cleanAfter.trim()}\n\n`;
     return res;
   });
 
-  // Scholars' sayings: @Saying@ -> tagged blockquote (supports multiple on same line)
-  text = text.replace(/^([ \t]*)(.*?)@([^@\r\n]+)@(?:[ \t]*(?:\r?\n[ \t]*)?\^([^\^\r\n]+)\^)?(.*)$/gm, (match, indent, before, quote, ref, after) => {
+  // Scholars' sayings: @Saying@ or @@Saying@@ -> tagged blockquote (supports multiple on same line)
+  text = text.replace(/^([ \t]*)(.*?)@+([^@\r\n]+)@+(?:[ \t]*(?:\r?\n[ \t]*)?\^+([^\^\r\n]+)\^+)?(.*)$/gm, (match, indent, before, quote, ref, after) => {
+    const { citations, rest } = extractLeadingCitations(after);
+    const cb = cleanBeforeStr(before);
     let res = '';
-    if (before.trim()) res += `${indent}${before.trim()}\n\n`;
-    res += `\n${indent}> [SAYING] ${quote.trim()}`;
+    if (cb) res += `${indent}${cb}\n\n`;
+    res += `\n${indent}> [SAYING] ${quote.trim()}${citations ? ' ' + citations : ''}`;
     if (ref) res += `  \n${indent}> *__REF__${ref.trim()}*`;
     res += '\n';
-    const cleanAfter = (after || '').replace(/^[.\u06D4\s]+/, '');
+    const cleanAfter = cleanAfterStr(rest);
     if (cleanAfter.trim()) res += `\n${indent}${cleanAfter.trim()}\n\n`;
     return res;
   });
 
-  // Poetry: $Poetry$ -> tagged blockquote (supports multiple on same line)
-  text = text.replace(/^([ \t]*)(.*?)\$([^$\r\n]+)\$(?:[ \t]*(?:\r?\n[ \t]*)?\^([^\^\r\n]+)\^)?(.*)$/gm, (match, indent, before, quote, ref, after) => {
+  // Poetry: $Poetry$ or $$Poetry$$ -> tagged blockquote (supports multiple on same line)
+  text = text.replace(/^([ \t]*)(.*?)\$+([^$\r\n]+)\$+(?:[ \t]*(?:\r?\n[ \t]*)?\^+([^\^\r\n]+)\^+)?(.*)$/gm, (match, indent, before, quote, ref, after) => {
+    const { citations, rest } = extractLeadingCitations(after);
+    const cb = cleanBeforeStr(before);
     let res = '';
-    if (before.trim()) res += `${indent}${before.trim()}\n\n`;
-    res += `\n${indent}> [POETRY] ${quote.trim()}`;
+    if (cb) res += `${indent}${cb}\n\n`;
+    res += `\n${indent}> [POETRY] ${quote.trim()}${citations ? ' ' + citations : ''}`;
     if (ref) res += `  \n${indent}> *__REF__${ref.trim()}*`;
     res += '\n';
-    const cleanAfter = (after || '').replace(/^[.\u06D4\s]+/, '');
+    const cleanAfter = cleanAfterStr(rest);
     if (cleanAfter.trim()) res += `\n${indent}${cleanAfter.trim()}\n\n`;
     return res;
   });
 
-  // Standalone References: ^text^ -> tagged blockquote
-  text = text.replace(/^([ \t]*)(.*?)\^([^\^\r\n]+)\^(.*)$/gm, (match, indent, before, ref, after) => {
+  // Standalone References: ^text^ or ^^text^^ -> tagged blockquote
+  text = text.replace(/^([ \t]*)(.*?)\^+([^\^\r\n]+)\^+(.*)$/gm, (match, indent, before, ref, after) => {
     let res = '';
     if (before.trim()) res += `${indent}${before.trim()}\n\n`;
     res += `\n${indent}> [REFERENCE] ${ref.trim()}\n`;
@@ -287,7 +345,19 @@ function preprocessFrameText(frameStr: string): string {
   return text.trim();
 }
 
-export function Bubble({ message, dark, avatarRef, lessonTitle }: { message: Message; dark: boolean; avatarRef?: React.RefObject<HTMLSpanElement | null>; lessonTitle?: string }) {
+export function Bubble({
+  message,
+  dark,
+  avatarRef,
+  lessonTitle,
+  onStreamingChange
+}: {
+  message: Message;
+  dark: boolean;
+  avatarRef?: React.RefObject<HTMLSpanElement | null>;
+  lessonTitle?: string;
+  onStreamingChange?: (isStreaming: boolean) => void;
+}) {
   const isUser = message.role === 'user'
 
   let activeLessonBreadcrumb: string | undefined = lessonTitle
@@ -328,355 +398,398 @@ export function Bubble({ message, dark, avatarRef, lessonTitle }: { message: Mes
     }
   }
 
+  const onStreamingChangeRef = useRef(onStreamingChange);
+  useEffect(() => {
+    onStreamingChangeRef.current = onStreamingChange;
+  }, [onStreamingChange]);
+
+  const currentIdxRef = useRef(0);
+
   useEffect(() => {
     if (isUser || !message.stream || !isStreaming) return;
 
-    let currentIdx = 0;
+    onStreamingChangeRef.current?.(true);
+
     const fullText = message.text;
     const chunkSize = 3;
 
     const interval = setInterval(() => {
-      currentIdx += chunkSize;
-      if (currentIdx >= fullText.length) {
+      currentIdxRef.current += chunkSize;
+      if (currentIdxRef.current >= fullText.length) {
         setDisplayedText(fullText);
         setIsStreaming(false);
+        onStreamingChangeRef.current?.(false);
         clearInterval(interval);
       } else {
-        setDisplayedText(fullText.slice(0, currentIdx));
+        setDisplayedText(fullText.slice(0, currentIdxRef.current));
       }
 
       const scrollContainer = document.querySelector('.custom-scrollbar');
       if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        const isAtBottom = scrollContainer.scrollHeight - scrollContainer.clientHeight <= scrollContainer.scrollTop + 150;
+        if (isAtBottom) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
       }
     }, 20);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, [message.stream, message.text, isStreaming, isUser]);
 
+  const markdownComponents = useMemo(() => {
+    const extractText = (child: any): string => {
+      if (!child) return '';
+      if (typeof child === 'string') return child;
+      if (Array.isArray(child)) return child.map(extractText).join('');
+      if (child.props && child.props.children) return extractText(child.props.children);
+      if (child.props && child.props.node && child.props.node.value) return child.props.node.value;
+      return '';
+    };
+
+    return {
+      h1: ({ node, ...props }: any) => (
+        <h1
+          className={`text-2xl font-bold mt-1 mb-4 ${dark ? 'text-white' : 'text-primary'
+            }`}
+          {...props}
+        />
+      ),
+      h2: ({ node, ...props }: any) => (
+        <div
+          className={`flex items-center gap-2.5 mt-5 mb-3 px-3 py-2 rounded-xl border ${dark
+            ? 'bg-emerald-500/[0.06] border-emerald-400/15'
+            : 'bg-emerald-50/80 border-emerald-200/70'
+            }`}
+        >
+          <span
+            className={`w-1 h-5 rounded-full flex-shrink-0 ${dark ? 'bg-emerald-400' : 'bg-emerald-600'
+              }`}
+          />
+          <h2
+            className={`text-[17px] md:text-[18px] font-bold ${dark ? 'text-emerald-300' : 'text-emerald-700'
+              }`}
+            {...props}
+          />
+        </div>
+      ),
+      h3: ({ node, ...props }: any) => (
+        <div
+          className={`flex items-center gap-3 mb-5 px-3 sm:px-5 py-3.5 -mx-3 sm:-mx-5 -mt-3 sm:-mt-5 bg-gradient-to-l ${dark
+            ? 'from-white/[0.06] to-transparent border-b border-white/10'
+            : 'from-primary/[0.05] to-transparent border-b border-primary/10'
+            }`}
+        >
+          <h3
+            className={`text-[19px] font-bold ${dark
+              ? 'text-transparent bg-clip-text bg-gradient-to-l from-emerald-300 to-emerald-500'
+              : 'text-purple-700'
+              }`}
+            {...props}
+          />
+        </div>
+      ),
+      h4: ({ node, ...props }: any) => (
+        <div
+          className={`flex items-center gap-2 mb-4 px-4 sm:px-5 py-3 -mx-4 sm:-mx-5 -mt-4 sm:-mt-5 bg-gradient-to-l ${dark
+            ? 'from-purple-500/10 via-purple-500/[0.04] to-transparent border-b border-purple-500/20'
+            : 'from-purple-100/80 via-purple-50/40 to-transparent border-b border-purple-200/80'
+            }`}
+        >
+          <h4
+            className={`text-[16px] md:text-[17px] font-extrabold ${dark
+              ? 'text-transparent bg-clip-text bg-gradient-to-l from-emerald-200 to-emerald-400'
+              : 'text-purple-900'
+              }`}
+            {...props}
+          />
+        </div>
+      ),
+      p: ({ node, ...props }: any) => (
+        <p
+          className={`mb-4 last:mb-0 text-[15px] md:text-[16px] leading-[1.85] ${dark ? 'text-white/90' : 'text-[#0F172A]'
+            }`}
+          {...props}
+        />
+      ),
+      ul: ({ node, ...props }: any) => (
+        <ul className={`list-disc list-outside pr-4 sm:pr-6 [&_ul]:pr-2 [&_ol]:pr-2 sm:[&_ul]:pr-6 sm:[&_ol]:pr-6 mr-0 sm:mr-2 mb-4 space-y-3 ${dark ? 'marker:text-emerald-400' : 'marker:text-purple-600'}`} {...props} />
+      ),
+      ol: ({ node, ...props }: any) => (
+        <ol
+          className={`list-decimal list-outside pr-4 sm:pr-6 [&_ul]:pr-2 [&_ol]:pr-2 sm:[&_ul]:pr-6 sm:[&_ol]:pr-6 mr-0 sm:mr-2 mb-4 space-y-3 font-semibold ${dark ? 'marker:text-emerald-400' : 'marker:text-purple-600'}`}
+          {...props}
+        />
+      ),
+      li: ({ node, ...props }: any) => (
+        <li
+          className={`text-[15px] md:text-[16px] leading-[1.85] pr-1 sm:pr-1.5 ${dark ? 'text-white/90' : 'text-[#0F172A]'}`}
+          {...props}
+        />
+      ),
+      strong: ({ node, ...props }: any) => {
+        const text = extractText(props.children);
+        if (text.includes('ZAD_TITLE_') || text.includes('__TITLE__')) {
+          return (
+            <strong
+              className={`font-bold underline underline-offset-[6px] decoration-[1.5px] ${dark
+                ? 'text-emerald-300 decoration-emerald-400/50'
+                : 'text-purple-800 decoration-purple-500/50'
+                }`}
+            >
+              {text.replace(/ZAD_TITLE_/g, '').replace(/__TITLE__/g, '')}
+            </strong>
+          );
+        }
+        if (text.includes('ZAD_BADGE_') || text.includes('__BADGE__')) {
+          return (
+            <strong
+              className={`font-bold inline-block px-2.5 py-0.5 mx-1 rounded-md border text-[13px] md:text-[14px] ${dark
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : 'bg-purple-50 border-purple-300 text-purple-700'
+                }`}
+            >
+              {text.replace(/ZAD_BADGE_/g, '').replace(/__BADGE__/g, '')}
+            </strong>
+          );
+        }
+        if (text.includes('ZAD_FRAME_') || text.includes('__FRAME__')) {
+          return (
+            <strong
+              className={`inline-flex items-center mb-2 mt-3 px-4 py-1.5 rounded-full border border-b-[2.5px] font-extrabold text-[15.5px] shadow-sm max-w-full leading-tight ${dark
+                ? 'bg-gradient-to-l from-emerald-500/10 to-transparent border-emerald-500/20 text-emerald-300'
+                : 'bg-gradient-to-l from-purple-50 to-transparent border-purple-200 text-purple-800'
+                }`}
+            >
+              <span>{text.replace(/ZAD_FRAME_/g, '').replace(/__FRAME__/g, '')}</span>
+            </strong>
+          );
+        }
+        return (
+          <strong
+            className={`font-bold ${dark
+              ? 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]'
+              : 'text-purple-800'
+              }`}
+            {...props}
+          />
+        );
+      },
+      em: ({ node, ...props }: any) => {
+        const text = extractText(props.children);
+        if (text.startsWith('__REF__')) {
+          return (
+            <span className={`block w-full mt-3 pt-2 border-t ${dark ? 'border-white/15' : 'border-black/10'} text-[12.5px] md:text-[13.5px] opacity-90 font-medium text-left`} dir="rtl">
+              {text.replace('__REF__', '')}
+            </span>
+          );
+        }
+        return <em className="italic" {...props} />;
+      },
+      del: ({ node, ...props }: any) => {
+        const text = extractText(props.children);
+        if (text.startsWith('«') && text.endsWith('»')) {
+          return (
+            <span
+              className={`block w-full my-4 px-5 py-5 rounded-2xl border-r-[4px] transition-all duration-300 hover:shadow-md ${dark
+                ? 'bg-[#0f172a]/90 border-emerald-400 text-emerald-50 shadow-[0_4px_15px_rgba(0,0,0,0.2)]'
+                : 'bg-[#FDFBF7] border-purple-600 text-[#1E1B4B] shadow-sm ring-1 ring-purple-100/70'
+                }`}
+            >
+              <span className="block text-[16.5px] md:text-[17.5px] leading-[2.2] font-bold text-center">
+                {props.children}
+              </span>
+            </span>
+          );
+        }
+        return (
+          <span
+            className={`inline-flex items-center mx-1 px-3 py-1 rounded-lg border align-middle font-bold text-[13px] md:text-[14px] ${dark
+              ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.08)]'
+              : 'bg-purple-50 border-purple-300/70 text-purple-700 shadow-sm'
+              }`}
+            {...props}
+          />
+        );
+      },
+      blockquote: ({ node, ...props }: any) => {
+        const quoteText = extractText(props.children).trim();
+        let type:
+          | 'quran'
+          | 'hadith'
+          | 'saying'
+          | 'poetry'
+          | 'reference'
+          | 'generic' = 'generic';
+
+        if (quoteText.startsWith('[QURAN]')) type = 'quran';
+        else if (quoteText.startsWith('[HADITH]')) type = 'hadith';
+        else if (quoteText.startsWith('[SAYING]')) type = 'saying';
+        else if (quoteText.startsWith('[POETRY]')) type = 'poetry';
+        else if (quoteText.startsWith('[REFERENCE]')) type = 'reference';
+
+        const styles = {
+          quran: {
+            dark: 'border-emerald-400/60 bg-emerald-500/[0.10] text-emerald-50 shadow-[inset_0_0_30px_rgba(16,185,129,0.06),0_8px_30px_rgba(16,185,129,0.05)]',
+            light: 'border-emerald-500 bg-[#ECFDF5] text-emerald-950 shadow-sm ring-1 ring-emerald-100',
+            icon: <BookOpen className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+            label: 'آية قرآنية',
+          },
+          hadith: {
+            dark: 'border-sky-400/50 bg-sky-500/[0.09] text-sky-50 shadow-[inset_0_0_30px_rgba(14,165,233,0.05),0_8px_30px_rgba(14,165,233,0.04)]',
+            light: 'border-sky-500 bg-[#F0F9FF] text-sky-950 shadow-sm ring-1 ring-sky-100',
+            icon: <Book className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+            label: 'حديث نبوي',
+          },
+          saying: {
+            dark: 'border-violet-400/50 bg-violet-500/[0.09] text-violet-50 shadow-[inset_0_0_30px_rgba(139,92,246,0.05),0_8px_30px_rgba(139,92,246,0.04)]',
+            light: 'border-purple-600 bg-[#FDFBF7] text-[#1E1B4B] shadow-sm ring-1 ring-purple-100/70',
+            icon: <User className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+            label: 'قول عالم',
+          },
+          poetry: {
+            dark: 'border-amber-400/50 bg-amber-500/[0.09] text-amber-50 shadow-[inset_0_0_30px_rgba(245,158,11,0.05),0_8px_30px_rgba(245,158,11,0.04)]',
+            light: 'border-amber-500 bg-[#FFFBEB] text-amber-950 shadow-sm ring-1 ring-amber-100',
+            icon: <Feather className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+            label: 'شعر',
+          },
+          reference: {
+            dark: 'border-indigo-400/40 bg-indigo-500/[0.05] text-indigo-100 shadow-[inset_0_0_30px_rgba(99,102,241,0.03),0_8px_30px_rgba(99,102,241,0.02)]',
+            light: 'border-indigo-500 bg-[#EEF2FF] text-indigo-950 shadow-sm ring-1 ring-indigo-100',
+            icon: <FileText className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+            label: 'مرجع',
+          },
+          generic: {
+            dark: 'border-emerald-500/50 bg-emerald-500/[0.08] text-emerald-50',
+            light: 'border-purple-600 bg-[#FDFBF7] text-[#1E1B4B] shadow-sm ring-1 ring-purple-100/70',
+            icon: <FileText className="w-[18px] h-[18px]" strokeWidth={2.5} />,
+            label: 'اقتباس',
+          },
+        };
+
+        const style = styles[type];
+        let prefixRemoved = false;
+        const removePrefix = (text: string) => {
+          const original = text;
+          const replaced = text.replace(/^\[QURAN\]\s*/, '').replace(/^\[HADITH\]\s*/, '').replace(/^\[SAYING\]\s*/, '').replace(/^\[POETRY\]\s*/, '').replace(/^\[REFERENCE\]\s*/, '');
+          if (replaced !== original) prefixRemoved = true;
+          return replaced;
+        };
+
+        const recursivelyClean = (node: any): any => {
+          if (prefixRemoved) return node;
+          if (typeof node === 'string') return removePrefix(node);
+          if (Array.isArray(node)) return node.map(recursivelyClean);
+          if (React.isValidElement(node)) {
+            const children = (node.props as any)?.children;
+            if (children) {
+              return React.cloneElement(node, {
+                children: recursivelyClean(children)
+              } as any);
+            }
+          }
+          return node;
+        };
+
+        const cleanedChildren = recursivelyClean(props.children);
+
+        return (
+          <blockquote
+            className={`relative my-5 rounded-2xl border-r-[5px] px-5 py-4 ${dark ? style.dark : style.light
+              }`}
+            {...props}
+          >
+            <div
+              className={
+                type === 'quran'
+                  ? 'text-[17px] md:text-[18px] leading-[2.05] font-semibold'
+                  : type === 'reference'
+                    ? 'text-[14px] md:text-[15px] leading-[1.85] font-medium opacity-90'
+                    : 'text-[15px] md:text-[16px] leading-[1.95] font-semibold'
+              }
+            >
+              {cleanedChildren}
+            </div>
+          </blockquote>
+        );
+      },
+
+      a: ({ node, href, children, ...props }: any) => {
+        if (href && href.startsWith('#cit-')) {
+          const rawIds = href.replace('#cit-', '');
+          const ids = rawIds.split(',').map(Number).filter(Boolean);
+          return <CitationPill ids={ids} citations={message.citations} dark={dark} />;
+        }
+        return (
+          <a
+            className={dark ? "text-emerald-400 hover:text-emerald-300 font-medium transition-colors underline underline-offset-4" : "text-purple-600 hover:text-purple-800 font-medium transition-colors underline underline-offset-4"}
+            target="_blank"
+            rel="noopener noreferrer"
+            href={href}
+            {...props}
+          />
+        );
+      },
+
+      hr: () => null,
+
+      code: ({ node, ...props }: any) => (
+        <code
+          className={`px-1.5 py-0.5 rounded-md text-sm font-mono ${dark
+            ? 'bg-emerald-950/50 text-emerald-200'
+            : 'bg-purple-100/60 text-purple-900 border border-purple-200/60'
+            }`}
+          {...props}
+        />
+      ),
+    };
+  }, [dark, message.citations]);
+
   return (
-    <div className={`flex w-full animate-in fade-in slide-in-from-bottom-2 duration-500 ${isUser ? 'justify-start' : 'justify-end'}`}>
-      <div className={`flex items-start gap-1.5 sm:gap-3 ${isUser ? 'max-w-[92%] sm:max-w-[88%] md:max-w-[80%]' : 'w-full max-w-[100%] sm:max-w-[97%] md:max-w-[96%] flex-row-reverse'}`}>
+    <div className={`flex w-full min-w-0 animate-in fade-in slide-in-from-bottom-2 duration-500 ${isUser ? 'justify-start' : 'justify-end'}`}>
+      <div className={`flex min-w-0 gap-1.5 sm:gap-3 w-full flex-col ${isUser ? 'items-start' : 'items-end'}`}>
         {isUser ? (
-          <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full brand-gradient text-white shadow-lg shadow-primary/30 -mt-2 sm:-mt-3">
+          <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full brand-gradient text-white shadow-lg shadow-primary/30">
             <User size={18} className="sm:hidden" strokeWidth={2.5} />
             <User size={22} className="hidden sm:block" strokeWidth={2.5} />
           </div>
         ) : (
-          <span ref={avatarRef}>
+          <span ref={avatarRef} className="shrink-0">
             <AvatarLogo dark={dark} />
           </span>
         )}
         {isUser ? (
-          <div className="rounded-2xl px-3.5 sm:px-5 py-2.5 sm:py-3.5 text-sm sm:text-[15px] leading-relaxed shadow-sm brand-gradient rounded-tr-sm text-white whitespace-pre-line">
+          <div className="rounded-[20px] sm:rounded-[24px] px-3.5 sm:px-5 py-2.5 sm:py-3.5 text-sm sm:text-[15px] leading-relaxed shadow-sm brand-gradient rounded-tr-none text-white whitespace-pre-line break-words">
             {message.text}
           </div>
         ) : (
-          <div className="flex flex-col w-full max-w-full pt-0.5 sm:pt-1">
+          <div className="flex flex-col flex-1 w-full min-w-0 pt-0.5 sm:pt-1">
             <div
               ref={messageContentRef}
-              className={`relative px-3 sm:px-5 py-3.5 sm:py-5 border overflow-hidden transition-all duration-300 hover:shadow-2xl rounded-2xl sm:rounded-3xl rounded-tl-sm flex flex-col gap-3 sm:gap-4 ${dark
-                ? 'bg-black/30 backdrop-blur-2xl border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.15)]'
+              data-selectable="true"
+              className={`relative px-3 sm:px-5 py-3 sm:py-5 border rounded-[20px] sm:rounded-[24px] rounded-tl-none flex flex-col gap-3 sm:gap-4 ${dark
+                ? 'bg-black/60 backdrop-blur-2xl border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.15)]'
                 : 'bg-[#FAF9FC] border-primary/15 shadow-[0_4px_20px_rgba(124,58,237,0.04)]'
                 }`}
             >
+              <ResponseMetadataBadges
+                domain={message.domain}
+                mode={message.responseMode || message.response_mode}
+                dark={dark}
+              />
               {(() => {
                 const structuredFrames = parseTextIntoFrames(displayedText);
-
-                const extractText = (child: any): string => {
-                  if (!child) return '';
-                  if (typeof child === 'string') return child;
-                  if (Array.isArray(child)) return child.map(extractText).join('');
-                  if (child.props && child.props.children) return extractText(child.props.children);
-                  if (child.props && child.props.node && child.props.node.value) return child.props.node.value;
-                  return '';
-                };
-
-                const markdownComponents = {
-                  h1: ({ node, ...props }: any) => (
-                    <h1
-                      className={`text-2xl font-bold mt-1 mb-4 ${dark ? 'text-white' : 'text-primary'
-                        }`}
-                      {...props}
-                    />
-                  ),
-                  h2: ({ node, ...props }: any) => (
-                    <div
-                      className={`flex items-center gap-2.5 mt-5 mb-3 px-3 py-2 rounded-xl border ${dark
-                        ? 'bg-emerald-500/[0.06] border-emerald-400/15'
-                        : 'bg-emerald-50/80 border-emerald-200/70'
-                        }`}
-                    >
-                      <span
-                        className={`w-1 h-5 rounded-full flex-shrink-0 ${dark ? 'bg-emerald-400' : 'bg-emerald-600'
-                          }`}
-                      />
-                      <h2
-                        className={`text-[17px] md:text-[18px] font-bold ${dark ? 'text-emerald-300' : 'text-emerald-700'
-                          }`}
-                        {...props}
-                      />
-                    </div>
-                  ),
-                  h3: ({ node, ...props }: any) => (
-                    <div
-                      className={`flex items-center gap-3 mb-5 px-5 py-3.5 -mx-5 -mt-5 bg-gradient-to-l ${dark
-                        ? 'from-white/[0.06] to-transparent border-b border-white/10'
-                        : 'from-primary/[0.05] to-transparent border-b border-primary/10'
-                        }`}
-                    >
-                      <h3
-                        className={`text-[19px] font-bold ${dark
-                          ? 'text-transparent bg-clip-text bg-gradient-to-l from-emerald-300 to-emerald-500'
-                          : 'text-purple-700'
-                          }`}
-                        {...props}
-                      />
-                    </div>
-                  ),
-                  h4: ({ node, ...props }: any) => (
-                    <div
-                      className={`flex items-center gap-2 mb-4 px-5 py-3 -mx-5 -mt-5 bg-gradient-to-l ${dark
-                        ? 'from-white/[0.04] to-transparent border-b border-white/[0.04]'
-                        : 'from-purple-100/60 via-purple-50/30 to-transparent border-b border-purple-200/50'
-                        }`}
-                    >
-                      <h4
-                        className={`text-[16px] md:text-[17px] font-extrabold ${dark
-                          ? 'text-transparent bg-clip-text bg-gradient-to-l from-emerald-200 to-emerald-400'
-                          : 'text-purple-900'
-                          }`}
-                        {...props}
-                      />
-                    </div>
-                  ),
-                  p: ({ node, ...props }: any) => (
-                    <p
-                      className={`mb-4 last:mb-0 text-[15px] md:text-[16px] leading-[1.85] ${dark ? 'text-white/90' : 'text-[#0F172A]'
-                        }`}
-                      {...props}
-                    />
-                  ),
-                  ul: ({ node, ...props }: any) => (
-                    <ul className={`list-disc list-outside pr-6 mr-2 mb-4 space-y-3 ${dark ? 'marker:text-emerald-400' : 'marker:text-purple-600'}`} {...props} />
-                  ),
-                  ol: ({ node, ...props }: any) => (
-                    <ol
-                      className={`list-decimal list-outside pr-6 mr-2 mb-4 space-y-3 font-semibold ${dark ? 'marker:text-emerald-400' : 'marker:text-purple-600'}`}
-                      {...props}
-                    />
-                  ),
-                  li: ({ node, ...props }: any) => (
-                    <li
-                      className={`text-[15px] md:text-[16px] leading-[1.85] pr-1.5 ${dark ? 'text-white/90' : 'text-[#0F172A]'}`}
-                      {...props}
-                    />
-                  ),
-                  strong: ({ node, ...props }: any) => {
-                    const text = extractText(props.children);
-                    if (text.includes('ZAD_TITLE_') || text.includes('__TITLE__')) {
-                      return (
-                        <strong
-                          className={`font-bold underline underline-offset-[6px] decoration-[1.5px] ${dark
-                            ? 'text-emerald-300 decoration-emerald-400/50'
-                            : 'text-purple-800 decoration-purple-500/50'
-                            }`}
-                        >
-                          {text.replace(/ZAD_TITLE_/g, '').replace(/__TITLE__/g, '')}
-                        </strong>
-                      );
-                    }
-                    if (text.includes('ZAD_BADGE_') || text.includes('__BADGE__')) {
-                      return (
-                        <strong
-                          className={`font-bold inline-block px-2.5 py-0.5 mx-1 rounded-md border text-[13px] md:text-[14px] ${dark
-                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                            : 'bg-purple-50 border-purple-300 text-purple-700'
-                            }`}
-                        >
-                          {text.replace(/ZAD_BADGE_/g, '').replace(/__BADGE__/g, '')}
-                        </strong>
-                      );
-                    }
-                    return (
-                      <strong
-                        className={`font-bold ${dark
-                          ? 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]'
-                          : 'text-purple-800'
-                          }`}
-                        {...props}
-                      />
-                    );
-                  },
-                  em: ({ node, ...props }: any) => {
-                    const text = extractText(props.children);
-                    if (text.startsWith('__REF__')) {
-                      return (
-                        <span className={`block w-full mt-3 pt-2 border-t ${dark ? 'border-white/15' : 'border-black/10'} text-[12.5px] md:text-[13.5px] opacity-90 font-medium text-left`} dir="rtl">
-                          {text.replace('__REF__', '')}
-                        </span>
-                      );
-                    }
-                    return <em className="italic" {...props} />;
-                  },
-                  del: ({ node, ...props }: any) => {
-                    const text = extractText(props.children);
-                    if (text.startsWith('«') && text.endsWith('»')) {
-                      return (
-                        <span
-                          className={`block w-full my-4 px-5 py-5 rounded-2xl border-r-[4px] transition-all duration-300 hover:shadow-md ${dark
-                            ? 'bg-[#0f172a]/90 border-emerald-400 text-emerald-50 shadow-[0_4px_15px_rgba(0,0,0,0.2)]'
-                            : 'bg-[#FDFBF7] border-purple-600 text-[#1E1B4B] shadow-sm ring-1 ring-purple-100/70'
-                            }`}
-                        >
-                          <span className="block text-[16.5px] md:text-[17.5px] leading-[2.2] font-bold text-center">
-                            {props.children}
-                          </span>
-                        </span>
-                      );
-                    }
-                    return (
-                      <span
-                        className={`inline-flex items-center mx-1 px-3 py-1 rounded-lg border align-middle font-bold text-[13px] md:text-[14px] ${dark
-                          ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.08)]'
-                          : 'bg-purple-50 border-purple-300/70 text-purple-700 shadow-sm'
-                          }`}
-                        {...props}
-                      />
-                    );
-                  },
-                  blockquote: ({ node, ...props }: any) => {
-                    const quoteText = extractText(props.children).trim();
-                    let type:
-                      | 'quran'
-                      | 'hadith'
-                      | 'saying'
-                      | 'poetry'
-                      | 'reference'
-                      | 'generic' = 'generic';
-
-                    if (quoteText.startsWith('[QURAN]')) type = 'quran';
-                    else if (quoteText.startsWith('[HADITH]')) type = 'hadith';
-                    else if (quoteText.startsWith('[SAYING]')) type = 'saying';
-                    else if (quoteText.startsWith('[POETRY]')) type = 'poetry';
-                    else if (quoteText.startsWith('[REFERENCE]')) type = 'reference';
-
-                    const styles = {
-                      quran: {
-                        dark: 'border-emerald-400/60 bg-emerald-500/[0.10] text-emerald-50 shadow-[inset_0_0_30px_rgba(16,185,129,0.06),0_8px_30px_rgba(16,185,129,0.05)]',
-                        light: 'border-emerald-500 bg-[#ECFDF5] text-emerald-950 shadow-sm ring-1 ring-emerald-100',
-                        icon: <BookOpen className="w-[18px] h-[18px]" strokeWidth={2.5} />,
-                        label: 'آية قرآنية',
-                      },
-                      hadith: {
-                        dark: 'border-sky-400/50 bg-sky-500/[0.09] text-sky-50 shadow-[inset_0_0_30px_rgba(14,165,233,0.05),0_8px_30px_rgba(14,165,233,0.04)]',
-                        light: 'border-sky-500 bg-[#F0F9FF] text-sky-950 shadow-sm ring-1 ring-sky-100',
-                        icon: <Book className="w-[18px] h-[18px]" strokeWidth={2.5} />,
-                        label: 'حديث نبوي',
-                      },
-                      saying: {
-                        dark: 'border-violet-400/50 bg-violet-500/[0.09] text-violet-50 shadow-[inset_0_0_30px_rgba(139,92,246,0.05),0_8px_30px_rgba(139,92,246,0.04)]',
-                        light: 'border-purple-600 bg-[#FDFBF7] text-[#1E1B4B] shadow-sm ring-1 ring-purple-100/70',
-                        icon: <User className="w-[18px] h-[18px]" strokeWidth={2.5} />,
-                        label: 'قول عالم',
-                      },
-                      poetry: {
-                        dark: 'border-amber-400/50 bg-amber-500/[0.09] text-amber-50 shadow-[inset_0_0_30px_rgba(245,158,11,0.05),0_8px_30px_rgba(245,158,11,0.04)]',
-                        light: 'border-amber-500 bg-[#FFFBEB] text-amber-950 shadow-sm ring-1 ring-amber-100',
-                        icon: <Feather className="w-[18px] h-[18px]" strokeWidth={2.5} />,
-                        label: 'شعر',
-                      },
-                      reference: {
-                        dark: 'border-indigo-400/40 bg-indigo-500/[0.05] text-indigo-100 shadow-[inset_0_0_30px_rgba(99,102,241,0.03),0_8px_30px_rgba(99,102,241,0.02)]',
-                        light: 'border-indigo-500 bg-[#EEF2FF] text-indigo-950 shadow-sm ring-1 ring-indigo-100',
-                        icon: <FileText className="w-[18px] h-[18px]" strokeWidth={2.5} />,
-                        label: 'مرجع',
-                      },
-                      generic: {
-                        dark: 'border-emerald-500/50 bg-emerald-500/[0.08] text-emerald-50',
-                        light: 'border-purple-600 bg-[#FDFBF7] text-[#1E1B4B] shadow-sm ring-1 ring-purple-100/70',
-                        icon: <FileText className="w-[18px] h-[18px]" strokeWidth={2.5} />,
-                        label: 'اقتباس',
-                      },
-                    };
-
-                    const style = styles[type];
-                    let prefixRemoved = false;
-                    const removePrefix = (text: string) => {
-                      const original = text;
-                      const replaced = text.replace(/^\[QURAN\]\s*/, '').replace(/^\[HADITH\]\s*/, '').replace(/^\[SAYING\]\s*/, '').replace(/^\[POETRY\]\s*/, '').replace(/^\[REFERENCE\]\s*/, '');
-                      if (replaced !== original) prefixRemoved = true;
-                      return replaced;
-                    };
-
-                    const recursivelyClean = (node: any): any => {
-                      if (prefixRemoved) return node;
-                      if (typeof node === 'string') return removePrefix(node);
-                      if (Array.isArray(node)) return node.map(recursivelyClean);
-                      if (React.isValidElement(node)) {
-                        const children = (node.props as any)?.children;
-                        if (children) {
-                          return React.cloneElement(node, {
-                            children: recursivelyClean(children)
-                          } as any);
-                        }
-                      }
-                      return node;
-                    };
-
-                    const cleanedChildren = recursivelyClean(props.children);
-
-                    return (
-                      <blockquote
-                        className={`relative my-5 overflow-hidden rounded-2xl border-r-[5px] px-5 py-4 ${dark ? style.dark : style.light
-                          }`}
-                        {...props}
-                      >
-                        <div
-                          className={
-                            type === 'quran'
-                              ? 'text-[17px] md:text-[18px] leading-[2.05] font-semibold'
-                              : type === 'reference'
-                                ? 'text-[14px] md:text-[15px] leading-[1.85] font-medium opacity-90'
-                                : 'text-[15px] md:text-[16px] leading-[1.95] font-semibold'
-                          }
-                        >
-                          {cleanedChildren}
-                        </div>
-                      </blockquote>
-                    );
-                  },
-
-                  a: ({ node, ...props }: any) => (
-                    <a
-                      className={dark ? "text-emerald-400 hover:text-emerald-300 font-medium transition-colors underline underline-offset-4" : "text-purple-600 hover:text-purple-800 font-medium transition-colors underline underline-offset-4"}
-                      {...props}
-                    />
-                  ),
-
-                  hr: () => null,
-
-                  code: ({ node, ...props }: any) => (
-                    <code
-                      className={`px-1.5 py-0.5 rounded-md text-sm font-mono ${dark
-                        ? 'bg-emerald-950/50 text-emerald-200'
-                        : 'bg-purple-100/60 text-purple-900 border border-purple-200/60'
-                        }`}
-                      {...props}
-                    />
-                  ),
-                };
-
                 return structuredFrames.map((mainFrame, idx) => (
                   <div
                     key={idx}
-                    className={`p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border overflow-hidden transition-all duration-300 flex flex-col gap-2 ${dark
-                      ? 'bg-white/[0.02] hover:bg-white/[0.04] border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
-                      : 'bg-white hover:bg-purple-50/40 border-purple-200/50 shadow-[0_2px_12px_rgba(124,58,237,0.03)]'
+                    className={`p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border flex flex-col gap-2 ${dark
+                      ? 'bg-white/[0.02] border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
+                      : 'bg-white border-purple-200/50 shadow-[0_2px_12px_rgba(124,58,237,0.03)]'
                       }`}
                   >
                     {mainFrame.content.trim().length > 0 && (
-                      <div dir="rtl" className="w-full text-right font-sans">
+                      <div dir="rtl" className="w-full text-right">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={markdownComponents as any}
@@ -691,9 +804,12 @@ export function Bubble({ message, dark, avatarRef, lessonTitle }: { message: Mes
                         {mainFrame.children.map((childContent, cIdx) => (
                           <div
                             key={cIdx}
-                            className={`p-3 sm:p-5 rounded-xl sm:rounded-2xl border overflow-hidden transition-all ${dark ? 'bg-black/20 border-white/10 shadow-inner' : 'bg-[#FAF9FC] border-slate-200/80 shadow-sm'}`}
+                            className={`p-4 sm:p-5 rounded-2xl border ${dark
+                              ? 'bg-gradient-to-br from-[#16062b]/80 via-[#100321]/80 to-[#0a0216]/90 border-purple-500/40 shadow-[0_4px_20px_rgba(168,85,247,0.12)]'
+                              : 'bg-gradient-to-br from-purple-50/90 via-white to-purple-50/40 border-purple-300/90 shadow-[0_2px_15px_rgba(124,58,237,0.08)]'
+                              }`}
                           >
-                            <div dir="rtl" className="w-full text-right font-sans">
+                            <div dir="rtl" className="w-full text-right">
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={markdownComponents as any}
@@ -716,14 +832,14 @@ export function Bubble({ message, dark, avatarRef, lessonTitle }: { message: Mes
               )}
 
               {!isUser && !isStreaming && (
-                <div className="flex justify-end items-center gap-2 mt-1 pt-3 border-t" dir="rtl" style={{ borderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }}>
+                <div className="flex flex-wrap justify-end items-center gap-1.5 sm:gap-2 mt-1 pt-3 border-t max-w-full" dir="rtl" style={{ borderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }}>
                   <AudioReaderButton text={displayedText} dark={dark} />
 
                   <button
                     onClick={handleCopy}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[13px] font-bold transition-all duration-300 hover:scale-105 ${dark
-                      ? 'text-white/60 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 shadow-sm'
-                      : 'text-primary/70 hover:text-primary bg-primary/5 hover:bg-primary/10 border border-primary/10 hover:border-primary/20 shadow-sm'
+                      ? 'text-purple-300 hover:text-purple-100 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 shadow-sm'
+                      : 'text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 shadow-sm'
                       }`}
                   >
                     {isCopied ? (
@@ -739,7 +855,7 @@ export function Bubble({ message, dark, avatarRef, lessonTitle }: { message: Mes
                     disabled={isExportingPDF}
                     title="حفظ الرسالة كـ PDF"
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[13px] font-bold transition-all duration-300 hover:scale-105 ${dark
-                      ? 'text-purple-300 hover:text-white bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 shadow-sm'
+                      ? 'text-purple-300 hover:text-purple-100 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 shadow-sm'
                       : 'text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 shadow-sm'
                       } ${isExportingPDF ? 'opacity-50 cursor-wait' : ''}`}
                   >
@@ -763,11 +879,11 @@ export function Bubble({ message, dark, avatarRef, lessonTitle }: { message: Mes
 export function TypingBubble({ dark, avatarRef }: { dark: boolean; avatarRef?: React.RefObject<HTMLSpanElement | null> }) {
   return (
     <div className="flex justify-end animate-in fade-in duration-500">
-      <div className="flex items-start gap-3 flex-row-reverse">
+      <div className="flex gap-1.5 sm:gap-3 flex-col items-end w-full sm:w-auto">
         <span ref={avatarRef}>
           <AvatarLogo dark={dark} />
         </span>
-        <div className={`flex items-center gap-1.5 rounded-2xl rounded-tl-sm border px-5 py-4 shadow-sm ${dark ? 'bg-[#1a0730]/80 border-white/10' : 'bg-white border-primary/10'}`}>
+        <div className={`flex items-center gap-1.5 rounded-[20px] rounded-tl-none border px-5 py-4 shadow-sm ${dark ? 'bg-[#1a0730]/80 border-white/10' : 'bg-white border-primary/10'}`}>
           {[0, 1, 2].map((i) => (
             <span
               key={i}
@@ -818,6 +934,240 @@ function CustomChip({ label, icon: Icon, color, dark }: { label: string; icon: a
       </span>
     </div>
   )
+}
+
+function getDomainBadgeInfo(domain?: string) {
+  if (!domain) return null
+  const lower = domain.toLowerCase()
+  if (lower.includes('fiqh') || lower.includes('فقه')) return { label: 'القسم: الفقه', icon: BookOpen, color: '#10B981' }
+  if (lower.includes('seerah') || lower.includes('سيرة') || lower.includes('تاريخ')) return { label: 'القسم: السيرة والتاريخ', icon: Book, color: '#F59E0B' }
+  if (lower.includes('aqeedah') || lower.includes('عقيدة')) return { label: 'القسم: العقيدة', icon: Feather, color: '#8B5CF6' }
+  if (lower.includes('tafsir') || lower.includes('تفسير') || lower.includes('quran') || lower.includes('قرآن')) return { label: 'القسم: التفسير وعلوم القرآن', icon: FileText, color: '#EC4899' }
+  if (lower.includes('hadith') || lower.includes('حديث')) return { label: 'القسم: الحديث وعلومه', icon: BookOpen, color: '#3B82F6' }
+  if (lower.includes('nahw') || lower.includes('لغة') || lower.includes('نحو')) return { label: 'القسم: اللغة العربية والنحو', icon: FileText, color: '#06B6D4' }
+  if (lower.includes('adab') || lower.includes('آداب')) return { label: 'القسم: الآداب والأخلاق', icon: Feather, color: '#10B981' }
+  return { label: `القسم: ${domain}`, icon: BookOpen, color: '#A855F7' }
+}
+
+function getModeBadgeInfo(mode?: string) {
+  if (!mode) return null
+  const lower = mode.toLowerCase()
+  if (lower.includes('student')) return { label: 'النمط: طالب علم', color: '#10B981' }
+  return { label: 'النمط: إجابة ميسّرة', color: '#A855F7' }
+}
+
+function ResponseMetadataBadges({ domain, mode, dark }: { domain?: string; mode?: string; dark: boolean }) {
+  const domainInfo = getDomainBadgeInfo(domain)
+  const modeInfo = getModeBadgeInfo(mode)
+
+  if (!domainInfo && !modeInfo) return null
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 pb-2.5 mb-2 border-b w-full" dir="rtl" style={{ borderColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(124,58,237,0.1)' }}>
+      {domainInfo && (
+        <CustomChip
+          label={domainInfo.label}
+          icon={domainInfo.icon}
+          color={domainInfo.color}
+          dark={dark}
+        />
+      )}
+      {modeInfo && (
+        <CustomChip
+          label={modeInfo.label}
+          icon={Feather}
+          color={modeInfo.color}
+          dark={dark}
+        />
+      )}
+    </div>
+  )
+}
+
+function getCitation(citations: CitationDTO[] | Record<string, CitationDTO> | undefined, num: number): CitationDTO | undefined {
+  if (!citations) return undefined;
+  if (Array.isArray(citations)) {
+    return citations[num - 1] || citations.find(c => c.pageId === num || c.page_id === num);
+  }
+  if (typeof citations === 'object') {
+    return citations[`cit_${num}`] || citations[num.toString()] || citations[(num - 1).toString()];
+  }
+  return undefined;
+}
+
+function CitationPill({ ids, citations, dark }: { ids: number[]; citations?: CitationDTO[] | Record<string, CitationDTO>; dark: boolean }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const pillRef = useRef<HTMLSpanElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setIsOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      setIsOpen(false);
+    }, 300);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (pillRef.current && !pillRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const matchingCitations = ids
+    .map(num => getCitation(citations, num))
+    .filter(Boolean) as CitationDTO[];
+
+  if (matchingCitations.length === 0) {
+    return <span className="text-xs opacity-75 font-mono px-1">[{ids.join(', ')}]</span>;
+  }
+
+  const primary = matchingCitations[0];
+  const rawBookTitle = primary.bookTitle || primary.book_title || 'مصدر شرعي';
+  const truncatedTitle = rawBookTitle.length > 15 ? `${rawBookTitle.slice(0, 15)}...` : rawBookTitle;
+  const extraCount = matchingCitations.length - 1;
+
+  return (
+    <span
+      ref={pillRef}
+      className="relative inline-block mx-1 my-0.5 align-middle select-none z-10"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(prev => !prev);
+        }}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border text-[12px] font-semibold transition-all duration-200 ease-out cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98] ${dark
+          ? 'bg-purple-500/15 text-purple-300 border-purple-500/30 hover:bg-purple-500/30 hover:border-purple-400 shadow-purple-950/40'
+          : 'bg-purple-100/80 text-purple-900 border-purple-300/80 hover:bg-purple-200 hover:border-purple-400 shadow-purple-100/50'
+          }`}
+      >
+        <BookOpen size={12} className="shrink-0 text-purple-400" strokeWidth={2.5} />
+        <span className="font-sans font-bold">{truncatedTitle}</span>
+        {extraCount > 0 && (
+          <span className={`px-1.5 py-0.2 rounded text-[10.5px] font-extrabold ${dark ? 'bg-purple-400/20 text-purple-200' : 'bg-purple-200 text-purple-800'}`}>
+            +{extraCount}
+          </span>
+        )}
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.93 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.94 }}
+            transition={{
+              type: 'spring',
+              stiffness: 420,
+              damping: 28,
+              mass: 0.75,
+            }}
+            className="absolute bottom-full pb-2.5 right-0 z-[100] w-72 sm:w-80 origin-bottom-right"
+            dir="rtl"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            <div
+              className={`p-3.5 rounded-2xl border shadow-2xl backdrop-blur-xl transition-shadow duration-300 ${dark ? 'bg-[#0f041c]/95 border-purple-500/30 text-white shadow-black/80' : 'bg-white/95 border-purple-200 text-slate-900 shadow-purple-900/15'
+                }`}
+            >
+              <div className="flex flex-col gap-3 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                {matchingCitations.map((cit, idx) => {
+                  const bTitle = cit.bookTitle || cit.book_title || 'بدون عنوان';
+                  const author = cit.author || '';
+                  const authorDeath = cit.authorDeath || cit.author_death || '';
+                  const part = cit.part && cit.part !== '0' ? `جـ ${cit.part}` : '';
+                  const page = (cit.pageId || cit.page_id) ? `ص ${cit.pageId || cit.page_id}` : '';
+                  const sUrl = cit.sourceUrl || cit.source_url || 'https://kitabonline.org';
+                  const mColor = getMadhhabHex(cit.madhhab || '');
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`p-2.5 rounded-xl border flex flex-col gap-2 ${dark ? 'bg-white/[0.03] border-white/10' : 'bg-purple-50/50 border-purple-100'
+                        }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-xs sm:text-sm text-purple-400 font-sans leading-snug break-words">
+                            {bTitle}
+                          </span>
+                          {author && (
+                            <span className="text-[11px] opacity-75 font-sans mt-0.5">
+                              {author} {authorDeath && !authorDeath.includes('غير معروف') ? `(${authorDeath})` : ''}
+                            </span>
+                          )}
+                        </div>
+                        <a
+                          href={sUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className={`shrink-0 flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all hover:scale-105 ${dark
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30'
+                            : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700 shadow-sm'
+                            }`}
+                        >
+                          <span>عرض المصدر</span>
+                          <ExternalLink size={11} />
+                        </a>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                        {cit.madhhab && (
+                          <span className="px-1.5 py-0.5 rounded text-[10.5px] font-bold" style={{ backgroundColor: hexToRgba(mColor, 0.15), color: mColor }}>
+                            {cit.madhhab}
+                          </span>
+                        )}
+                        {(part || page) && (
+                          <span className={`px-1.5 py-0.5 rounded text-[10.5px] font-semibold ${dark ? 'bg-white/10 text-slate-300' : 'bg-slate-200/80 text-slate-700'}`}>
+                            {[part, page].filter(Boolean).join(' | ')}
+                          </span>
+                        )}
+                        {cit.hierarchy && (
+                          <span
+                            title={cit.hierarchy}
+                            className={`inline-block px-2.5 py-0.5 rounded-lg text-[10.5px] font-semibold leading-relaxed transition-all duration-300 ease-out cursor-pointer text-ellipsis overflow-hidden whitespace-nowrap max-w-[180px] sm:max-w-[210px] hover:max-w-full hover:whitespace-normal hover:overflow-visible ${dark
+                              ? 'bg-purple-950/60 text-purple-300 border border-purple-500/30 hover:bg-purple-900/90 hover:border-purple-400/80 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)]'
+                              : 'bg-purple-100/90 text-purple-900 border border-purple-300/70 hover:bg-purple-200/90 hover:border-purple-400 hover:shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                              }`}
+                          >
+                            {cit.hierarchy}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </span>
+  );
 }
 
 function HierarchyBreadcrumbs({ hierarchy, dark, color }: { hierarchy: string; dark: boolean; color: string }) {

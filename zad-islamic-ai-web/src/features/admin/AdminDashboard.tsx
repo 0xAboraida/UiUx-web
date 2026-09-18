@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import bgDark from '@/assets/images/image.png'
+import bgDark from '@/assets/images/image.webp'
 
 const TUTOR_ENGINE_URL = import.meta.env.VITE_TUTOR_ENGINE_URL || 'https://abourida-zad-tutor-engine-space.hf.space'
 const API_BASE = TUTOR_ENGINE_URL
@@ -46,7 +46,7 @@ interface LogEntry {
   details?: string
 }
 
-export default function AdminDashboard({ onExit }: { onExit: () => void }) {
+export default function AdminDashboard({ onExit, onNavigateToIngestion }: { onExit: () => void; onNavigateToIngestion?: () => void }) {
   const [hierarchy, setHierarchy] = useState<Record<string, Record<string, string[]>>>({})
   const [loadingBooks, setLoadingBooks] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -537,6 +537,16 @@ export default function AdminDashboard({ onExit }: { onExit: () => void }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {onNavigateToIngestion && (
+            <button
+              onClick={onNavigateToIngestion}
+              className="flex items-center gap-1.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 px-3 py-2 text-xs font-bold transition-all shadow-sm"
+              title="الانتقال إلى واجهة استدخال ومعالجة كتب الذكاء الاصطناعي"
+            >
+              ✨ معالجة الـ AI (Ingestion) ↗
+            </button>
+          )}
+
           {/* System Error & Logs Trigger Button */}
           <button
             onClick={() => setShowLogsDrawer(!showLogsDrawer)}

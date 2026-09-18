@@ -64,11 +64,10 @@ export function StudyChatPanel({
         style={{
           width: panelWidth ? panelWidth : '100%',
         }}
-        className={`flex-1 w-full min-w-[280px] flex flex-col relative h-full backdrop-blur-xl overflow-hidden ${
-          isDark
-            ? 'bg-[#1a0730]/20 border-l border-white/10 text-white'
-            : 'bg-white/95 border-l border-slate-200 text-slate-900 shadow-sm'
-        }`}
+        className={`flex-1 w-full min-w-[280px] flex flex-col relative h-full overflow-hidden transition-colors bg-transparent border-l ${isDark
+            ? 'border-white/10 text-white'
+            : 'border-slate-200 text-slate-900'
+          }`}
       >
         {/* Unified Single-Row Merged Header (Title + Progress + Action + Close) */}
         <StickyStudyPlanHeader
@@ -80,9 +79,15 @@ export function StudyChatPanel({
         />
 
         {/* Messages & Welcome Options Scroll Area */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 space-y-4 sm:space-y-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div 
+          className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 space-y-4 sm:space-y-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          style={{
+            maskImage: 'linear-gradient(to bottom, black calc(100% - 80px), transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 80px), transparent 100%)'
+          }}
+        >
           {/* Initial Welcome 3 Interactive Action Cards */}
-          {currentChunkId && onSelectStartOption && messages.length <= 1 && (
+          {currentChunkId && onSelectStartOption && messages.length === 0 && !loading && (
             <StudyWelcomeActionCards
               chunkTitle={chunkTitle}
               isDark={isDark}
@@ -115,24 +120,21 @@ export function StudyChatPanel({
           )}
 
           {loading && <TypingBubble dark={isDark} />}
-          <div ref={chatEndRef} />
+          <div ref={chatEndRef} className="h-28 w-full shrink-0" />
         </div>
 
         {/* Input Bar */}
-        <div className={`p-4 border-t backdrop-blur-md ${
-          isDark ? 'border-white/10 bg-[#12041f]/80' : 'border-slate-200 bg-slate-50/90 shadow-sm'
-        }`}>
+        <div className="absolute bottom-0 left-0 right-0 p-4 z-20 pb-6 pointer-events-none">
           <form
             onSubmit={(e) => {
               e.preventDefault()
               handleSend()
             }}
-            className="flex w-full max-w-2xl mx-auto items-end gap-3"
+            className="flex w-full max-w-2xl mx-auto items-end gap-3 pointer-events-auto"
           >
             <div className="gradient-border min-w-0 flex-1 rounded-[24px] p-[2.5px] shadow-xl shadow-primary/25 transition-all duration-300">
-              <div className={`flex items-end gap-2 rounded-[22px] py-1.5 pr-4 pl-2 backdrop-blur-md ${
-                isDark ? 'bg-[#1a0730]/90 text-white' : 'bg-white text-slate-900 border border-slate-200'
-              }`}>
+              <div className={`flex items-end gap-2 rounded-[22px] py-1.5 pr-4 pl-2 backdrop-blur-md ${isDark ? 'bg-[#1a0730]/90 text-white' : 'bg-white text-slate-900 border border-slate-200'
+                }`}>
                 <VoiceRecordButton
                   listening={listening}
                   dark={isDark}
@@ -161,9 +163,8 @@ export function StudyChatPanel({
                   placeholder={currentChunkId ? "اكتب سؤالك الشرعي هنا لزاد…" : "اختر درساً أولاً لتبدأ المحادثة…"}
                   disabled={!currentChunkId || loading}
                   aria-label="اكتب سؤالك"
-                  className={`font-sans min-w-0 flex-1 resize-none bg-transparent py-2.5 text-base outline-none disabled:opacity-50 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${
-                    isDark ? 'text-white placeholder:text-white/50' : 'text-slate-900 placeholder:text-slate-400'
-                  }`}
+                  className={`font-sans min-w-0 flex-1 resize-none bg-transparent py-2.5 text-base outline-none disabled:opacity-50 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${isDark ? 'text-white placeholder:text-white/50' : 'text-slate-900 placeholder:text-slate-400'
+                    }`}
                 />
                 <button
                   type="submit"

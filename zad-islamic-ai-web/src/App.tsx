@@ -1,5 +1,5 @@
 import 'regenerator-runtime/runtime'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import darkLogo from '@/assets/images/ZadDarkLogo.png'
 import Navbar from './components/layout/Navbar'
 import Hero from './components/layout/Hero'
@@ -16,16 +16,44 @@ import AdminDashboard from './features/admin/AdminDashboard'
 import AuthPage from './features/auth/AuthPage'
 import type { Book } from './features/knowledge/data'
 import { StudyProvider } from './contexts/StudyContext'
+import DataIngestionAdmin from './components/admin/DataIngestionAdmin'
+import V2PipelineAdmin from './components/admin/V2PipelineAdmin'
+import AdminLibrary from './features/knowledge/AdminLibrary'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { TextSelectionToolbar } from './components/common/TextSelectionToolbar'
 
-type View = 'home' | 'chat' | 'voice' | 'knowledge' | 'study' | 'admin' | 'login' | 'signup'
+type View = 'home' | 'chat' | 'voice' | 'knowledge' | 'study' | 'admin' | 'data_ingestion' | 'v2_pipeline_admin' | 'admin_library' | 'login' | 'signup'
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 40, color: 'red', direction: 'ltr', background: 'white', minHeight: '100vh' }}>
+          <h2>Something went wrong in React:</h2>
+          <pre style={{ whiteSpace: 'pre-wrap' }}>{this.state.error?.toString()}</pre>
+          <pre style={{ whiteSpace: 'pre-wrap', marginTop: 20 }}>{this.state.error?.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function AppContent() {
   const [view, setView] = useState<View>('home')
   const [isNavigating, setIsNavigating] = useState(false)
   const [pendingQuestion, setPendingQuestion] = useState<string | undefined>()
+  const [pendingBook, setPendingBook] = useState<{ id: number | string; title: string; author: string } | null>(null)
   const { isAuthenticated } = useAuth()
   const { isDark } = useTheme()
 
@@ -52,29 +80,37 @@ function AppContent() {
     document.documentElement.lang = 'ar'
   }, [])
 
-  const askAboutBook = (book: Book) => {
-    setPendingQuestion(`حدّثني عن كتاب "${book.title}" للمؤلف ${book.author}، وما أبرز موضوعاته؟`)
+  const askAboutBook = (book: { id: number | string; title: string; author: string }) => {
+    setPendingBook(book)
+    setPendingQuestion(undefined)
     navigate('chat')
   }
 
   const askQuestion = (question: string) => {
     setPendingQuestion(question)
+    setPendingBook(null)
     navigate('chat')
   }
 
-  const openChat = () => isAuthenticated ? navigate('chat') : navigate('login')
+  const openChat = () => {
+    setPendingBook(null)
+    isAuthenticated ? navigate('chat') : navigate('login')
+  }
   const openVoice = () => isAuthenticated ? navigate('voice') : navigate('login')
   const openKnowledge = () => navigate('knowledge')
   const openStudy = () => isAuthenticated ? navigate('study') : navigate('login')
   const openAdmin = () => navigate('admin')
+  const openDataIngestion = () => navigate('data_ingestion')
+  const openV2PipelineAdmin = () => navigate('v2_pipeline_admin')
+  const openAdminLibrary = () => navigate('admin_library')
 
   const renderView = () => {
     if (view === 'login' || view === 'signup') {
       return (
-        <AuthPage 
-          initialMode={view} 
-          onBack={() => navigate('home')} 
-          onSuccess={() => navigate('home')} 
+        <AuthPage
+          initialMode={view}
+          onBack={() => navigate('home')}
+          onSuccess={() => navigate('home')}
         />
       )
     }
@@ -92,13 +128,29 @@ function AppContent() {
       return <VoiceScreen onExit={() => navigate('home')} onOpenText={() => navigate('chat')} />
     }
     if (view === 'knowledge') {
-      return <KnowledgeBase onExit={() => navigate('home')} onAskBook={askAboutBook} />
+      return (
+        <KnowledgeBase
+          onExit={() => navigate('home')}
+          onAskBook={askAboutBook}
+          onLogin={() => navigate('login')}
+          onNavigateGlobal={(targetView) => navigate(targetView as View)}
+        />
+      )
     }
     if (view === 'study') {
       return <StudyMode onExit={() => navigate('home')} />
     }
     if (view === 'admin') {
-      return <AdminDashboard onExit={() => navigate('home')} />
+      return <AdminDashboard onExit={() => navigate('home')} onNavigateToIngestion={() => navigate('v2_pipeline_admin')} />
+    }
+    if (view === 'data_ingestion') {
+      return <DataIngestionAdmin onExit={() => navigate('home')} />
+    }
+    if (view === 'v2_pipeline_admin') {
+      return <V2PipelineAdmin onExit={() => navigate('home')} />
+    }
+    if (view === 'admin_library') {
+      return <AdminLibrary onExit={() => navigate('home')} onNavigateToIngestion={() => navigate('v2_pipeline_admin')} />
     }
 
     return (
@@ -108,6 +160,9 @@ function AppContent() {
           onOpenKnowledge={openKnowledge}
           onOpenStudy={openStudy}
           onOpenAdmin={openAdmin}
+          onOpenDataIngestion={openDataIngestion}
+          onOpenV2PipelineAdmin={openV2PipelineAdmin}
+          onOpenAdminLibrary={openAdminLibrary}
           onOpenVoiceChat={openVoice}
         />
         <main>
@@ -125,8 +180,8 @@ function AppContent() {
   return (
     <StudyProvider>
       <div className="relative min-h-screen w-full overflow-hidden bg-background">
-        <div 
-          key={view === 'login' || view === 'signup' ? 'auth' : view} 
+        <div
+          key={view === 'login' || view === 'signup' ? 'auth' : view}
           className="min-h-screen w-full"
         >
           {renderView()}
@@ -140,9 +195,11 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ErrorBoundary>
     </ThemeProvider>
   )
 }

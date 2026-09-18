@@ -93,7 +93,7 @@ interface StudyContextType {
   clearStudySession: () => void
 }
 
-const StudyContext = createContext<StudyContextType | undefined>(undefined)
+export const StudyContext = createContext<StudyContextType | undefined>(undefined)
 
 // Custom hook to sync state to localStorage
 function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {

@@ -44,6 +44,7 @@ export const domains: Domain[] = [
         books: [
           { title: 'المغني', author: 'ابن قدامة المقدسي' },
           { title: 'زاد المستقنع', author: 'الحجاوي' },
+          { title: 'عمدة الفقه', author: 'ابن قدامة المقدسي' },
         ],
       },
       {

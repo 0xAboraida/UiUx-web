@@ -108,4 +108,6 @@ export interface StudyQuizPanelProps {
   activeQuizId?: number | null
   activeSessionId?: number | null
   onLoadQuiz?: (quizDto: any) => void
+  chunkLoading?: boolean
 }
+

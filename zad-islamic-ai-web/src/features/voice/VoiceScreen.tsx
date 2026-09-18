@@ -3,10 +3,10 @@ import whiteLogo from '@/assets/images/WhiteLogo.png'
 import zadDarkLogo from '@/assets/images/ZadDarkLogo.png'
 import { demoReply } from '../chat/data'
 import { useMicrophoneVolume } from '../../hooks/useMicrophoneVolume'
-import { Sun, Moon, ArrowLeft, AlignRight, MessageCircle, X, Mic, MicOff } from 'lucide-react'
+import { Sun, Moon, ArrowLeft, AlignRight, MessageCircle, X, Mic, MicOff, Wrench, Sparkles, AlertCircle, MessageSquare } from 'lucide-react'
 import VoiceChatButton from '../../components/ui/VoiceChatButton'
-import bgDark from '@/assets/images/image.png'
-import bgLight from '@/assets/images/bg-islamic-light.png'
+import bgDark from '@/assets/images/image.webp'
+import bgLight from '@/assets/images/bg-islamic-light.webp'
 import Starfield from '../../components/layout/Starfield'
 
 type Status = 'idle' | 'listening' | 'thinking' | 'speaking' | 'muted'
@@ -38,6 +38,7 @@ export default function VoiceScreen({ onExit, onOpenText }: { onExit: () => void
   const [reply, setReply] = useState('')
   const [supported, setSupported] = useState(true)
   const [typedIdleText, setTypedIdleText] = useState('')
+  const [showNotice, setShowNotice] = useState(true)
 
   const recognitionRef = useRef<any>(null)
   const transcriptRef = useRef<string>('')
@@ -303,6 +304,77 @@ export default function VoiceScreen({ onExit, onOpenText }: { onExit: () => void
           </button>
         </div>
       </header>
+
+      {/* Persistent Top Banner Notice (when modal is closed) */}
+      {!showNotice && (
+        <div className="mx-6 mb-2 z-20 relative flex items-center justify-between px-4 py-2.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 backdrop-blur-md text-amber-700 dark:text-amber-300 text-xs md:text-sm font-medium">
+          <div className="flex items-center gap-2">
+            <Wrench className="h-4 w-4 shrink-0 animate-pulse text-amber-500" />
+            <span>تنبيه: الوكيل الصوتي حالياً قيد التطوير والصيانة، وسيتوفر قريباً بكامل كفاءته.</span>
+          </div>
+          <button
+            onClick={() => setShowNotice(true)}
+            className="underline text-xs font-bold hover:opacity-80 shrink-0 mr-2"
+          >
+            عرض التفاصيل
+          </button>
+        </div>
+      )}
+
+      {/* Notice Banner / Modal for Voice Agent Under Maintenance */}
+      {showNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className={`relative max-w-lg w-full rounded-3xl p-6 md:p-8 shadow-2xl border transition-all ${
+            dark
+              ? 'bg-[#180829]/95 border-brand-magenta/30 text-white shadow-[0_0_50px_rgba(168,85,247,0.3)]'
+              : 'bg-white/95 border-primary/20 text-brand-deep shadow-2xl'
+          }`}>
+            <button
+              onClick={() => setShowNotice(false)}
+              className="absolute top-4 left-4 p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+              title="إغلاق التنبيه"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex flex-col items-center text-center">
+              <div className="h-16 w-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 mb-4 shadow-inner">
+                <Wrench className="h-8 w-8 animate-bounce" />
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold mb-3">
+                <Sparkles className="w-3.5 h-3.5" /> قيد التطوير والتحديث حالياً
+              </div>
+
+              <h3 className="text-2xl font-bold font-display mb-3">
+                المساعد الصوتي قيد التطوير
+              </h3>
+
+              <p className="text-sm md:text-base leading-relaxed opacity-80 mb-6 max-w-md">
+                نعمل حالياً على تحديث وتطوير الوكيل الصوتي (Voice Agent) لتقديم أفضل تجربة محادثة صوتية تفاعلية مباشرة. وسيكون متاحاً وسيعمل بكامل كفاءته قريباً جداً بإذن الله!
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+                <button
+                  type="button"
+                  onClick={onOpenText}
+                  className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-brand-magenta to-purple-600 hover:from-brand-magenta/90 hover:to-purple-700 text-white font-bold shadow-lg shadow-brand-magenta/25 transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                  <MessageSquare className="w-4 h-4" /> الانتقال للمحادثة النصية
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowNotice(false)}
+                  className="w-full sm:w-auto py-3 px-5 rounded-xl border border-black/10 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 font-semibold text-sm transition-all"
+                >
+                  تصفّح الواجهة
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Center */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 text-center z-10 relative">

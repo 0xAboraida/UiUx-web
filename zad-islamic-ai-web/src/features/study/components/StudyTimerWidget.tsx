@@ -118,7 +118,7 @@ export function StudyTimerWidget({ isDark = true }: StudyTimerWidgetProps) {
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="مؤقت الدراسة والتركيز"
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition-all shadow-lg hover:scale-105 active:scale-95 ${
+          className={`flex h-8 w-8 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all shadow-lg hover:scale-105 active:scale-95 ${
             isDark
               ? 'bg-[#a855f7]/15 backdrop-blur-md border border-[#a855f7]/30 hover:bg-[#a855f7]/25 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] text-purple-100'
               : 'bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 shadow-md'
@@ -126,7 +126,7 @@ export function StudyTimerWidget({ isDark = true }: StudyTimerWidgetProps) {
           title="مؤقت الدراسة والتركيز"
         >
           <div className="transition-all duration-300 hover:rotate-12">
-            <Timer size={20} strokeWidth={2.5} className={isDark ? 'text-purple-100' : 'text-purple-700'} />
+            <Timer size={17} strokeWidth={2.5} className={isDark ? 'text-purple-100' : 'text-purple-700'} />
           </div>
         </button>
       ) : (

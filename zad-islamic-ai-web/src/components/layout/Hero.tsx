@@ -7,8 +7,8 @@ import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognitio
 import TextareaAutosize from 'react-textarea-autosize'
 import whiteLogo from '@/assets/images/WhiteLogo.png'
 import darkLogo from '@/assets/images/ZadDarkLogo.png'
-import bgDark from '@/assets/images/image.png'
-import bgLight from '@/assets/images/bg-islamic-light.png'
+import bgDark from '@/assets/images/image.webp'
+import bgLight from '@/assets/images/bg-islamic-light.webp'
 import { useTheme } from '../../contexts/ThemeContext'
 
 const samplePrompts = [
@@ -164,8 +164,7 @@ export default function Hero({
                 : '0 1px 10px rgba(255,255,255,0.9)',
             }}
           >
-            تطبيقٌ ذكيّ يجيب عن أسئلتك في الفقه والعقيدة والتفسير والحديث
-            بمصادر موثوقة — تحدّث صوتيًا أو اكتب سؤالك، وزادٌ يرشدك بإجابةٍ مُحكمة.
+             منصّةٌ متكامله لمساعدة طالب العلم الشرعي باستخدام الذكاء الاصطناعي مع الإجابات الموثقة من أمهات الكتب
           </p>
 
           {/* Ask input — wrapped in a min-height container to absorb vertical expansion. 
@@ -229,7 +228,7 @@ export default function Hero({
               </div>
 
               {/* ChatGPT-style voice-chat button — sits to the left of the bar */}
-              <VoiceChatButton onClick={onTryVoice} className="h-14 w-14" />
+              <VoiceChatButton onClick={onTryVoice} className="h-14 w-14 -translate-y-1.5" />
             </form>
           </div>
 

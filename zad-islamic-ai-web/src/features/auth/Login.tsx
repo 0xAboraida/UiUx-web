@@ -87,7 +87,7 @@ export default function Login({
 
         const normalizedEmail = email.trim().toLowerCase()
         const isExactAdminEmail = normalizedEmail === 'abouridaadminzad@zad.ai'
-        
+
         const rawRole = returnedUser.role || tokenRole || (isExactAdminEmail ? 'admin' : 'user')
         const role = String(rawRole).toLowerCase()
 
@@ -102,6 +102,7 @@ export default function Login({
       } else {
         throw new Error('لم يتم استلام رمز المصادقة من الخادم')
       }
+    } catch (err: any) {
       setError(
         err.message === 'Invalid email or password.'
           ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
@@ -168,8 +169,8 @@ export default function Login({
                 transition-all
                 duration-300
                 text-[13px]
-                ${dark 
-                  ? 'bg-white/[0.05] border-white/10 text-white hover:border-white/30 hover:bg-white/[0.08] focus:border-[#c084fc]/60 focus:bg-white/[0.07] focus:shadow-[0_0_15px_rgba(192,132,252,0.15)] placeholder:text-white/30' 
+                ${dark
+                  ? 'bg-white/[0.05] border-white/10 text-white hover:border-white/30 hover:bg-white/[0.08] focus:border-[#c084fc]/60 focus:bg-white/[0.07] focus:shadow-[0_0_15px_rgba(192,132,252,0.15)] placeholder:text-white/30'
                   : 'bg-black/[0.03] border-black/10 text-brand-deep hover:border-primary/40 hover:bg-black/[0.05] focus:border-primary/60 focus:bg-white focus:shadow-[0_4px_20px_rgba(122,23,201,0.1)] placeholder:text-slate-400'
                 }
               `}
@@ -251,8 +252,8 @@ export default function Login({
                 duration-300
                 text-[14px]
                 tracking-widest
-                ${dark 
-                  ? 'bg-white/[0.05] border-white/10 text-white hover:border-white/30 hover:bg-white/[0.08] focus:border-[#c084fc]/60 focus:bg-white/[0.07] focus:shadow-[0_0_15px_rgba(192,132,252,0.15)] placeholder:text-white/30' 
+                ${dark
+                  ? 'bg-white/[0.05] border-white/10 text-white hover:border-white/30 hover:bg-white/[0.08] focus:border-[#c084fc]/60 focus:bg-white/[0.07] focus:shadow-[0_0_15px_rgba(192,132,252,0.15)] placeholder:text-white/30'
                   : 'bg-black/[0.03] border-black/10 text-brand-deep hover:border-primary/40 hover:bg-black/[0.05] focus:border-primary/60 focus:bg-white focus:shadow-[0_4px_20px_rgba(122,23,201,0.1)] placeholder:text-slate-400'
                 }
               `}
@@ -291,8 +292,8 @@ export default function Login({
                   border
                   rounded-[5px]
                   transition-all
-                  ${dark 
-                    ? 'border-white/20 bg-white/5 hover:border-white/40 peer-checked:bg-[#9333ea] peer-checked:border-[#9333ea]' 
+                  ${dark
+                    ? 'border-white/20 bg-white/5 hover:border-white/40 peer-checked:bg-[#9333ea] peer-checked:border-[#9333ea]'
                     : 'border-black/15 bg-black/[0.03] hover:border-primary/40 peer-checked:bg-primary peer-checked:border-primary'
                   }
                 `}

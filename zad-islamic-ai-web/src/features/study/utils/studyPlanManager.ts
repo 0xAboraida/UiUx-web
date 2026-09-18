@@ -91,12 +91,10 @@ export const studyPlanManager = {
     const sessionProgress = all[keyId]
     if (!sessionProgress) return null
 
-    // Mark all preceding steps completed, and ensure activeStepId is uncompleted
+    // Mark all preceding steps completed. NEVER un-complete a step to prevent progress bar from going backwards!
     sessionProgress.steps.forEach(s => {
       if (s.id < activeStepId) {
         s.isCompleted = true
-      } else if (s.id === activeStepId) {
-        s.isCompleted = false
       }
     })
 
@@ -123,8 +121,8 @@ export const studyPlanManager = {
     let extractedSteps: string[] = []
 
     // 1. Parse JSON metadata block from native Gemini Tool Function call or inline JSON
-    const jsonMatch = 
-      content.match(/```json\s*([\s\S]*?)\s*```/i) || 
+    const jsonMatch =
+      content.match(/```json\s*([\s\S]*?)\s*```/i) ||
       content.match(/(\{[\s\S]*?"(?:plan_steps|active_step_id|completed_step_id|completed_step_index|next_step_index|action)"[\s\S]*?\})/i)
 
     if (jsonMatch) {
@@ -169,7 +167,7 @@ export const studyPlanManager = {
       if (stepCompletedId && stepCompletedId > 0) {
         this.markStepCompleted(keyId, stepCompletedId, true)
       }
-      
+
       if (activeStepId && activeStepId > 1) {
         this.markStepActive(keyId, activeStepId)
       }

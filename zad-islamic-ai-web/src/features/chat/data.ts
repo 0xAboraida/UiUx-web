@@ -5,6 +5,9 @@ export type Message = {
   role: Role
   text: string
   citations?: CitationDTO[]
+  domain?: string
+  responseMode?: string
+  response_mode?: string
   stream?: boolean
 }
 

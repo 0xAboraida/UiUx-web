@@ -39,7 +39,7 @@ export default function Showcase() {
   return (
     <section id="showcase" className="mx-auto max-w-6xl px-5 py-24 md:py-32">
       <div className="mx-auto max-w-2xl text-center">
-        <span className="text-sm font-semibold uppercase tracking-wider text-accent">لقطات من التطبيق</span>
+        <span className="text-sm font-semibold uppercase tracking-wider text-accent">لقطات من المنصّة</span>
         <h2 className="mt-3 font-display text-4xl text-foreground md:text-5xl">
           تصميمٌ يليق <span className="brand-text-gradient">بالعلم</span>
         </h2>

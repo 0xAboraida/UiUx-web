@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useDeferredValue, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import bgDark from '@/assets/images/image.png'
-import bgLight from '@/assets/images/bg-islamic-light.png'
+import bgDark from '@/assets/images/image.webp'
+import bgLight from '@/assets/images/bg-islamic-light.webp'
 import whiteLogo from '@/assets/images/WhiteLogo.png'
 import darkLogo from '@/assets/images/ZadDarkLogo.png'
 import {
@@ -58,7 +58,8 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
   const [input, setInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const deferredSearchQuery = useDeferredValue(searchQuery)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false) // Chat loading
+  const [isChunkLoading, setIsChunkLoading] = useState(false) // Document chunk loading
   const [mindmapLoading, setMindmapLoading] = useState(false)
   const [quizLoading, setQuizLoading] = useState(false)
   const [activeQuizId, setActiveQuizId] = useState<number | null>(null)
@@ -145,11 +146,28 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
       // 2. Fetch session chat messages from backend database
       const savedMessages = await studyApi.getSessionMessages(sess.id).catch(() => [])
       if (savedMessages && savedMessages.length > 0) {
-        const uiMsgs = savedMessages.map(m => ({
-          id: m.id.toString(),
-          role: (m.role === 'user' ? 'user' : 'tutor') as 'user' | 'tutor',
-          text: m.content
-        }))
+        const uiMsgs = savedMessages.map(m => {
+          let cleanText = m.content;
+          
+          if (m.role === 'user') {
+            if (cleanText.includes('ملاحظات حتمية للعمل') || cleanText.includes('أنا كطالب أود البدء في دراسة درس')) {
+              cleanText = 'أود الحصول على خطة تفاعلية لمذاكرة هذا الدرس.';
+            } else if (cleanText.includes('أنا كطالب أود الحصول على تلخيص مركز وشامل لدرس')) {
+              cleanText = 'أود الحصول على تلخيص مركز ومُتوازن لهذا الدرس (لا إفراط ولا تفريط).';
+            } else if (cleanText.includes('مرحباً يا زاد، أود فتح باب النقاش المباشر والأسئلة حول درس')) {
+              cleanText = '💬 أود بدء التحاور المباشر مع زاد وطرح أسئلتي في هذا الدرس.';
+            }
+          } else {
+            const { cleanText: parsed } = studyPlanManager.parseLLMResponse(cleanText, sess.id, true);
+            cleanText = parsed;
+          }
+
+          return {
+            id: m.id.toString(),
+            role: (m.role === 'user' ? 'user' : 'tutor') as 'user' | 'tutor',
+            text: cleanText
+          };
+        })
         setMessages(uiMsgs)
 
         const historyFormatted = savedMessages.map(m => ({
@@ -266,24 +284,76 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
     return () => clearTimeout(timer)
   }, [focusTarget])
 
-  const fetchTree = () => {
-    setTreeLoading(true)
-    studyApi.getLibraryTrees(true)
-      .then(data => {
-        if (data && data.tree) {
-          setTreeData(data.tree)
+  const fetchTree = async () => {
+    try {
+      // 1. Load from cache immediately to show UI instantly
+      const cachedTreeStr = localStorage.getItem('zad_library_tree')
+      const cachedVersionStr = localStorage.getItem('zad_library_version')
+      
+      let hasValidCache = false
+      if (cachedTreeStr) {
+        try {
+          const parsedCache = JSON.parse(cachedTreeStr)
+          if (parsedCache && parsedCache.length > 0) {
+            setTreeData(parsedCache)
+            hasValidCache = true
+          }
+        } catch (e) {
+          console.warn('Failed parsing cached tree', e)
         }
-      })
-      .catch(() => {
+      }
+
+      if (!hasValidCache) setTreeLoading(true)
+
+      // 2. Check version from Tutor Engine (Fast & Lightweight)
+      let currentVersion = null
+      try {
+        const versionRes = await fetch(`${API_BASE}/api/v1/library/version`)
+        const versionData = await versionRes.json()
+        if (versionData.success) {
+          currentVersion = versionData.version || versionData.last_updated
+        }
+      } catch (e) {
+        console.warn('Failed to fetch library version', e)
+      }
+
+      // 3. If version matches, we are done!
+      if (hasValidCache && currentVersion && cachedVersionStr === String(currentVersion)) {
+        setTreeLoading(false)
+        return
+      }
+
+      // 4. Version mismatch or no cache -> Fetch full tree (forceRefresh = false)
+      setTreeLoading(true)
+      let newTreeData = null
+      
+      try {
+        const data = await studyApi.getLibraryTrees(false)
+        if (data && data.tree) newTreeData = data.tree
+      } catch (err) {
         // Fallback to direct Python FastAPI
-        fetch(`${API_BASE}/api/v1/library/trees?force_refresh=true`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.success && data.tree) setTreeData(data.tree)
-          })
-          .catch(console.error)
-      })
-      .finally(() => setTreeLoading(false))
+        const fallbackRes = await fetch(`${API_BASE}/api/v1/library/trees?force_refresh=false`)
+        const fallbackData = await fallbackRes.json()
+        if (fallbackData.success && fallbackData.tree) newTreeData = fallbackData.tree
+      }
+
+      // 5. Save to state and cache
+      if (newTreeData) {
+        setTreeData(newTreeData)
+        try {
+          localStorage.setItem('zad_library_tree', JSON.stringify(newTreeData))
+          if (currentVersion) {
+            localStorage.setItem('zad_library_version', String(currentVersion))
+          }
+        } catch (e) {
+          console.warn('Failed saving tree to cache (might be too large)', e)
+        }
+      }
+    } catch (error) {
+      console.error('Error in fetchTree pipeline:', error)
+    } finally {
+      setTreeLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -297,6 +367,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
   }, [])
 
   const executeChunkSelect = async (chunkId: string, title: string, fullPath: string) => {
+    setIsChunkLoading(true)
     setCurrentChunkId(chunkId)
     setActiveSessionId(null)
     setPendingPlanSteps([])
@@ -356,6 +427,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
     } catch (e) {
       console.error(e)
     } finally {
+      setIsChunkLoading(false)
       setLoading(false)
     }
   }
@@ -911,22 +983,22 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
 
       {/* Background with Dark/Light styling */}
       {isDark ? (
-        <div className="absolute inset-0 bg-[#0f041c] z-0">
+        <div className="absolute inset-0 z-0 pointer-events-none">
           <img
             src={bgDark}
             alt=""
-            className="h-full w-full object-cover opacity-40 mix-blend-screen"
+            className="h-full w-full object-cover opacity-100"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0f041c] via-[#0f041c]/80 to-transparent" />
+          <div className="absolute inset-0 bg-[#12041f]/60" />
         </div>
       ) : (
-        <div className="absolute inset-0 bg-[#FAF9FC] z-0">
+        <div className="absolute inset-0 z-0 pointer-events-none">
           <img
             src={bgLight}
             alt=""
-            className="h-full w-full object-cover opacity-25 mix-blend-multiply pointer-events-none"
+            className="h-full w-full object-cover opacity-100"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#FAF9FC] via-[#FAF9FC]/80 to-transparent" />
+          <div className="absolute inset-0 bg-white/40" />
         </div>
       )}
 
@@ -1176,9 +1248,8 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
 
       {/* Dedicated Mobile Navigation Bar (< 768px) */}
       {!isHeaderCollapsed && (
-        <div className={`flex md:hidden w-full items-center justify-around px-2 py-1.5 border-b backdrop-blur-xl z-30 shrink-0 gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden ${
-          isDark ? 'bg-[#12041f]/95 border-white/10 text-white shadow-lg' : 'bg-white/95 border-slate-200 text-slate-800 shadow-md'
-        }`}>
+        <div className={`flex md:hidden w-full items-center justify-around px-2 py-1.5 border-b backdrop-blur-xl z-30 shrink-0 gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden ${isDark ? 'bg-[#12041f]/95 border-white/10 text-white shadow-lg' : 'bg-white/95 border-slate-200 text-slate-800 shadow-md'
+          }`}>
           {/* 1. الفهرس */}
           <button
             onClick={() => {
@@ -1189,15 +1260,14 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
               setIsQuizOpen(false)
               focusPanel('sidebar')
             }}
-            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${
-              isSidebarOpen
+            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${isSidebarOpen
                 ? isDark
                   ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 ring-1 ring-purple-400'
                   : 'bg-purple-600 text-white shadow-md'
                 : isDark
                   ? 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
                   : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
-            }`}
+              }`}
           >
             <Menu size={14} className={isSidebarOpen ? 'text-white' : 'text-teal-400'} />
             <span>الفهرس</span>
@@ -1213,15 +1283,14 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
               setIsQuizOpen(false)
               focusPanel('document')
             }}
-            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${
-              isDocumentOpen
+            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${isDocumentOpen
                 ? isDark
                   ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 ring-1 ring-purple-400'
                   : 'bg-purple-600 text-white shadow-md'
                 : isDark
                   ? 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
                   : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
-            }`}
+              }`}
           >
             <BookOpen size={14} className={isDocumentOpen ? 'text-white' : 'text-sky-400'} />
             <span>النص الأصلي</span>
@@ -1237,15 +1306,14 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
               setIsQuizOpen(false)
               focusPanel('chat')
             }}
-            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${
-              isChatOpen
+            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${isChatOpen
                 ? isDark
                   ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 ring-1 ring-purple-400'
                   : 'bg-purple-600 text-white shadow-md'
                 : isDark
                   ? 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
                   : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
-            }`}
+              }`}
           >
             <MessageCircle size={14} className={isChatOpen ? 'text-white' : 'text-purple-400'} />
             <span>المحادثة</span>
@@ -1261,15 +1329,14 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
               setIsQuizOpen(false)
               focusPanel('mindmap')
             }}
-            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${
-              isMindmapOpen
+            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${isMindmapOpen
                 ? isDark
                   ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 ring-1 ring-purple-400'
                   : 'bg-purple-600 text-white shadow-md'
                 : isDark
                   ? 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
                   : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
-            }`}
+              }`}
           >
             <Brain size={14} className={isMindmapOpen ? 'text-white' : 'text-sky-400'} />
             <span>الخريطة</span>
@@ -1285,15 +1352,14 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
               setIsMindmapOpen(false)
               focusPanel('quiz')
             }}
-            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${
-              isQuizOpen
+            className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-xs font-black transition-all shrink-0 whitespace-nowrap ${isQuizOpen
                 ? isDark
                   ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 ring-1 ring-purple-400'
                   : 'bg-purple-600 text-white shadow-md'
                 : isDark
                   ? 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
                   : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
-            }`}
+              }`}
           >
             <ClipboardList size={14} className={isQuizOpen ? 'text-white' : 'text-emerald-400'} />
             <span>التقييم</span>
@@ -1392,12 +1458,12 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                 >
                   <StudyDocument
                     isDocumentOpen={isDocumentOpen}
-                    documentWidth={(isMobile || openPanelNames.length === 1) ? undefined : documentWidth}
+                    documentWidth={documentWidth}
                     setIsDocumentOpen={setIsDocumentOpen}
                     currentChunkId={currentChunkId}
                     chunkMeta={chunkMeta}
                     chunkText={chunkText}
-                    loading={loading}
+                    loading={isChunkLoading}
                     mindmapLoading={mindmapLoading}
                     quizLoading={quizLoading}
                     handleGenerateMindmap={handleGenerateMindmap}
@@ -1481,6 +1547,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                     panelWidth={(isMobile || openPanelNames.length === 1) ? undefined : mindmapWidth}
                     startResizing={() => { }}
                     isDark={isDark}
+                    chunkLoading={isChunkLoading}
                   />
                 </motion.div>
 
@@ -1525,6 +1592,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
                       activeQuizId={activeQuizId}
                       activeSessionId={activeSessionId}
                       onLoadQuiz={handleLoadQuiz}
+                      chunkLoading={isChunkLoading}
                     />
                   </PanelErrorBoundary>
                 </motion.div>
