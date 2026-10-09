@@ -1572,22 +1572,27 @@ export default function KnowledgeBase({
                         type="button"
                         onClick={() => setActiveInfoBook(book)}
                         className="p-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-muted-foreground hover:text-brand-magenta hover:bg-brand-magenta/10 transition-all flex items-center justify-center cursor-pointer"
-                        title="معلومات وتفاصيل الكتاب">
-                        <Info className="w-3.5 h-3.5" />
+                        title="معلومات وتفاصيل الكتاب"
+                      >
+                        <Info className="w-4 h-4" />
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => toggleFavorite(book.id || book.title)}
-                        className={`p-1.5 rounded-xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center cursor-pointer ${
-                          isFav
-                            ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-500 border-rose-200 dark:border-rose-900/40'
-                            : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20'
-                        }`}
-                        title={isFav ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}
-                      >
-                        <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-current text-rose-500' : ''}`} />
-                      </button>
+                      {(typeof toggleFavorite === 'function') && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(book.id ?? book.title);
+                          }}
+                          className={`p-1.5 rounded-xl border transition-all flex items-center justify-center active:scale-90 ${isFav
+                            ? 'border-rose-500/30 text-rose-500 bg-rose-500/10'
+                            : 'border-slate-200 dark:border-white/10 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10'
+                            }`}
+                          title={isFav ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}
+                        >
+                          <Heart className={`w-4 h-4 ${isFav ? 'fill-current text-rose-500' : ''}`} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -1641,15 +1646,13 @@ export default function KnowledgeBase({
               <button
                 type="button"
                 onClick={item.action}
-                className={`relative flex items-center justify-center transition-all duration-300 rounded-full cursor-pointer ${
-                  compact
+                className={`relative flex items-center justify-center transition-all duration-300 rounded-full cursor-pointer ${compact
                     ? 'text-[11px] sm:text-xs px-2.5 py-1'
                     : 'text-xs sm:text-sm lg:text-[14px] px-3 sm:px-3.5 py-1.5'
-                } font-bold ${
-                  active
+                  } font-bold ${active
                     ? 'bg-brand-magenta text-white shadow-md shadow-brand-magenta/35 scale-[1.02]'
                     : 'text-slate-800 dark:text-slate-100 hover:text-brand-magenta dark:hover:text-purple-300 hover:bg-white/40 dark:hover:bg-white/10'
-                }`}
+                  }`}
               >
                 <span>{item.label}</span>
               </button>
@@ -1727,10 +1730,10 @@ export default function KnowledgeBase({
 
             {/* UNIFIED TOP NAVBAR */}
             <header className={`z-50 w-full transition-all duration-300 ${activeMainTab === 'home'
-                ? isScrolledPastSearch
-                  ? 'fixed top-0 left-0 right-0 bg-white/95 dark:bg-[#0c0218]/95 backdrop-blur-xl border-b border-purple-200/60 dark:border-purple-500/25 shadow-md py-2 px-4 sm:px-6 lg:px-8 animate-in slide-in-from-top-2 duration-300'
-                  : 'bg-transparent border-b border-transparent py-4 px-4 sm:px-6 lg:px-8'
-                : 'sticky top-0 bg-white/95 dark:bg-[#0c0218]/95 border-b border-slate-200/80 dark:border-purple-500/25 backdrop-blur-xl py-2.5 px-4 sm:px-6 lg:px-8 shadow-xs'
+              ? isScrolledPastSearch
+                ? 'fixed top-0 left-0 right-0 bg-white/95 dark:bg-[#0c0218]/95 backdrop-blur-xl border-b border-purple-200/60 dark:border-purple-500/25 shadow-md py-2 px-4 sm:px-6 lg:px-8 animate-in slide-in-from-top-2 duration-300'
+                : 'bg-transparent border-b border-transparent py-4 px-4 sm:px-6 lg:px-8'
+              : 'sticky top-0 bg-white/95 dark:bg-[#0c0218]/95 border-b border-slate-200/80 dark:border-purple-500/25 backdrop-blur-xl py-2.5 px-4 sm:px-6 lg:px-8 shadow-xs'
               }`}>
               <div className="w-full flex items-center justify-between gap-2 sm:gap-4">
 
@@ -2369,7 +2372,7 @@ export default function KnowledgeBase({
                         title={sortAsc ? "الترتيب الحالي: من المتقدمين إلى المتأخرين (تصاعدي)" : "الترتيب الحالي: من المتأخرين إلى المتقدمين (تنازلي)"}
                       >
                         <ArrowUpDown className="w-4 h-4 text-brand-magenta" />
-                        <span>{sortAsc ? 'الأقدم وفاة ⏳' : 'الأحدث وفاة ⌛'}</span>
+                        <span>{sortAsc ? 'الأقدم وفاة ⁳' : 'الأحدث وفاة ⌛'}</span>
                       </button>
 
                       {/* Grid / List Mode */}

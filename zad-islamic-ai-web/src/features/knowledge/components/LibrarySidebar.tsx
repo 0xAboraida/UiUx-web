@@ -68,7 +68,7 @@ export default function LibrarySidebar({
   return (
     <>
       <aside
-        className={`fixed top-0 right-0 z-50 h-screen w-80 sm:w-96 transition-all duration-300 ease-in-out flex flex-col border-l shadow-2xl ${isOpen
+        className={`fixed top-0 right-0 z-[70] h-screen w-80 sm:w-96 transition-all duration-300 ease-in-out flex flex-col border-l shadow-2xl ${isOpen
           ? 'translate-x-0 pointer-events-auto visible opacity-100'
           : 'translate-x-full pointer-events-none invisible opacity-0'
           } ${theme === 'dark'
