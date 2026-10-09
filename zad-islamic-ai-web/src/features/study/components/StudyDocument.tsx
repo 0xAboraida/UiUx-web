@@ -221,7 +221,7 @@ export function StudyDocument({
             </button>
           </div>
 
-          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 study-document-scrollbar">
             {!currentChunkId ? (
               <div className={`flex flex-col items-center justify-center rounded-3xl border p-12 text-center backdrop-blur-md shadow-xl mt-10 ${isDark ? 'border-white/10 bg-gradient-to-b from-white/5 to-transparent' : 'border-slate-200 bg-slate-50'
                 }`}>
@@ -392,7 +392,7 @@ export function StudyDocument({
                   />
 
                   {/* Turath Book Authentic Page Navigator (Floating on bottom edges) */}
-                  {currentChunkId?.startsWith('turath_') && viewMode === 'paged' && onPageChange && (
+                  {currentChunkId?.startsWith('turath_') && viewMode === 'paged' && onPageChange && !chunkText?.includes('turath-empty-parent-notice') && (
                     <div className="absolute -bottom-[17px] left-0 right-0 flex items-center justify-between px-8 pointer-events-none z-20">
                       <button
                         type="button"

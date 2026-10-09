@@ -156,6 +156,15 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
   }, [])
 
   const handleSelectSavedSession = async (sess: StudySessionDto) => {
+    if (sess.chunkId && sess.chunkId.startsWith('turath_')) {
+      await executeChunkSelect(
+        sess.chunkId,
+        sess.sectionTitle || sess.bookTitle,
+        sess.domain || sess.bookTitle
+      )
+      return
+    }
+
     setCurrentChunkId(sess.chunkId)
     setChunkTitle(sess.bookTitle || 'جلسة دراسية')
     setHeaderSubtitle(sess.sectionTitle || sess.domain || '')
@@ -505,7 +514,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
         const cached = await idbGetTurathBookTree(turathId)
         if (cached && cached.children && cached.children.length > 0) {
           const isFallback = cached.children.length === 1 && cached.children[0].title === 'قراءة الكتاب (من البداية)'
-          const isOldFormat = Boolean(!cached.children[0].toc_id || !cached.children[0].chunk_id?.includes('_v3'))
+          const isOldFormat = Boolean(!cached.children[0].toc_id || !cached.children[0].chunk_id?.includes('_v5'))
           if (!isFallback && !isOldFormat) {
             setTreeData(prev => updateBookInTree(prev, bookNode.title, cached.children, turathId))
             return cached.children
@@ -673,7 +682,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
         const parts = chunkId.split('_')
         const turathId = parseInt(parts[1], 10)
         const startPage = parseInt(parts[3], 10) || 1
-        const endPage = parts[5] ? parseInt(parts[5], 10) : startPage
+        let endPage = parts[5] ? parseInt(parts[5], 10) : startPage
         let startTocIndex = parts[7] ? parseInt(parts[7], 10) : undefined
         let endTocIndex = parts[9] ? parseInt(parts[9], 10) : undefined
 
@@ -681,6 +690,17 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
         let resolvedStartTocId = selectedNode?.toc_id || (startTocIndex ? `toc-${startTocIndex}` : undefined)
         let resolvedEndTocId = selectedNode?.next_toc_id || (endTocIndex && endTocIndex > 0 ? `toc-${endTocIndex}` : undefined)
         let nextChapterTitle = selectedNode?.next_title
+
+        // CRITICAL: If this node is a parent folder that has sub-chapters (children):
+        // Its boundary MUST stop at its very first child! It never encompasses all its children or the next main book!
+        if (selectedNode?.children && selectedNode.children.length > 0) {
+          const firstChild = selectedNode.children[0]
+          if (firstChild) {
+            endPage = Math.max(startPage, firstChild.page || startPage)
+            if (firstChild.toc_id) resolvedEndTocId = firstChild.toc_id
+            if (firstChild.title) nextChapterTitle = firstChild.title
+          }
+        }
 
         // Fallback: If not passed as selectedNode, locate in cached chapters
         if (!resolvedStartTocId || !resolvedEndTocId) {
@@ -733,7 +753,10 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
             .trim()
 
           // If a parent folder has no body text between its heading and the next heading
-          if (cleanRawText.length < 15 && selectedNode?.children && selectedNode.children.length > 0) {
+          const normalizedTitle = title.replace(/[^\u0621-\u064A\u0671-\u06D3\w]/g, '').trim()
+          const isOnlyHeading = cleanRawText.length < 15 || cleanRawText === normalizedTitle || (cleanRawText.startsWith(normalizedTitle) && cleanRawText.length - normalizedTitle.length < 15)
+
+          if (isOnlyHeading && selectedNode?.children && selectedNode.children.length > 0) {
             const firstChild = selectedNode.children[0]
             const nextHeadingName = firstChild?.title || nextChapterTitle || 'الدرس الأول'
             const noticeHtml = `
@@ -840,6 +863,48 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
             hierarchy: resolvedHierarchy,
             source_url: sourceUrl
           })
+
+          // Start or resume session in Backend SQL database so it's recorded in Study History
+          try {
+            const session = await studyApi.startSession(
+              chunkId,
+              resolvedBookTitle,
+              resolvedDomain || fullPath,
+              title
+            )
+            if (session && session.id) {
+              setActiveSessionId(session.id)
+
+              // Load existing chat messages for this session if any
+              const savedMessages = await studyApi.getSessionMessages(session.id).catch(() => [])
+              if (savedMessages && savedMessages.length > 0) {
+                const uiMsgs = savedMessages.map(m => {
+                  let cleanText = m.content
+                  if (m.role === 'user') {
+                    if (cleanText.includes('ملاحظات حتمية للعمل') || cleanText.includes('أنا كطالب أود البدء في دراسة درس')) {
+                      cleanText = 'أود الحصول على خطة تفاعلية لمذاكرة هذا الدرس.'
+                    } else if (cleanText.includes('أنا كطالب أود الحصول على تلخيص مركز وشامل لدرس')) {
+                      cleanText = 'أود الحصول على تلخيص مركز ومُتوازن لهذا الدرس (لا إفراط ولا تفريط).'
+                    } else if (cleanText.includes('مرحباً يا زاد، أود فتح باب النقاش المباشر والأسئلة حول درس')) {
+                      cleanText = 'أود بدء التحاور المباشر مع زاد وطرح أسئلتي في هذا الدرس.'
+                    }
+                  } else {
+                    const { cleanText: parsed } = studyPlanManager.parseLLMResponse(cleanText, session.id, true)
+                    cleanText = parsed
+                  }
+                  return {
+                    id: m.id.toString(),
+                    role: (m.role === 'user' ? 'user' : 'tutor') as 'user' | 'tutor',
+                    text: cleanText
+                  }
+                })
+                setMessages(uiMsgs)
+                setChatHistory(savedMessages.map(m => ({ role: m.role, content: m.content })))
+              }
+            }
+          } catch (err) {
+            console.warn('Backend study session start for Turath failed:', err)
+          }
         } else {
           setChunkText('تعذر تحميل الفصل من مكتبة تراث، يرجى التحقق من الاتصال بالإنترنت.')
         }
@@ -858,7 +923,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
       // Start or resume session in Backend SQL database
       let currentSessionId: number | null = null
       try {
-        const session = await studyApi.startSession(chunkId, title, fullPath)
+        const session = await studyApi.startSession(chunkId, title, fullPath, title)
         if (session && session.id) {
           currentSessionId = session.id
           setActiveSessionId(session.id)

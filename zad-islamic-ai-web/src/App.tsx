@@ -5,7 +5,6 @@ import Navbar from './components/layout/Navbar'
 import Hero from './components/layout/Hero'
 import FeatureCards from './components/layout/FeatureCards'
 import HowItWorks from './components/layout/HowItWorks'
-import Showcase from './components/layout/Showcase'
 import CTA from './components/layout/CTA'
 import Footer from './components/layout/Footer'
 import ChatScreen from './features/chat/ChatScreen'
@@ -27,8 +26,9 @@ import { LessonsPage } from './features/lessons/LessonsPage'
 import { ScholarProfilePage } from './features/lessons/ScholarProfilePage'
 import { SystemObservability } from './features/admin/SystemObservability'
 import { TurathRagPage } from './features/admin/turath-rag'
+import { EngineControlPage } from './features/admin/engine-control'
 
-type View = 'home' | 'chat' | 'voice' | 'knowledge' | 'study' | 'admin' | 'turath_rag' | 'data_ingestion' | 'v2_pipeline_admin' | 'admin_library' | 'youtube_importer' | 'lessons' | 'scholar_profile' | 'system_observability' | 'login' | 'signup'
+type View = 'home' | 'chat' | 'voice' | 'knowledge' | 'study' | 'admin' | 'turath_rag' | 'engine_control' | 'data_ingestion' | 'v2_pipeline_admin' | 'admin_library' | 'youtube_importer' | 'lessons' | 'scholar_profile' | 'system_observability' | 'login' | 'signup'
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
   constructor(props: any) {
@@ -107,6 +107,7 @@ function AppContent() {
   const openStudy = () => isAuthenticated ? navigate('study') : navigate('login')
   const openAdmin = () => navigate('admin')
   const openTurathRag = () => navigate('turath_rag')
+  const openEngineControl = () => navigate('engine_control')
   const openDataIngestion = () => navigate('data_ingestion')
   const openV2PipelineAdmin = () => navigate('v2_pipeline_admin')
   const openAdminLibrary = () => navigate('admin_library')
@@ -152,6 +153,9 @@ function AppContent() {
     }
     if (view === 'turath_rag') {
       return <TurathRagPage onExit={() => navigate('home')} />
+    }
+    if (view === 'engine_control') {
+      return <EngineControlPage onExit={() => navigate('home')} />
     }
     if (view === 'admin') {
       return (
@@ -214,6 +218,7 @@ function AppContent() {
           onOpenStudy={openStudy}
           onOpenAdmin={openAdmin}
           onOpenTurathRag={openTurathRag}
+          onOpenEngineControl={openEngineControl}
           onOpenDataIngestion={openDataIngestion}
           onOpenV2PipelineAdmin={openV2PipelineAdmin}
           onOpenAdminLibrary={openAdminLibrary}
@@ -226,7 +231,6 @@ function AppContent() {
           <Hero onTryChat={openChat} onTryVoice={openVoice} onAsk={askQuestion} />
           <FeatureCards />
           <HowItWorks />
-          <Showcase />
           <CTA onTryChat={openChat} />
         </main>
         <Footer />
