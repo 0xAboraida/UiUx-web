@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import whiteLogo from '@/assets/images/WhiteLogo.png'
-import darkLogo from '@/assets/images/ZadDarkLogo.png'
+import whiteLogo from '@/assets/images/WhiteLogo.webp'
+import darkLogo from '@/assets/images/ZadDarkLogo.webp'
 import {
   User, LogOut, Settings, LayoutDashboard, Sun, Moon, Sparkles, LogIn, Loader2,
   Activity, Zap, Server, Cpu, Home, BookOpen, GraduationCap, MessageSquare, Mic,
-  ChevronLeft, ShieldCheck, Database, Video, X, BookOpenCheck, Bell, Palette, Menu
+  ChevronLeft, ShieldCheck, Database, Video, X, BookOpenCheck, Bell, Palette, Menu,
+  Share2, Smartphone, Copy, Check, Globe, Mail
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
@@ -51,12 +52,261 @@ export default function Navbar({
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [isLoginLoading, setIsLoginLoading] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [copiedType, setCopiedType] = useState<'web' | 'app' | null>(null)
 
   const profileMenuRef = useRef<HTMLDivElement>(null)
 
   const { user, isAuthenticated, logout } = useAuth()
   const { theme, toggleTheme, isDark, accentColor, setAccentColor } = useTheme()
   const isAdmin = user?.role?.toLowerCase() === 'admin'
+
+  // Dynamic accent styling for all sidebar navigation icons & active state
+  const getNavIconBoxClass = () => {
+    switch (accentColor) {
+      case 'emerald':
+        return isDark
+          ? 'bg-teal-500/10 border-teal-500/25 text-teal-300'
+          : 'bg-teal-50 border-teal-200/80 text-teal-700'
+      case 'amber':
+        return isDark
+          ? 'bg-[#dfbf83]/10 border-[#dfbf83]/25 text-[#eed8ad]'
+          : 'bg-[#fbf8f0] border-[#ebd9b5] text-[#8a652a]'
+      case 'blue':
+        return isDark
+          ? 'bg-blue-500/10 border-blue-500/25 text-blue-300'
+          : 'bg-blue-50 border-blue-200/80 text-blue-700'
+      case 'purple':
+      default:
+        return isDark
+          ? 'bg-purple-500/10 border-purple-500/25 text-purple-300'
+          : 'bg-purple-50 border-purple-200/80 text-purple-700'
+    }
+  }
+
+  const getActiveNavClass = () => {
+    switch (accentColor) {
+      case 'emerald':
+        return isDark
+          ? 'border-teal-500/40 bg-teal-950/40 text-teal-200'
+          : 'border-teal-600/30 bg-teal-50/80 text-teal-950 shadow-sm'
+      case 'amber':
+        return isDark
+          ? 'border-[#dfbf83]/40 bg-[#251809]/60 text-[#f6eedd]'
+          : 'border-[#b88d46]/30 bg-[#fbf8f0] text-[#5e431a] shadow-sm'
+      case 'blue':
+        return isDark
+          ? 'border-blue-500/40 bg-blue-950/40 text-blue-200'
+          : 'border-blue-600/30 bg-blue-50/80 text-blue-950 shadow-sm'
+      case 'purple':
+      default:
+        return isDark
+          ? 'border-purple-500/40 bg-purple-950/40 text-purple-200'
+          : 'border-purple-600/30 bg-purple-50/80 text-purple-950 shadow-sm'
+    }
+  }
+
+  const getActiveDotClass = () => {
+    if (isDark) {
+      switch (accentColor) {
+        case 'emerald': return 'bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)]'
+        case 'amber': return 'bg-[#dfbf83] shadow-[0_0_8px_rgba(223,191,131,0.8)]'
+        case 'blue': return 'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]'
+        default: return 'bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]'
+      }
+    } else {
+      switch (accentColor) {
+        case 'emerald': return 'bg-teal-700'
+        case 'amber': return 'bg-[#8a652a]'
+        case 'blue': return 'bg-blue-700'
+        default: return 'bg-purple-700'
+      }
+    }
+  }
+
+  const getDrawerSectionHeadingClass = () => {
+    switch (accentColor) {
+      case 'emerald':
+        return isDark ? 'text-teal-300/60' : 'text-teal-900/65'
+      case 'amber':
+        return isDark ? 'text-[#dfbf83]/60' : 'text-[#8a652a]/65'
+      case 'blue':
+        return isDark ? 'text-blue-300/60' : 'text-blue-900/65'
+      case 'purple':
+      default:
+        return isDark ? 'text-purple-300/60' : 'text-purple-900/65'
+    }
+  }
+
+  const getDrawerScrollbarThumbClass = () => {
+    switch (accentColor) {
+      case 'emerald':
+        return isDark
+          ? '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-teal-500/50 hover:[&::-webkit-scrollbar-thumb]:bg-teal-400/80 [scrollbar-color:rgba(20,184,166,0.5)_transparent]'
+          : '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-teal-600/40 hover:[&::-webkit-scrollbar-thumb]:bg-teal-600/70 [scrollbar-color:rgba(13,148,136,0.4)_transparent]'
+      case 'amber':
+        return isDark
+          ? '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#dfbf83]/50 hover:[&::-webkit-scrollbar-thumb]:bg-[#dfbf83]/80 [scrollbar-color:rgba(223,191,131,0.5)_transparent]'
+          : '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#b88d46]/40 hover:[&::-webkit-scrollbar-thumb]:bg-[#b88d46]/70 [scrollbar-color:rgba(184,141,70,0.4)_transparent]'
+      case 'blue':
+        return isDark
+          ? '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blue-500/50 hover:[&::-webkit-scrollbar-thumb]:bg-blue-400/80 [scrollbar-color:rgba(59,130,246,0.5)_transparent]'
+          : '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blue-600/40 hover:[&::-webkit-scrollbar-thumb]:bg-blue-600/70 [scrollbar-color:rgba(37,99,235,0.4)_transparent]'
+      case 'purple':
+      default:
+        return isDark
+          ? '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-purple-500/50 hover:[&::-webkit-scrollbar-thumb]:bg-purple-400/80 [scrollbar-color:rgba(168,85,247,0.5)_transparent]'
+          : '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-stone-300 hover:[&::-webkit-scrollbar-thumb]:bg-stone-400 [scrollbar-color:rgba(214,211,209,0.7)_transparent]'
+    }
+  }
+
+  const getDrawerBorderClass = () => {
+    switch (accentColor) {
+      case 'emerald':
+        return isDark ? 'border-teal-500/35' : 'border-teal-600/30'
+      case 'amber':
+        return isDark ? 'border-[#dfbf83]/35' : 'border-[#b88d46]/35'
+      case 'blue':
+        return isDark ? 'border-blue-500/35' : 'border-blue-600/30'
+      case 'purple':
+      default:
+        return isDark ? 'border-purple-500/35' : 'border-purple-600/30'
+    }
+  }
+
+  const getDrawerWelcomeCardClass = () => (isDark ? 'border-white/10 bg-white/[0.03] shadow-sm' : 'border-stone-200/80 bg-white/90 shadow-stone-200/50')
+
+  const getDrawerBgClass = () => (isDark ? 'bg-[#090b10]/98 text-white shadow-[-16px_0_50px_rgba(0,0,0,0.85)]' : 'bg-[#fcfbf9]/98 text-stone-900 shadow-[-12px_0_40px_rgba(0,0,0,0.08)]')
+
+  const getNavItemCardClass = () => (isDark ? 'border-white/[0.07] bg-white/[0.03] text-white/90 hover:bg-white/[0.08] hover:border-white/15' : 'border-stone-200/70 bg-white/80 text-stone-800 hover:bg-white hover:border-stone-300 shadow-2xs')
+
+  const getZadWordClass = () => {
+    switch (accentColor) {
+      case 'emerald': return isDark ? 'text-teal-400' : 'text-teal-700'
+      case 'amber': return isDark ? 'text-[#dfbf83]' : 'text-[#8a652a]'
+      case 'blue': return isDark ? 'text-blue-400' : 'text-blue-700'
+      default: return isDark ? 'text-purple-300' : 'text-purple-700'
+    }
+  }
+
+  const getLogoBgColorClass = () => {
+    switch (accentColor) {
+      case 'emerald': return isDark ? 'bg-teal-400' : 'bg-teal-700'
+      case 'amber': return isDark ? 'bg-[#dfbf83]' : 'bg-[#8a652a]'
+      case 'blue': return isDark ? 'bg-blue-400' : 'bg-blue-700'
+      default: return isDark ? 'bg-purple-300' : 'bg-purple-700'
+    }
+  }
+
+  const getDrawerCloseButtonClass = () => {
+    switch (accentColor) {
+      case 'emerald':
+        return isDark
+          ? 'border-teal-500/25 bg-teal-500/10 text-teal-300 hover:border-teal-500/40 hover:bg-teal-500/15'
+          : 'border-teal-500/30 bg-teal-50/80 text-teal-800 hover:bg-teal-100/80'
+      case 'amber':
+        return isDark
+          ? 'border-[#dfbf83]/25 bg-[#dfbf83]/10 text-[#eed9b0] hover:border-[#dfbf83]/40 hover:bg-[#dfbf83]/15'
+          : 'border-[#dfbf83]/40 bg-[#fbf8f0] text-[#8a652a] hover:bg-[#ebd9b5]/40'
+      case 'blue':
+        return isDark
+          ? 'border-blue-500/25 bg-blue-500/10 text-blue-300 hover:border-blue-500/40 hover:bg-blue-500/15'
+          : 'border-blue-500/30 bg-blue-50/80 text-blue-800 hover:bg-blue-100/80'
+      case 'purple':
+      default:
+        return isDark
+          ? 'border-purple-500/25 bg-purple-500/10 text-purple-300 hover:border-purple-500/40 hover:bg-purple-500/15'
+          : 'border-purple-500/30 bg-purple-50/80 text-purple-800 hover:bg-purple-100/80'
+    }
+  }
+
+  const getThemeBadgeClass = () => {
+    switch (accentColor) {
+      case 'emerald': return isDark ? 'bg-teal-500/15 text-teal-300 border-teal-500/30' : 'bg-teal-50 text-teal-800 border-teal-200'
+      case 'amber': return isDark ? 'bg-[#dfbf83]/15 text-[#eed9b0] border-[#dfbf83]/30' : 'bg-[#fbf8f0] text-[#8a652a] border-[#ebd9b5]'
+      case 'blue': return isDark ? 'bg-blue-500/15 text-blue-300 border-blue-500/30' : 'bg-blue-50 text-blue-800 border-blue-200'
+      default: return isDark ? 'bg-purple-500/15 text-purple-300 border-purple-500/30' : 'bg-purple-50 text-purple-800 border-purple-200'
+    }
+  }
+
+  const getThemeToggleTrackClass = () => {
+    if (!isDark) return 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.35)]'
+    switch (accentColor) {
+      case 'emerald': return 'bg-gradient-to-r from-teal-700 to-cyan-600 shadow-[0_0_12px_rgba(20,184,166,0.35)]'
+      case 'amber': return 'bg-gradient-to-r from-[#8e682d] to-[#c59b58] shadow-[0_0_12px_rgba(223,191,131,0.35)]'
+      case 'blue': return 'bg-gradient-to-r from-blue-700 to-indigo-600 shadow-[0_0_12px_rgba(59,130,246,0.35)]'
+      default: return 'bg-gradient-to-r from-purple-700 to-indigo-600 shadow-[0_0_12px_rgba(168,85,247,0.35)]'
+    }
+  }
+
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    // 1. Try modern navigator.clipboard if available (secure context / localhost / HTTPS)
+    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(text)
+        return true
+      } catch (err) {
+        console.warn('navigator.clipboard.writeText failed, trying fallback:', err)
+      }
+    }
+
+    // 2. Reliable cross-browser fallback using temporary textarea (works on mobile, HTTP, local IPs)
+    try {
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.top = '0'
+      textArea.style.left = '0'
+      textArea.style.width = '2em'
+      textArea.style.height = '2em'
+      textArea.style.padding = '0'
+      textArea.style.border = 'none'
+      textArea.style.outline = 'none'
+      textArea.style.boxShadow = 'none'
+      textArea.style.background = 'transparent'
+      textArea.setAttribute('readonly', '')
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      textArea.setSelectionRange(0, 99999)
+      const success = document.execCommand('copy')
+      document.body.removeChild(textArea)
+      if (success) return true
+    } catch (err) {
+      console.warn('execCommand fallback failed:', err)
+    }
+
+    // 3. Extreme fallback
+    try {
+      window.prompt('يرجى نسخ الرابط:', text)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  const handleShare = async (type: 'web' | 'app') => {
+    const url = type === 'web'
+      ? 'https://zad-islamic-ai.vercel.app/'
+      : 'https://apkpure.com/p/com.example.zaad'
+    const title = type === 'web' ? 'منصة زاد للعلوم الشرعية' : 'تطبيق زاد للهاتف (أندرويد)'
+    const text = type === 'web'
+      ? 'منصة زاد للعلوم الشرعية بالذكاء الاصطناعي - إجابات موثقة من أمهات الكتب الشرعية'
+      : 'حمّل تطبيق زاد للهاتف الآن وادرس العلوم الشرعية بسهولة'
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title,
+          text: `${title}\n${text}`,
+          url,
+        })
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return
+        console.warn('Native navigator.share failed:', err)
+      }
+    }
+  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -105,8 +355,25 @@ export default function Navbar({
 
         {/* Brand (Right Section in RTL) */}
         <a href="#home" className="flex shrink-0 items-center gap-2 lg:gap-2.5 transition-transform hover:scale-105">
-          <img src={isDark ? whiteLogo : darkLogo} alt="شعار زاد" className="h-8 w-8 lg:h-10 lg:w-10 object-contain" />
-          <span className={`font-display text-[22px] lg:text-[28px] ${isDark ? 'text-white' : 'text-brand-deep'}`}>زاد</span>
+          {isDark ? (
+            <div
+              aria-hidden="true"
+              className={`h-8 w-8 lg:h-10 lg:w-10 shrink-0 transition-colors duration-300 ${getLogoBgColorClass()}`}
+              style={{
+                WebkitMaskImage: `url(${whiteLogo})`,
+                maskImage: `url(${whiteLogo})`,
+                WebkitMaskSize: 'contain',
+                maskSize: 'contain',
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center',
+                maskPosition: 'center',
+              }}
+            />
+          ) : (
+            <img src={darkLogo} alt="شعار زاد" className="h-8 w-8 lg:h-10 lg:w-10 object-contain" />
+          )}
+          <span className={`font-display text-[22px] lg:text-[28px] transition-colors ${getZadWordClass()}`}>زاد</span>
         </a>
 
         {/* Center Section: Tabs (Adapts and shrinks down to 768px) */}
@@ -405,7 +672,7 @@ export default function Navbar({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.28, ease: 'easeOut' }}
-              className={`fixed inset-0 z-50 backdrop-blur-md md:hidden ${isDark ? 'bg-black/60' : 'bg-slate-900/30'
+              className={`fixed inset-0 z-50 backdrop-blur-[2px] md:hidden ${isDark ? 'bg-black/45' : 'bg-black/25'
                 }`}
               onClick={() => setOpen(false)}
               aria-hidden="true"
@@ -424,25 +691,32 @@ export default function Navbar({
                 stiffness: 320,
                 mass: 0.85,
               }}
-              className={`fixed inset-y-0 right-0 z-50 flex h-[100dvh] w-[86vw] max-w-[340px] flex-col border-l backdrop-blur-2xl md:hidden will-change-transform ${isDark
-                ? 'border-purple-500/20 bg-[#0c0317]/98 text-white shadow-[-16px_0_50px_rgba(0,0,0,0.85)]'
-                : 'border-stone-200/80 bg-[#fbfaf8]/98 text-stone-900 shadow-[-12px_0_40px_rgba(0,0,0,0.08)]'
-                }`}
+              className={`fixed inset-y-0 right-0 z-50 flex h-[100dvh] w-[86vw] max-w-[340px] flex-col border-l backdrop-blur-2xl md:hidden will-change-transform ${getDrawerBorderClass()} ${getDrawerBgClass()}`}
             >
               {/* 1. Header: Logo Zad, "زاد", Close button (X) on the left */}
-              <div className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? 'border-purple-500/20' : 'border-stone-200/60'}`}>
+              <div className={`flex items-center justify-between px-5 py-4 border-b ${getDrawerBorderClass()}`}>
                 <div className="flex items-center gap-2.5">
-                  <img src={isDark ? whiteLogo : darkLogo} alt="زاد" className="h-9 w-9 object-contain" />
-                  <span className={`font-display text-2xl font-bold tracking-wide ${isDark ? 'text-white' : 'text-stone-900'}`}>زاد</span>
+                  <div
+                    aria-hidden="true"
+                    className={`h-9 w-9 shrink-0 transition-colors duration-300 ${getLogoBgColorClass()}`}
+                    style={{
+                      WebkitMaskImage: `url(${whiteLogo})`,
+                      maskImage: `url(${whiteLogo})`,
+                      WebkitMaskSize: 'contain',
+                      maskSize: 'contain',
+                      WebkitMaskRepeat: 'no-repeat',
+                      maskRepeat: 'no-repeat',
+                      WebkitMaskPosition: 'center',
+                      maskPosition: 'center',
+                    }}
+                  />
+                  <span className={`font-display text-2xl font-bold tracking-wide transition-colors ${getZadWordClass()}`}>زاد</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="إغلاق القائمة"
-                  className={`flex h-9.5 w-9.5 items-center justify-center rounded-full border shadow-sm active:scale-90 transition-all ${isDark
-                    ? 'border-white/15 bg-white/10 text-white/90 hover:bg-white/20 hover:text-white hover:border-white/25'
-                    : 'border-stone-200/90 bg-white text-stone-700 hover:bg-stone-100 hover:text-stone-900 shadow-stone-200/50'
-                    }`}
+                  className={`flex h-9.5 w-9.5 items-center justify-center rounded-full border shadow-sm active:scale-90 transition-all ${getDrawerCloseButtonClass()}`}
                 >
                   <X size={19} strokeWidth={2.2} />
                 </button>
@@ -453,17 +727,16 @@ export default function Navbar({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: 0.08 }}
-                className={`flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4 text-right [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full ${isDark ? '[&::-webkit-scrollbar-thumb]:bg-purple-500/30' : '[&::-webkit-scrollbar-thumb]:bg-stone-300'
-                  }`}
+                className={`flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4 text-right pb-8 slim-scrollbar ${getDrawerScrollbarThumbClass()}`}
               >
                 {/* Auth Section - Display welcome & login ONLY when NOT authenticated */}
                 {!isAuthenticated && (
                   <div className={`rounded-2xl border p-4 text-right shadow-sm ${isDark
-                    ? 'border-purple-500/30 bg-purple-950/20 shadow-purple-950/20'
+                    ? getDrawerWelcomeCardClass()
                     : 'border-stone-200/80 bg-white/90 shadow-stone-200/50'
                     }`}>
                     <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>مرحباً بك</h4>
-                    <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-purple-200/70' : 'text-stone-500'}`}>
+                    <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-white/70' : 'text-stone-500'}`}>
                       قم بالتسجيل للاستفادة من خدمات الموقع
                     </p>
                     <button
@@ -485,7 +758,7 @@ export default function Navbar({
 
                 {/* 3. Main Navigation Items */}
                 <div className="space-y-1.5">
-                  <div className="px-2 text-[11px] font-bold text-stone-400 dark:text-purple-300/40 tracking-wider">
+                  <div className={`pr-0.5 pl-2 text-[11px] font-semibold tracking-wider transition-colors ${getDrawerSectionHeadingClass()}`}>
                     التنقل الأساسي
                   </div>
 
@@ -493,18 +766,15 @@ export default function Navbar({
                   <a
                     href="#home"
                     onClick={() => setOpen(false)}
-                    className={`flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-bold active:scale-[0.99] transition-all ${isDark
-                      ? 'border-purple-500/40 bg-purple-950/40 text-purple-200'
-                      : 'border-purple-600/30 bg-purple-50/80 text-purple-950 shadow-sm'
-                      }`}
+                    className={`flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-bold active:scale-[0.99] transition-all ${getActiveNavClass()}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#53177d] text-white shadow-sm shadow-[#53177d]/20">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg brand-gradient text-white shadow-sm">
                         <Home size={16} />
                       </div>
                       <span>الرئيسية</span>
                     </div>
-                    <span className={`h-2 w-2 rounded-full ${isDark ? 'bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]' : 'bg-purple-700'}`} />
+                    <span className={`h-2 w-2 rounded-full ${getActiveDotClass()}`} />
                   </a>
 
                   {/* المكتبة */}
@@ -514,19 +784,15 @@ export default function Navbar({
                       setOpen(false)
                       onOpenKnowledge()
                     }}
-                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${isDark
-                      ? 'border-white/5 bg-white/[0.03] text-white/90 hover:bg-white/10'
-                      : 'border-stone-200/60 bg-white/70 text-stone-800 hover:bg-stone-100/70'
-                      }`}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${getNavItemCardClass()}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' : 'bg-amber-50 border-amber-200/60 text-amber-700'
-                        }`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
                         <BookOpen size={16} />
                       </div>
                       <span>المكتبة</span>
                     </div>
-                    <ChevronLeft size={16} className={isDark ? 'text-white/30' : 'text-stone-400'} />
+                    <ChevronLeft size={16} className={isDark ? 'text-white/55' : 'text-stone-400'} />
                   </button>
 
                   {/* الشروحات والدورات (Video Icon) */}
@@ -536,25 +802,21 @@ export default function Navbar({
                       setOpen(false)
                       onOpenLessons()
                     }}
-                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${isDark
-                      ? 'border-white/5 bg-white/[0.03] text-white/90 hover:bg-white/10'
-                      : 'border-stone-200/60 bg-white/70 text-stone-800 hover:bg-stone-100/70'
-                      }`}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${getNavItemCardClass()}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${isDark ? 'bg-sky-500/10 border-sky-500/20 text-sky-300' : 'bg-sky-50 border-sky-200/60 text-sky-700'
-                        }`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
                         <Video size={16} />
                       </div>
                       <span>الشروحات والدورات</span>
                     </div>
-                    <ChevronLeft size={16} className={isDark ? 'text-white/30' : 'text-stone-400'} />
+                    <ChevronLeft size={16} className={isDark ? 'text-white/55' : 'text-stone-400'} />
                   </button>
                 </div>
 
-                {/* 4. AI & Interactive Section (Same header formatting, BookOpenCheck icon) */}
+                {/* 4. AI & Interactive Section */}
                 <div className={`space-y-1.5 pt-3 border-t ${isDark ? 'border-white/10' : 'border-stone-200/70'}`}>
-                  <div className="px-2 text-[11px] font-bold text-stone-400 dark:text-purple-300/40 tracking-wider">
+                  <div className={`pr-0.5 pl-2 text-[11px] font-semibold tracking-wider transition-colors ${getDrawerSectionHeadingClass()}`}>
                     أدوات زاد التفاعلية
                   </div>
 
@@ -565,19 +827,15 @@ export default function Navbar({
                       setOpen(false)
                       onOpenStudy()
                     }}
-                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${isDark
-                      ? 'border-white/5 bg-white/[0.03] text-white/90 hover:bg-white/10'
-                      : 'border-stone-200/60 bg-white/70 text-stone-800 hover:bg-stone-100/70'
-                      }`}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${getNavItemCardClass()}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${isDark ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' : 'bg-purple-50 border-purple-200/60 text-purple-700'
-                        }`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
                         <BookOpenCheck size={16} />
                       </div>
                       <span>وضع الدراسة</span>
                     </div>
-                    <ChevronLeft size={16} className={isDark ? 'text-white/30' : 'text-stone-400'} />
+                    <ChevronLeft size={16} className={isDark ? 'text-white/55' : 'text-stone-400'} />
                   </button>
 
                   {/* المحادثة النصية */}
@@ -587,19 +845,15 @@ export default function Navbar({
                       setOpen(false)
                       onTryChat()
                     }}
-                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${isDark
-                      ? 'border-white/5 bg-white/[0.03] text-white/90 hover:bg-white/10'
-                      : 'border-stone-200/60 bg-white/70 text-stone-800 hover:bg-stone-100/70'
-                      }`}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${getNavItemCardClass()}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${isDark ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' : 'bg-blue-50 border-blue-200/60 text-blue-700'
-                        }`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
                         <MessageSquare size={16} />
                       </div>
                       <span>المحادثة النصية</span>
                     </div>
-                    <ChevronLeft size={16} className={isDark ? 'text-white/30' : 'text-stone-400'} />
+                    <ChevronLeft size={16} className={isDark ? 'text-white/55' : 'text-stone-400'} />
                   </button>
 
                   {/* المحادثة الصوتية (تحت الإنشاء) */}
@@ -609,30 +863,25 @@ export default function Navbar({
                       setOpen(false)
                       if (onOpenVoiceChat) onOpenVoiceChat()
                     }}
-                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${isDark
-                      ? 'border-white/5 bg-white/[0.03] text-white/90 hover:bg-white/10'
-                      : 'border-stone-200/60 bg-white/70 text-stone-800 hover:bg-stone-100/70'
-                      }`}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${getNavItemCardClass()}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${isDark ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-emerald-50 border-emerald-200/60 text-emerald-700'
-                        }`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
                         <Mic size={16} />
                       </div>
                       <span>المحادثة الصوتية</span>
                     </div>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${isDark ? 'bg-amber-500/15 text-amber-300 border-amber-500/25' : 'bg-amber-50 text-amber-800 border-amber-200'
-                      }`}>
-                      تحت الإنشاء ⏳
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getThemeBadgeClass()}`}>
+                      قريباً...
                     </span>
                   </button>
                 </div>
 
                 {/* Admin Management Tools (If admin) */}
                 {isAuthenticated && isAdmin && (
-                  <div className={`pt-2 border-t space-y-1 ${isDark ? 'border-purple-500/15' : 'border-stone-200/60'}`}>
-                    <div className={`flex items-center gap-2 px-2 py-1 text-[11px] font-bold ${isDark ? 'text-purple-300' : 'text-purple-800'}`}>
-                      <ShieldCheck size={13} className={isDark ? 'text-purple-400' : 'text-purple-600'} />
+                  <div className={`pt-2 border-t space-y-1 ${isDark ? 'border-white/10' : 'border-stone-200/60'}`}>
+                    <div className={`flex items-center gap-2 px-2 py-1 text-[11px] font-bold ${getDrawerSectionHeadingClass()}`}>
+                      <ShieldCheck size={13} className={accentColor === 'emerald' ? 'text-teal-400' : accentColor === 'amber' ? 'text-[#dfbf83]' : accentColor === 'blue' ? 'text-blue-400' : 'text-purple-400'} />
                       <span>لوحة تحكم المسؤول</span>
                     </div>
 
@@ -784,7 +1033,7 @@ export default function Navbar({
 
                 {/* 5. Customization & Appearance Section (المظهر والتخصيص) */}
                 <div className={`space-y-2 pt-3 border-t ${isDark ? 'border-white/10' : 'border-stone-200/70'}`}>
-                  <div className="px-2 text-[11px] font-bold text-stone-400 dark:text-purple-300/40 tracking-wider">
+                  <div className={`pr-0.5 pl-2 text-[11px] font-semibold tracking-wider transition-colors ${getDrawerSectionHeadingClass()}`}>
                     المظهر والتخصيص
                   </div>
 
@@ -797,19 +1046,20 @@ export default function Navbar({
                         window.dispatchEvent(new Event('open_zad_notifications'))
                       }, 120)
                     }}
-                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${isDark
-                      ? 'border-white/5 bg-white/[0.03] text-white/90 hover:bg-white/10'
-                      : 'border-stone-200/60 bg-white/70 text-stone-800 hover:bg-stone-100/70'
-                      }`}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${getNavItemCardClass()}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${isDark ? 'bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-300' : 'bg-fuchsia-50 border-fuchsia-200/60 text-fuchsia-700'
-                        }`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
                         <Bell size={16} />
                       </div>
                       <span>الإشعارات والتحديثات</span>
                     </div>
-                    <ChevronLeft size={16} className={isDark ? 'text-white/30' : 'text-stone-400'} />
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getThemeBadgeClass()}`}>
+                        جديد
+                      </span>
+                      <ChevronLeft size={16} className={isDark ? 'text-white/55' : 'text-stone-400'} />
+                    </div>
                   </button>
 
                   {/* مظهر التطبيق (Toggle Switch) */}
@@ -817,21 +1067,15 @@ export default function Navbar({
                     onClick={toggleTheme}
                     role="button"
                     tabIndex={0}
-                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold cursor-pointer active:scale-[0.99] transition-all select-none ${isDark
-                      ? 'border-white/5 bg-white/[0.03] text-white/90 hover:bg-white/10'
-                      : 'border-stone-200/60 bg-white/70 text-stone-800 hover:bg-stone-100/70'
-                      }`}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold cursor-pointer active:scale-[0.99] transition-all select-none ${getNavItemCardClass()}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${isDark
-                          ? 'bg-purple-500/15 border-purple-500/25 text-purple-300'
-                          : 'bg-amber-50 border-amber-200/60 text-amber-600'
-                        }`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
                         {isDark ? <Moon size={16} /> : <Sun size={16} />}
                       </div>
                       <div className="text-right">
                         <span className="block text-sm font-bold">مظهر التطبيق</span>
-                        <span className={`text-[11px] font-normal ${isDark ? 'text-purple-300/60' : 'text-stone-500'}`}>
+                        <span className={`text-[11px] font-normal ${isDark ? 'text-white/60' : 'text-stone-500'}`}>
                           {isDark ? 'الوضع الليلي مفعّل' : 'الوضع النهاري مفعّل'}
                         </span>
                       </div>
@@ -839,10 +1083,7 @@ export default function Navbar({
 
                     {/* Modern Animated Switch Component */}
                     <div
-                      className={`relative flex h-7 w-14 items-center rounded-full p-1 transition-colors duration-300 ${isDark
-                          ? 'bg-gradient-to-r from-purple-700 to-indigo-600 shadow-[0_0_12px_rgba(168,85,247,0.35)]'
-                          : 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.35)]'
-                        }`}
+                      className={`relative flex h-7 w-14 items-center rounded-full p-1 transition-colors duration-300 ${getThemeToggleTrackClass()}`}
                     >
                       {/* Track background icons */}
                       <div className="absolute inset-x-2 flex justify-between items-center text-[10px] pointer-events-none">
@@ -854,7 +1095,7 @@ export default function Navbar({
                       <motion.div
                         layout
                         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                        className={`z-10 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-md ${isDark ? 'mr-0 ml-auto text-purple-700' : 'ml-0 mr-auto text-amber-600'
+                        className={`z-10 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-md ${isDark ? 'mr-0 ml-auto text-stone-800' : 'ml-0 mr-auto text-amber-600'
                           }`}
                       >
                         {isDark ? <Moon size={11} strokeWidth={2.5} /> : <Sun size={11} strokeWidth={2.5} />}
@@ -862,111 +1103,334 @@ export default function Navbar({
                     </div>
                   </div>
 
-
-
-                  {/* لون السمة */}
-                  <div className={`rounded-xl border p-3 ${isDark ? 'border-white/5 bg-white/[0.02]' : 'border-stone-200/60 bg-white/60'}`}>
-                    <div className="flex items-center justify-between mb-2">
+                  {/* لون السمة (توزيع متوازن وأنيق) */}
+                  <div className={`rounded-xl border p-3 ${getNavItemCardClass()}`}>
+                    <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-2 text-xs font-semibold">
-                        <Palette size={15} className={accentColor === 'emerald' ? 'text-emerald-400' : accentColor === 'amber' ? 'text-amber-400' : accentColor === 'blue' ? 'text-blue-400' : 'text-purple-400'} />
+                        <Palette size={15} className={accentColor === 'emerald' ? 'text-teal-400' : accentColor === 'amber' ? 'text-[#dfbf83]' : accentColor === 'blue' ? 'text-blue-400' : 'text-purple-400'} />
                         <span>لون السمة</span>
                       </div>
-                      <span className={`text-[10px] font-bold ${accentColor === 'emerald' ? 'text-emerald-400' : accentColor === 'amber' ? 'text-amber-400' : accentColor === 'blue' ? 'text-blue-400' : 'text-purple-400'}`}>
+                      <span className={`text-[10px] font-bold ${accentColor === 'emerald' ? 'text-teal-400' : accentColor === 'amber' ? 'text-[#dfbf83]' : accentColor === 'blue' ? 'text-blue-400' : 'text-purple-400'}`}>
                         {accentColor === 'purple' && 'أرجواني ملكي'}
-                        {accentColor === 'emerald' && 'زمردي قرآني'}
-                        {accentColor === 'amber' && 'ذهبي أندلسي'}
+                        {accentColor === 'emerald' && 'فيروزي إسلامي'}
+                        {accentColor === 'amber' && 'عاجي إسلامي'}
                         {accentColor === 'blue' && 'أزرق ياقوتي'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2.5 justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setAccentColor('purple')}
-                        title="أرجواني ملكي"
-                        className={`h-6 w-6 rounded-full bg-gradient-to-tr from-purple-700 to-fuchsia-500 transition-all active:scale-90 ${accentColor === 'purple' ? 'ring-2 ring-purple-400 ring-offset-2 ring-offset-[#120324] scale-110 shadow-md shadow-purple-500/30' : 'opacity-60 hover:opacity-100'
-                          }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setAccentColor('emerald')}
-                        title="زمردي قرآني"
-                        className={`h-6 w-6 rounded-full bg-gradient-to-tr from-emerald-700 to-teal-500 transition-all active:scale-90 ${accentColor === 'emerald' ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-[#120324] scale-110 shadow-md shadow-emerald-500/30' : 'opacity-60 hover:opacity-100'
-                          }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setAccentColor('amber')}
-                        title="ذهبي أندلسي"
-                        className={`h-6 w-6 rounded-full bg-gradient-to-tr from-amber-600 to-yellow-400 transition-all active:scale-90 ${accentColor === 'amber' ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-[#120324] scale-110 shadow-md shadow-amber-500/30' : 'opacity-60 hover:opacity-100'
-                          }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setAccentColor('blue')}
-                        title="أزرق ياقوتي"
-                        className={`h-6 w-6 rounded-full bg-gradient-to-tr from-blue-700 to-indigo-500 transition-all active:scale-90 ${accentColor === 'blue' ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-[#120324] scale-110 shadow-md shadow-blue-500/30' : 'opacity-60 hover:opacity-100'
-                          }`}
-                      />
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { id: 'purple', name: 'أرجواني', gradient: 'from-purple-700 to-fuchsia-500', ring: 'ring-purple-400' },
+                        { id: 'emerald', name: 'فيروزي', gradient: 'from-teal-700 via-teal-500 to-cyan-400', ring: 'ring-teal-400' },
+                        { id: 'amber', name: 'عاجي', gradient: 'from-[#8e682d] via-[#c59b58] to-[#eedbb2]', ring: 'ring-[#dfbf83]' },
+                        { id: 'blue', name: 'ياقوتي', gradient: 'from-blue-700 to-indigo-500', ring: 'ring-blue-400' },
+                      ].map((item) => {
+                        const isSelected = accentColor === item.id
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setAccentColor(item.id as any)}
+                            className="group flex flex-col items-center gap-1.5 py-1 px-1 transition-all active:scale-95"
+                          >
+                            <span
+                              className={`h-7 w-7 rounded-full bg-gradient-to-tr ${item.gradient} transition-all duration-300 ${isSelected
+                                ? `ring-2 ${item.ring} ring-offset-2 ${isDark ? 'ring-offset-[#120324]' : 'ring-offset-white'} scale-115 shadow-lg`
+                                : 'scale-90 opacity-70 group-hover:opacity-100 group-hover:scale-95'
+                                }`}
+                            />
+                            <span
+                              className={`text-[10px] leading-tight transition-colors ${isSelected ? (isDark ? 'font-bold text-white' : 'font-bold text-stone-900') : isDark ? 'font-medium text-white/60' : 'font-medium text-stone-600'
+                                }`}
+                            >
+                              {item.name}
+                            </span>
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
 
-                {/* User Profile Card at the very bottom (if authenticated) */}
-                {isAuthenticated && (
+                {/* 6. Mobile App & Share Section (التطبيق والمشاركة) */}
+                <div className={`space-y-2 pt-3 border-t ${isDark ? 'border-white/10' : 'border-stone-200/70'}`}>
+                  <div className={`pr-0.5 pl-2 text-[11px] font-semibold tracking-wider transition-colors ${getDrawerSectionHeadingClass()}`}>
+                    التطبيق والمشاركة
+                  </div>
+
+                  {/* رابط تحميل التطبيق للأندرويد */}
+                  <a
+                    href="https://apkpure.com/p/com.example.zaad"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setOpen(false)}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${getNavItemCardClass()}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
+                        <Smartphone size={16} />
+                      </div>
+                      <div className="text-right">
+                        <span className="block text-sm font-bold">تطبيق زاد للأندرويد</span>
+                        <span className={`text-[11px] font-normal ${isDark ? 'text-white/60' : 'text-stone-500'}`}>
+                          تحميل مباشر عبر APKPure
+                        </span>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getThemeBadgeClass()}`}>
+                      تثبيت
+                    </span>
+                  </a>
+
+                  {/* زر مشاركة زاد */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setOpen(false)
-                      setShowProfileModal(true)
-                    }}
-                    className={`flex w-full items-center justify-between rounded-2xl border p-3 text-right transition-all duration-200 active:scale-[0.98] ${isDark
-                      ? 'border-purple-500/25 bg-gradient-to-r from-purple-950/50 via-[#18052e] to-[#120324] text-white shadow-lg shadow-purple-950/30 hover:border-purple-400/40'
-                      : 'border-stone-200/90 bg-white/95 text-stone-900 shadow-sm hover:border-purple-300'
-                      }`}
+                    onClick={() => setShowShareModal(true)}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${getNavItemCardClass()}`}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {/* User Icon or Photo - No first letters! */}
-                      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl brand-gradient text-white shadow-md overflow-hidden">
-                        {user?.avatarUrl ? (
-                          <img src={getAvatarUrl(user.avatarUrl)} alt={user?.name || 'مستخدم'} className="h-full w-full object-cover" />
-                        ) : (
-                          <User size={22} strokeWidth={2.2} />
-                        )}
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
+                        <Share2 size={16} />
                       </div>
-                      <div className="min-w-0 flex-1 text-right">
-                        <div className="flex items-center gap-2">
-                          <span className={`truncate text-sm font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
-                            {user?.name || (isAdmin ? 'مسؤول النظام' : 'مستخدم زاد')}
-                          </span>
-                          {isAdmin ? (
-                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold border ${isDark ? 'bg-purple-500/25 text-purple-300 border-purple-500/30' : 'bg-purple-100 text-purple-800 border-purple-200'}`}>
-                              أدمن
-                            </span>
-                          ) : (
-                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold border ${isDark ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-emerald-100 text-emerald-800 border-emerald-200'}`}>
-                              متصل
-                            </span>
-                          )}
-                        </div>
-                        <p className={`truncate text-xs font-mono mt-0.5 ${isDark ? 'text-purple-200/60' : 'text-stone-500'}`}>
-                          {user?.email || 'طالب علم'}
-                        </p>
+                      <div className="text-right">
+                        <span className="block text-sm font-bold">مشاركة زاد</span>
+                        <span className={`text-[11px] font-normal ${isDark ? 'text-white/60' : 'text-stone-500'}`}>
+                          شارك الموقع أو رابط التطبيق
+                        </span>
                       </div>
                     </div>
-                    <ChevronLeft size={18} className={isDark ? 'text-purple-300/60' : 'text-stone-400'} />
+                    <ChevronLeft size={16} className={isDark ? 'text-white/55' : 'text-stone-400'} />
                   </button>
-                )}
-
-                {/* Zad App Download Badges */}
-                <div className="pt-2 text-center">
-                  <p className={`text-[11px] font-semibold mb-2 ${isDark ? 'text-purple-200/60' : 'text-stone-500'}`}>حمّل تطبيق زاد للهاتف</p>
-                  <div className="flex justify-center scale-90 origin-center">
-                    <StoreBadges variant={isDark ? 'dark' : 'light'} />
-                  </div>
                 </div>
+
+                {/* 7. User Profile (مدمج في أسفل السايدبار بالكامل بدون فريم كارت منفصل، ويتحرك مع التمرير) */}
+                {isAuthenticated && (
+                  <div className={`-mx-4 -mb-4 mt-6 border-t transition-colors ${isDark ? 'border-white/10 bg-black/30' : 'border-stone-200/80 bg-stone-100/80'}`}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpen(false)
+                        setShowProfileModal(true)
+                      }}
+                      className={`flex w-full items-center justify-between px-5 py-4 text-right transition-all duration-200 active:scale-[0.99] ${isDark ? 'hover:bg-white/5' : 'hover:bg-stone-200/60'}`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Avatar */}
+                        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full brand-gradient text-white shadow-md overflow-hidden ring-2 ring-white/15">
+                          {user?.avatarUrl ? (
+                            <img src={getAvatarUrl(user.avatarUrl)} alt={user?.name || 'مستخدم'} className="h-full w-full object-cover" />
+                          ) : (
+                            <User size={22} strokeWidth={2.2} />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <div className="flex items-center gap-2">
+                            <span className={`truncate text-sm font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
+                              {user?.name || (isAdmin ? 'مسؤول النظام' : 'مستخدم زاد')}
+                            </span>
+                            {isAdmin && (
+                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold border ${getThemeBadgeClass()}`}>
+                                أدمن
+                              </span>
+                            )}
+                          </div>
+                          <p className={`truncate text-xs font-mono mt-0.5 ${isDark ? 'text-white/50' : 'text-stone-500'}`}>
+                            {user?.email || 'طالب علم'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${isDark ? 'text-white/60 hover:text-white' : 'text-stone-500'}`}>
+                        <ChevronLeft size={18} />
+                      </div>
+                    </button>
+                  </div>
+                )}
               </motion.div>
             </motion.aside>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Share Zad Modal (مشاركة منصة وتطبيق زاد) */}
+      <AnimatePresence>
+        {showShareModal && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowShareModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Content */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 12 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              dir="rtl"
+              className={`relative z-10 w-full max-w-sm rounded-2xl border p-5 shadow-2xl backdrop-blur-xl ${isDark
+                ? 'border-white/10 bg-[#090b10]/98 text-white shadow-[-16px_0_50px_rgba(0,0,0,0.85)]'
+                : 'border-stone-200/90 bg-white/98 text-stone-900 shadow-stone-400/20'
+                }`}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-inherit/20 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl border ${getNavIconBoxClass()}`}>
+                    <Share2 size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold">مشاركة زاد</h3>
+                    <p className={`text-[11px] ${isDark ? 'text-white/60' : 'text-stone-500'}`}>
+                      اختر الرابط الذي تود مشاركته
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowShareModal(false)}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all active:scale-90 ${isDark
+                    ? 'border-white/10 hover:bg-white/10 text-white/70'
+                    : 'border-stone-200 hover:bg-stone-100 text-stone-600'
+                    }`}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Options */}
+              <div className="space-y-3">
+                {/* 1. Website Share */}
+                <div className={`p-4 rounded-2xl border transition-all ${isDark
+                  ? 'border-white/[0.08] bg-white/[0.03] hover:border-white/15'
+                  : 'border-stone-200 bg-white/80 hover:border-stone-300 shadow-sm'
+                  }`}>
+                  <div className="flex items-center gap-3 mb-2.5">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-sm ${getNavIconBoxClass()}`}>
+                      <Globe size={18} strokeWidth={2.2} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="block text-sm font-bold">منصة زاد للويب</span>
+                      <p className={`text-[11px] truncate ${isDark ? 'text-white/60' : 'text-stone-500'}`}>
+                        التصفح والدراسة عبر المتصفح
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={`text-[11px] font-mono dir-ltr text-left select-all px-3 py-1.5 rounded-lg mb-3 truncate border ${isDark ? 'bg-black/40 text-white/80 border-white/5' : 'bg-stone-100 text-stone-700 border-stone-200'
+                    }`}>
+                    https://zad-islamic-ai.vercel.app/
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleShare('web')}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl brand-gradient text-white text-xs font-bold active:scale-[0.98] hover:opacity-90 transition-all shadow-sm"
+                    >
+                      <Share2 size={15} />
+                      <span>مشاركة</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await copyToClipboard('https://zad-islamic-ai.vercel.app/')
+                        setCopiedType('web')
+                        setTimeout(() => setCopiedType(null), 2500)
+                      }}
+                      className={`flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl border text-xs font-bold active:scale-[0.98] transition-all ${copiedType === 'web'
+                        ? getThemeBadgeClass()
+                        : isDark
+                          ? 'border-white/15 bg-white/5 hover:bg-white/10 text-white'
+                          : 'border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700'
+                        }`}
+                    >
+                      {copiedType === 'web' ? (
+                        <>
+                          <Check size={14} className={accentColor === 'emerald' ? 'text-teal-400' : accentColor === 'amber' ? 'text-[#dfbf83]' : accentColor === 'blue' ? 'text-blue-400' : 'text-purple-400'} />
+                          <span>تم النسخ!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={14} />
+                          <span>نسخ الرابط</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Mobile App Share */}
+                <div className={`p-4 rounded-2xl border transition-all ${isDark
+                  ? 'border-white/[0.08] bg-white/[0.03] hover:border-white/15'
+                  : 'border-stone-200 bg-white/80 hover:border-stone-300 shadow-sm'
+                  }`}>
+                  <div className="flex items-center gap-3 mb-2.5">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-sm ${getNavIconBoxClass()}`}>
+                      <Smartphone size={18} strokeWidth={2.2} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="block text-sm font-bold">تطبيق زاد للأندرويد</span>
+                      <p className={`text-[11px] truncate ${isDark ? 'text-white/60' : 'text-stone-500'}`}>
+                        تحميل وتثبيت مباشر عبر APKPure
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={`text-[11px] font-mono dir-ltr text-left select-all px-3 py-1.5 rounded-lg mb-3 truncate border ${isDark ? 'bg-black/40 text-white/80 border-white/5' : 'bg-stone-100 text-stone-700 border-stone-200'
+                    }`}>
+                    https://apkpure.com/p/com.example.zaad
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleShare('app')}
+                      className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl brand-gradient text-white text-xs font-bold active:scale-[0.98] hover:opacity-90 transition-all shadow-sm"
+                    >
+                      <Share2 size={15} />
+                      <span>مشاركة</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await copyToClipboard('https://apkpure.com/p/com.example.zaad')
+                        setCopiedType('app')
+                        setTimeout(() => setCopiedType(null), 2500)
+                      }}
+                      className={`flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl border text-xs font-bold active:scale-[0.98] transition-all ${copiedType === 'app'
+                        ? getThemeBadgeClass()
+                        : isDark
+                          ? 'border-white/15 bg-white/5 hover:bg-white/10 text-white'
+                          : 'border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700'
+                        }`}
+                    >
+                      {copiedType === 'app' ? (
+                        <>
+                          <Check size={14} className={accentColor === 'emerald' ? 'text-teal-400' : accentColor === 'amber' ? 'text-[#dfbf83]' : accentColor === 'blue' ? 'text-blue-400' : 'text-purple-400'} />
+                          <span>تم النسخ!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={14} />
+                          <span>نسخ الرابط</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Toast */}
+              {copiedType && (
+                <div className={`mt-3 py-1.5 px-3 rounded-lg border text-xs text-center font-bold ${getThemeBadgeClass()}`}>
+                  تم نسخ الرابط بنجاح إلى الحافظة! 📋
+                </div>
+              )}
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 

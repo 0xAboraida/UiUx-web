@@ -4,12 +4,15 @@ import Starfield from './Starfield'
 import VoiceRecordButton from '../ui/VoiceRecordButton'
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition'
 import TextareaAutosize from 'react-textarea-autosize'
-import whiteLogo from '@/assets/images/WhiteLogo.png'
-import darkLogo from '@/assets/images/ZadDarkLogo.png'
+import whiteLogo from '@/assets/images/WhiteLogo.webp'
+import darkLogo from '@/assets/images/ZadDarkLogo.webp'
 import bgDark from '@/assets/images/image.webp'
 import bgLight from '@/assets/images/bg-islamic-light.webp'
-import bgDarkMobile from '@/assets/images/mobile view main page background dark4.png'
-import bgLightMobile from '@/assets/images/mobile view main page background light4.png'
+import bgDarkMobilePurple from '@/assets/images/mobile view main page background dark4.webp'
+import bgDarkMobileBlue from '@/assets/images/mobile view main page background dark blue.webp'
+import bgDarkMobileTeal from '@/assets/images/mobile view main page background dark teal.webp'
+import bgDarkMobileAmber from '@/assets/images/mobile view main page background dark agee.webp'
+import bgLightMobile from '@/assets/images/mobile view main page background light4.webp'
 import { useTheme } from '../../contexts/ThemeContext'
 
 const samplePrompts = [
@@ -30,7 +33,17 @@ export default function Hero({
   onTryVoice: () => void
   onAsk: (question: string) => void
 }) {
-  const { isDark: dark } = useTheme()
+  const { isDark: dark, accentColor } = useTheme()
+
+  const getMobileDarkBg = () => {
+    switch (accentColor) {
+      case 'blue': return bgDarkMobileBlue
+      case 'emerald': return bgDarkMobileTeal
+      case 'amber': return bgDarkMobileAmber
+      case 'purple':
+      default: return bgDarkMobilePurple
+    }
+  }
   const [question, setQuestion] = useState('')
   const [baseQuestion, setBaseQuestion] = useState('')
   const [focused, setFocused] = useState(false)
@@ -112,7 +125,7 @@ export default function Hero({
 
       {/* Mobile Dedicated Background Image Layers (< md) */}
       <img
-        src={bgDarkMobile}
+        src={getMobileDarkBg()}
         alt=""
         aria-hidden
         className={`pointer-events-none absolute inset-0 block md:hidden h-full w-full object-cover object-center transition-opacity duration-300 ease-out ${dark ? 'opacity-100' : 'opacity-0'
@@ -223,7 +236,7 @@ export default function Hero({
                   <button
                     type="submit"
                     aria-label="اسأل زاد"
-                    className="flex h-9 w-9 md:h-11 md:w-11 shrink-0 items-center justify-center rounded-full text-white bg-purple-600/80 hover:bg-purple-600/95 backdrop-blur-md border border-white/30 shadow-md shadow-primary/25 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="flex h-9 w-9 md:h-11 md:w-11 shrink-0 items-center justify-center rounded-full text-white brand-gradient backdrop-blur-md border border-white/30 shadow-md shadow-primary/25 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 md:h-5 md:w-5 -scale-x-100">
                       <path

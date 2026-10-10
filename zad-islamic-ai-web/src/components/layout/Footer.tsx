@@ -1,9 +1,9 @@
-import whiteLogo from '@/assets/images/WhiteLogo.png'
+import whiteLogo from '@/assets/images/WhiteLogo.webp'
 
 const columns = [
   {
     title: 'التطبيق',
-    links: ['المميزات', 'كيف يعمل', 'اللقطات', 'التحميل'],
+    links: ['المميزات', 'اللقطات', 'التحميل'],
   },
   {
     title: 'الشركة',

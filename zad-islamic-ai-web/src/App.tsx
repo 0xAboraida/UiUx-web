@@ -1,11 +1,9 @@
 import 'regenerator-runtime/runtime'
 import React, { useEffect, useState } from 'react'
-import darkLogo from '@/assets/images/ZadDarkLogo.png'
+import darkLogo from '@/assets/images/ZadDarkLogo.webp'
 import Navbar from './components/layout/Navbar'
 import Hero from './components/layout/Hero'
 import FeatureCards from './components/layout/FeatureCards'
-import HowItWorks from './components/layout/HowItWorks'
-import CTA from './components/layout/CTA'
 import Footer from './components/layout/Footer'
 import ChatScreen from './features/chat/ChatScreen'
 import VoiceScreen from './features/voice/VoiceScreen'
@@ -230,8 +228,6 @@ function AppContent() {
         <main>
           <Hero onTryChat={openChat} onTryVoice={openVoice} onAsk={askQuestion} />
           <FeatureCards />
-          <HowItWorks />
-          <CTA onTryChat={openChat} />
         </main>
         <Footer />
       </div>

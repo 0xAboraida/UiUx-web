@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTheme } from '../../contexts/ThemeContext'
 
 type Feature = {
   id: string
@@ -65,39 +66,40 @@ const features: Feature[] = [
     short: 'لغة الضاد وجمالياتها.',
     detail: 'قواعد النحو والصرف، والبلاغة، ومفردات اللغة العربية التي تعين على فهم النصوص الشرعية.',
   },
-  // {
-  //   id: 'tajweed',
-  //   title: 'التجويد والقراءات',
-  //   icon: '📗',
-  //   short: 'إتقان تلاوة كتاب الله.',
-  //   detail: 'أحكام التجويد ومخارج الحروف، والتعريف بالقراءات المتواترة ورواياتها.',
-  // },
-  // {
-  //   id: 'adab',
-  //   title: 'الرقائق والآداب والأذكار',
-  //   icon: '📿',
-  //   short: 'تزكية النفس وتهذيب الأخلاق.',
-  //   detail: 'مواضيع ترقق القلوب، وآداب إسلامية في الحياة اليومية، مع أذكار المسلم المستحبة.',
-  // },
-  // {
-  //   id: 'poetry',
-  //   title: 'الدواوين الشعرية',
-  //   icon: '✒️',
-  //   short: 'روائع الشعر العربي.',
-  //   detail: 'مختارات من عيون الشعر العربي والإسلامي، متضمنةً الحِكَم والقصائد الخالدة.',
-  // },
-  // {
-  //   id: 'fatwa',
-  //   title: 'الفتاوى',
-  //   icon: '⚖️',
-  //   short: 'نوازل وقضايا معاصرة.',
-  //   detail: 'مجموعة من الفتاوى الموثقة للعلماء الثقات لبيان الحكم الشرعي في مختلف نواحي الحياة.',
-  // },
 ]
 
 export default function FeatureCards() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const { accentColor } = useTheme()
+
+  const getMeteorGradient = () => {
+    switch (accentColor) {
+      case 'emerald':
+        return 'conic-gradient(from 0deg, transparent 0%, transparent 85%, #0284c7 92%, #0d9488 96%, #2dd4bf 100%)'
+      case 'amber':
+        return 'conic-gradient(from 0deg, transparent 0%, transparent 85%, #8e682d 92%, #c59b58 96%, #dfbf83 100%)'
+      case 'blue':
+        return 'conic-gradient(from 0deg, transparent 0%, transparent 85%, #1d4ed8 92%, #3b82f6 96%, #60a5fa 100%)'
+      case 'purple':
+      default:
+        return 'conic-gradient(from 0deg, transparent 0%, transparent 85%, #2b7fff 92%, #7a17c9 96%, #c020f0 100%)'
+    }
+  }
+
+  const getContainerShadowClass = () => {
+    switch (accentColor) {
+      case 'emerald':
+        return 'shadow-[0_0_40px_rgba(20,184,166,0.15)] hover:shadow-[0_30px_80px_-24px_rgba(20,184,166,0.35)]'
+      case 'amber':
+        return 'shadow-[0_0_40px_rgba(223,191,131,0.15)] hover:shadow-[0_30px_80px_-24px_rgba(223,191,131,0.35)]'
+      case 'blue':
+        return 'shadow-[0_0_40px_rgba(59,130,246,0.15)] hover:shadow-[0_30px_80px_-24px_rgba(59,130,246,0.35)]'
+      case 'purple':
+      default:
+        return 'shadow-[0_0_40px_rgba(173,70,255,0.15)] hover:shadow-[0_30px_80px_-24px_rgba(173,70,255,0.35)]'
+    }
+  }
 
   // Auto-rotation effect
   useEffect(() => {
@@ -111,11 +113,10 @@ export default function FeatureCards() {
   return (
     <section id="features" className="relative z-10 -mt-16 md:-mt-24 mx-auto max-w-6xl px-5 py-24 md:py-32">
       <div className="mx-auto max-w-2xl text-center">
-        {/* <span className="text-sm font-semibold uppercase tracking-wider text-accent">المجالات المعرفية</span> */}
         <h2 className="mt-3 font-display text-4xl text-foreground md:text-5xl">
           علمٌ موثوق <span className="brand-text-gradient">بين يديك</span>
         </h2>
-        <p className="mt-4 text-lg text-muted-foreground">
+        <p className="mt-4 text-lg text-stone-600 dark:text-white">
           يغطّي زاد المجالات الشرعية الأساسية بإجاباتٍ دقيقة ومصادر معتمدة.
         </p>
       </div>
@@ -123,7 +124,7 @@ export default function FeatureCards() {
       <div className="mt-16 flex flex-col items-center">
         {/* Main Showcase Container */}
         <div
-          className="animate-float-subtle relative w-full max-w-xl overflow-hidden rounded-[2.6rem] bg-border/40 p-[2.5px] shadow-[0_0_40px_rgba(173,70,255,0.1)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_80px_-24px_rgba(173,70,255,0.3)]"
+          className={`animate-float-subtle relative w-full max-w-xl overflow-hidden rounded-[2.6rem] bg-border/40 p-[2.5px] transition-all duration-500 hover:-translate-y-2 ${getContainerShadowClass()}`}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={() => setIsPaused(true)}
@@ -134,7 +135,7 @@ export default function FeatureCards() {
             <div
               className="h-[900px] w-[900px] shrink-0 animate-[spin_20s_linear_infinite]"
               style={{
-                background: 'conic-gradient(from 0deg, transparent 0%, transparent 85%, #2b7fff 96%, #c020f0 100%)'
+                background: getMeteorGradient()
               }}
             />
           </div>
@@ -164,7 +165,7 @@ export default function FeatureCards() {
                   </div>
                   <h3 className={`mb-4 font-display text-4xl text-foreground transition-all duration-700 delay-150 ${index === activeIndex ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>{f.title}</h3>
                   <p className={`mb-2 text-xl font-medium text-accent transition-all duration-700 delay-200 ${index === activeIndex ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>{f.short}</p>
-                  <p className={`mb-8 max-w-sm text-base leading-relaxed text-muted-foreground transition-all duration-700 delay-300 ${index === activeIndex ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                  <p className={`mb-8 max-w-sm text-base leading-relaxed text-stone-600 dark:text-white transition-all duration-700 delay-300 ${index === activeIndex ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
                     {f.detail}
                   </p>
 
@@ -195,7 +196,7 @@ export default function FeatureCards() {
               aria-label={`الذهاب إلى ${f.title}`}
               className={`h-2.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${index === activeIndex
                   ? 'w-8 bg-accent'
-                  : 'w-2.5 bg-border hover:bg-muted-foreground/50'
+                  : 'w-2.5 bg-border hover:bg-accent/40'
                 }`}
             />
           ))}
@@ -204,3 +205,4 @@ export default function FeatureCards() {
     </section>
   )
 }
+
