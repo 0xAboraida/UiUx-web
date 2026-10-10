@@ -445,39 +445,6 @@ body {
   animation: borderShift 5s ease-in-out infinite;
 }
 
-@media (min-width: 768px) {
-  .md-gradient-border {
-    background-image: linear-gradient(120deg,
-        #5b0e9c,
-        #8a17c9,
-        #c020f0,
-        #ad46ff,
-        #2b7fff,
-        #8a17c9,
-        #5b0e9c);
-    background-size: 300% 300%;
-    animation: borderShift 5s ease-in-out infinite;
-  }
-  [data-accent="emerald"] .md-gradient-border {
-    background-image: linear-gradient(120deg, #064e3b, #059669, #10b981, #34d399, #0d9488, #059669, #064e3b) !important;
-  }
-  [data-accent="amber"] .md-gradient-border {
-    background-image: linear-gradient(120deg, #78350f, #d97706, #f59e0b, #fbbf24, #f59e0b, #d97706, #78350f) !important;
-  }
-  [data-accent="blue"] .md-gradient-border {
-    background-image: linear-gradient(120deg, #1e3a8a, #2563eb, #3b82f6, #60a5fa, #38bdf8, #2563eb, #1e3a8a) !important;
-  }
-}
-
-@media (max-width: 767px) {
-  .md-gradient-border,
-  [data-accent="emerald"] .md-gradient-border,
-  [data-accent="amber"] .md-gradient-border,
-  [data-accent="blue"] .md-gradient-border {
-    background-image: none !important;
-    background: transparent !important;
-  }
-}
 
 .gradient-border-card {
   background-image: linear-gradient(135deg,
@@ -833,4 +800,16 @@ li .strong-vertical-dash {
 .dark .study-document-scrollbar::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, rgba(56, 189, 248, 0.6) 0%, rgba(192, 132, 252, 0.6) 100%);
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+}
+
+@keyframes borderShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }

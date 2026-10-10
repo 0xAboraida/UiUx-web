@@ -105,6 +105,20 @@ export default function Hero({
     return () => clearTimeout(timer)
   }, [question, focused])
 
+  const getBorderGradient = () => {
+    switch (accentColor) {
+      case 'emerald':
+        return 'linear-gradient(120deg, #0f766e, #14b8a6, #2dd4bf, #38bdf8, #14b8a6, #0f766e)'
+      case 'amber':
+        return 'linear-gradient(120deg, #8e682d, #c59b58, #dfbf83, #eedbb2, #c59b58, #8e682d)'
+      case 'blue':
+        return 'linear-gradient(120deg, #1d4ed8, #2563eb, #3b82f6, #60a5fa, #38bdf8, #2563eb, #1d4ed8)'
+      case 'purple':
+      default:
+        return 'linear-gradient(120deg, #6b21a8, #8a17c9, #c020f0, #ad46ff, #2b7fff, #8a17c9, #6b21a8)'
+    }
+  }
+
   return (
     <section id="home" className="relative flex min-h-[100dvh] flex-col justify-center overflow-hidden pb-14 pt-20 sm:pt-24 md:pb-48 md:pt-40">
       {/* Desktop Background Image Layers (>= md) */}
@@ -194,11 +208,25 @@ export default function Hero({
           <div className="mx-auto mt-3 md:mt-2 flex min-h-[90px] md:min-h-[130px] w-full max-w-2xl items-end justify-center px-1 sm:px-0">
             <form onSubmit={submit} className="flex w-full items-end gap-2 md:gap-3">
 
-              <div className="md-gradient-border min-w-0 flex-1 rounded-2xl md:rounded-[24px] md:border-0 md:p-[2.5px] shadow-lg shadow-purple-950/20 md:shadow-xl md:shadow-primary/25 transition-all duration-300">
+              <div className="relative min-w-0 flex-1 rounded-2xl md:rounded-[24px] shadow-lg shadow-black/20 md:shadow-xl transition-all duration-300">
+                {/* Moving Animated Gradient Border (ONLY on border, interior is 100% transparent) */}
                 <div
-                  className={`flex items-center gap-1.5 md:gap-2 rounded-[15px] md:rounded-[22px] py-1.5 md:py-2 pr-3.5 md:pr-5 pl-1.5 md:pl-2 transition-all duration-300 ${dark
-                    ? 'bg-white/[0.08] hover:bg-white/[0.14] backdrop-blur-[2px] border border-white/20 shadow-[0_4px_24px_rgba(0,0,0,0.2)]'
-                    : 'bg-white/[0.18] hover:bg-white/[0.28] backdrop-blur-[2px] border border-white/50 shadow-[0_4px_24px_rgba(122,23,201,0.04)]'
+                  className="pointer-events-none absolute inset-0 rounded-2xl md:rounded-[24px]"
+                  style={{
+                    padding: '2px',
+                    background: getBorderGradient(),
+                    backgroundSize: '250% 250%',
+                    animation: 'borderShift 4.5s ease-in-out infinite',
+                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude',
+                  }}
+                />
+
+                <div
+                  className={`relative flex items-center gap-1.5 md:gap-2 rounded-[14px] md:rounded-[22px] py-1.5 md:py-2 pr-3.5 md:pr-5 pl-1.5 md:pl-2 transition-all duration-300 ${dark
+                    ? 'bg-white/[0.08] hover:bg-white/[0.14] backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.25)]'
+                    : 'bg-white/[0.35] hover:bg-white/[0.45] backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
                     }`}
                 >
                   <VoiceRecordButton
