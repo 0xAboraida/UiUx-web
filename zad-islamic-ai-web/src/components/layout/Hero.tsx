@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import StoreBadges from '../ui/StoreBadges'
-import Starfield from './Starfield'
 import VoiceRecordButton from '../ui/VoiceRecordButton'
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition'
 import TextareaAutosize from 'react-textarea-autosize'
 import whiteLogo from '@/assets/images/WhiteLogo.webp'
 import darkLogo from '@/assets/images/ZadDarkLogo.webp'
-import bgDark from '@/assets/images/image.webp'
-import bgLight from '@/assets/images/bg-islamic-light.webp'
+import bgDark from '@/assets/images/pc view main page background dark purple.png'
+import bgLight from '@/assets/images/authPageBackgroundLight.png'
+import bgDarkPcBlue from '@/assets/images/pc view main page background dark blue.webp'
+import bgDarkPcTeal from '@/assets/images/pc view main page background dark teal.webp'
+import bgDarkPcAmber from '@/assets/images/pc view main page background dark agee.webp'
 import bgDarkMobilePurple from '@/assets/images/mobile view main page background dark4.webp'
 import bgDarkMobileBlue from '@/assets/images/mobile view main page background dark blue.webp'
 import bgDarkMobileTeal from '@/assets/images/mobile view main page background dark teal.webp'
@@ -34,6 +36,16 @@ export default function Hero({
   onAsk: (question: string) => void
 }) {
   const { isDark: dark, accentColor } = useTheme()
+
+  const getDesktopDarkBg = () => {
+    switch (accentColor) {
+      case 'blue': return bgDarkPcBlue
+      case 'emerald': return bgDarkPcTeal
+      case 'amber': return bgDarkPcAmber
+      case 'purple':
+      default: return bgDark
+    }
+  }
 
   const getMobileDarkBg = () => {
     switch (accentColor) {
@@ -105,35 +117,21 @@ export default function Hero({
     return () => clearTimeout(timer)
   }, [question, focused])
 
-  const getBorderGradient = () => {
-    switch (accentColor) {
-      case 'emerald':
-        return 'linear-gradient(120deg, #0f766e, #14b8a6, #2dd4bf, #38bdf8, #14b8a6, #0f766e)'
-      case 'amber':
-        return 'linear-gradient(120deg, #8e682d, #c59b58, #dfbf83, #eedbb2, #c59b58, #8e682d)'
-      case 'blue':
-        return 'linear-gradient(120deg, #1d4ed8, #2563eb, #3b82f6, #60a5fa, #38bdf8, #2563eb, #1d4ed8)'
-      case 'purple':
-      default:
-        return 'linear-gradient(120deg, #6b21a8, #8a17c9, #c020f0, #ad46ff, #2b7fff, #8a17c9, #6b21a8)'
-    }
-  }
-
   return (
     <section id="home" className="relative flex min-h-[100dvh] flex-col justify-center overflow-hidden pb-14 pt-20 sm:pt-24 md:pb-48 md:pt-40">
       {/* Desktop Background Image Layers (>= md) */}
       <img
-        src={bgDark}
+        src={getDesktopDarkBg()}
         alt=""
         aria-hidden
-        className={`pointer-events-none absolute inset-0 hidden md:block h-full w-full object-cover object-center transition-opacity duration-300 ease-out ${dark ? 'opacity-100' : 'opacity-0'
+        className={`pointer-events-none absolute inset-0 hidden md:block h-full w-full object-cover object-bottom transition-opacity duration-300 ease-out ${dark ? 'opacity-100' : 'opacity-0'
           }`}
       />
       <img
         src={bgLight}
         alt=""
         aria-hidden
-        className={`pointer-events-none absolute inset-0 hidden md:block h-full w-full object-cover object-center transition-opacity duration-300 ease-out ${dark ? 'opacity-0' : 'opacity-100'
+        className={`pointer-events-none absolute inset-0 hidden md:block h-full w-full object-cover object-bottom transition-opacity duration-300 ease-out ${dark ? 'opacity-0' : 'opacity-100'
           }`}
       />
 
@@ -152,22 +150,6 @@ export default function Hero({
         className={`pointer-events-none absolute inset-0 block md:hidden h-full w-full object-cover object-center transition-opacity duration-300 ease-out ${dark ? 'opacity-0' : 'opacity-100'
           }`}
       />
-      {/* light blend at the bottom only — lets the image stay vivid */}
-      <div
-        className={`pointer-events-none absolute inset-x-0 bottom-0 h-20 md:h-40 ${dark ? 'bg-gradient-to-t from-[#12041f] to-transparent' : 'bg-gradient-to-t from-[#faf7ff] to-transparent'
-          }`}
-      />
-
-
-      {dark && <Starfield />}
-
-      {dark && (
-        <>
-          <div className="hidden md:block pointer-events-none absolute -left-24 top-1/3 h-80 w-80 rounded-full bg-brand-blue/30 blur-[120px]" />
-          <div className="hidden md:block pointer-events-none absolute -right-16 -top-10 h-72 w-72 rounded-full bg-brand-magenta/40 blur-[110px]" />
-        </>
-      )}
-
       <div className="relative mx-auto max-w-6xl px-4 sm:px-5">
         {/* Copy — single centered column */}
         <div className="mx-auto max-w-3xl text-center">
@@ -209,22 +191,11 @@ export default function Hero({
             <form onSubmit={submit} className="flex w-full items-end gap-2 md:gap-3">
 
               <div className="relative min-w-0 flex-1 rounded-2xl md:rounded-[24px] shadow-lg shadow-black/20 md:shadow-xl transition-all duration-300">
-                {/* Moving Animated Gradient Border (ONLY on border, interior is 100% transparent) */}
-                <div
-                  className="pointer-events-none absolute inset-0 rounded-2xl md:rounded-[24px]"
-                  style={{
-                    padding: '2px',
-                    background: getBorderGradient(),
-                    backgroundSize: '250% 250%',
-                    animation: 'borderShift 4.5s ease-in-out infinite',
-                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                    WebkitMaskComposite: 'xor',
-                    maskComposite: 'exclude',
-                  }}
-                />
+                {/* Moving Animated Gradient Border (ONLY on Desktop, 100% transparent interior) */}
+                <div className="desktop-moving-border" />
 
                 <div
-                  className={`relative flex items-center gap-1.5 md:gap-2 rounded-[14px] md:rounded-[22px] py-1.5 md:py-2 pr-3.5 md:pr-5 pl-1.5 md:pl-2 transition-all duration-300 ${dark
+                  className={`relative flex items-center gap-1.5 md:gap-2 rounded-2xl md:rounded-[24px] border border-white/15 md:border-transparent py-1.5 md:py-2 pr-3.5 md:pr-5 pl-1.5 md:pl-2 transition-all duration-300 ${dark
                     ? 'bg-white/[0.08] hover:bg-white/[0.14] backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.25)]'
                     : 'bg-white/[0.35] hover:bg-white/[0.45] backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
                     }`}

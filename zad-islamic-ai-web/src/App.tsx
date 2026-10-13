@@ -7,7 +7,7 @@ import FeatureCards from './components/layout/FeatureCards'
 import Footer from './components/layout/Footer'
 import ChatScreen from './features/chat/ChatScreen'
 import VoiceScreen from './features/voice/VoiceScreen'
-import KnowledgeBase from './features/knowledge/KnowledgeBase'
+import KnowledgeBase, { type MainTab } from './features/knowledge/KnowledgeBase'
 import StudyMode from './features/study/StudyMode'
 import AdminDashboard from './features/admin/AdminDashboard'
 import AuthPage from './features/auth/AuthPage'
@@ -54,8 +54,9 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 function AppContent() {
   const [view, setView] = useState<View>('home')
+  const [libraryTab, setLibraryTab] = useState<MainTab>('home')
   const [selectedScholar, setSelectedScholar] = useState<string | null>(null)
-  const [isNavigating, setIsNavigating] = useState(false)
+  const [isLibraryScrolled, setIsLibraryScrolled] = useState(false)
   const [pendingQuestion, setPendingQuestion] = useState<string | undefined>()
   const [pendingBook, setPendingBook] = useState<{ id: number | string; title: string; author: string } | null>(null)
   const { isAuthenticated } = useAuth()
@@ -63,20 +64,8 @@ function AppContent() {
 
   const navigate = (newView: View) => {
     if (view === newView) return
-    setIsNavigating(true)
-    setTimeout(() => {
-      // @ts-ignore - View Transitions API
-      if (document.startViewTransition) {
-        // @ts-ignore
-        document.startViewTransition(() => {
-          setView(newView)
-          setIsNavigating(false)
-        })
-      } else {
-        setView(newView)
-        setIsNavigating(false)
-      }
-    }, 300)
+    window.scrollTo({ top: 0, behavior: 'instant' })
+    setView(newView)
   }
 
   useEffect(() => {
@@ -101,7 +90,10 @@ function AppContent() {
     isAuthenticated ? navigate('chat') : navigate('login')
   }
   const openVoice = () => isAuthenticated ? navigate('voice') : navigate('login')
-  const openKnowledge = () => navigate('knowledge')
+  const openKnowledge = () => {
+    setLibraryTab('home')
+    navigate('knowledge')
+  }
   const openStudy = () => isAuthenticated ? navigate('study') : navigate('login')
   const openAdmin = () => navigate('admin')
   const openTurathRag = () => navigate('turath_rag')
@@ -138,12 +130,51 @@ function AppContent() {
     }
     if (view === 'knowledge') {
       return (
-        <KnowledgeBase
-          onExit={() => navigate('home')}
-          onAskBook={askAboutBook}
-          onLogin={() => navigate('login')}
-          onNavigateGlobal={(targetView) => navigate(targetView as View)}
-        />
+        <div dir="rtl" className={`min-h-screen bg-background text-foreground transition-colors duration-300 ${isDark ? 'dark' : ''}`}>
+          {libraryTab === 'home' && !isLibraryScrolled && (
+            <Navbar
+              activeTab="knowledge"
+              onNavigateHome={() => navigate('home')}
+              onTryChat={openChat}
+              onOpenKnowledge={() => {
+                setLibraryTab('home')
+                setIsLibraryScrolled(false)
+                openKnowledge()
+              }}
+              onOpenStudy={openStudy}
+              onOpenAdmin={openAdmin}
+              onOpenTurathRag={openTurathRag}
+              onOpenEngineControl={openEngineControl}
+              onOpenDataIngestion={openDataIngestion}
+              onOpenV2PipelineAdmin={openV2PipelineAdmin}
+              onOpenAdminLibrary={openAdminLibrary}
+              onOpenYoutubeImporter={openYoutubeImporter}
+              onOpenLessons={openLessons}
+              onOpenVoiceChat={openVoice}
+              onOpenSystemObservability={openSystemObservability}
+            />
+          )}
+          <KnowledgeBase
+            onExit={() => {
+              setLibraryTab('home')
+              setIsLibraryScrolled(false)
+              navigate('home')
+            }}
+            onAskBook={askAboutBook}
+            onLogin={() => navigate('login')}
+            onNavigateGlobal={(targetView) => {
+              setLibraryTab('home')
+              setIsLibraryScrolled(false)
+              navigate(targetView as View)
+            }}
+            initialTab={libraryTab}
+            onTabChange={(tab) => {
+              setLibraryTab(tab)
+              if (tab !== 'home') setIsLibraryScrolled(true)
+            }}
+            onScrolledPastSearchChange={(scrolled) => setIsLibraryScrolled(scrolled)}
+          />
+        </div>
       )
     }
     if (view === 'study') {
@@ -182,7 +213,24 @@ function AppContent() {
     }
     if (view === 'lessons') {
       return (
-        <div className="min-h-screen bg-black">
+        <div dir="rtl" className={`min-h-screen bg-background text-foreground transition-colors duration-300 ${isDark ? 'dark' : ''}`}>
+          <Navbar
+            activeTab="lessons"
+            onNavigateHome={() => navigate('home')}
+            onTryChat={openChat}
+            onOpenKnowledge={openKnowledge}
+            onOpenStudy={openStudy}
+            onOpenAdmin={openAdmin}
+            onOpenTurathRag={openTurathRag}
+            onOpenEngineControl={openEngineControl}
+            onOpenDataIngestion={openDataIngestion}
+            onOpenV2PipelineAdmin={openV2PipelineAdmin}
+            onOpenAdminLibrary={openAdminLibrary}
+            onOpenYoutubeImporter={openYoutubeImporter}
+            onOpenLessons={openLessons}
+            onOpenVoiceChat={openVoice}
+            onOpenSystemObservability={openSystemObservability}
+          />
           <LessonsPage 
             onBack={() => navigate('home')}
             onNavigateToScholar={(id) => {
@@ -190,6 +238,7 @@ function AppContent() {
               navigate('scholar_profile')
             }} 
             onNavigateToImporter={() => navigate('youtube_importer')}
+            hideHeader={true}
           />
         </div>
       )
@@ -211,6 +260,8 @@ function AppContent() {
     return (
       <div dir="rtl" className={`min-h-screen bg-background text-foreground transition-colors duration-300 ${isDark ? 'dark' : ''}`}>
         <Navbar
+          activeTab="home"
+          onNavigateHome={() => navigate('home')}
           onTryChat={openChat}
           onOpenKnowledge={openKnowledge}
           onOpenStudy={openStudy}

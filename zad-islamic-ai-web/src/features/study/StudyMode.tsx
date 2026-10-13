@@ -712,7 +712,7 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
               if (cachedBookData?.children && cachedBookData.children.length > 0) {
                 bookChapters = cachedBookData.children
               }
-            } catch {}
+            } catch { }
           }
           if (bookChapters) {
             const flattenNodes = (nodes: TreeNode[]): TreeNode[] => {
@@ -1825,7 +1825,7 @@ ${typesGuide.join('\n')}
               title={isDocumentOpen ? 'النص الأصلي' : 'فتح النص الأصلي'}
             >
               <BookOpen size={16} className="text-sky-500 shrink-0 stroke-[2.2]" />
-              <span>النص الأصلي</span>
+              <span>نص الدرس</span>
             </button>
 
             {/* 3. المحادثة */}

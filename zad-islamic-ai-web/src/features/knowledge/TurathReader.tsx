@@ -11,6 +11,8 @@ import zadDarkLogo from '@/assets/images/ZadDarkLogo.png'
 import { PanelResizer } from '../study/components/PanelResizer'
 import { AudioReaderButton } from '@/components/common/AudioReaderButton'
 import { AuthorBiographyModal } from '@/components/common/AuthorBiographyModal'
+import { fetchTurathBookIndexes, fetchTurathPage } from '../../api/turathApi'
+import { idbGetTurathBookTree, idbSetTurathBookTree } from '../../utils/indexedDbStorage'
 
 type BookMeta = {
   id: number
@@ -615,6 +617,54 @@ export default function TurathReader({
   const [activeHeadingText, setActiveHeadingText] = useState<string | null>(null)
   const [selectedTocIndex, setSelectedTocIndex] = useState<number | null>(null)
 
+  // In-memory page cache per book session (0ms instant page loads)
+  const pageCacheRef = useRef<Map<number, ProcessedContent>>(new Map())
+
+  // Reset page cache when opening a different book
+  useEffect(() => {
+    pageCacheRef.current.clear()
+  }, [book.id])
+
+  // High-performance single page fetcher with in-memory caching and fallback
+  const fetchPageData = useCallback(async (pageNum: number): Promise<ProcessedContent | null> => {
+    // 1. In-memory cache hit (0ms instant)
+    if (pageCacheRef.current.has(pageNum)) {
+      return pageCacheRef.current.get(pageNum)!;
+    }
+
+    const bookNumId = Number(book.id);
+
+    // 2. Fetch single page via fast lightweight Turath API (Vite proxy / Turath proxy)
+    try {
+      const turathRes = await fetchTurathPage(bookNumId, pageNum);
+      if (turathRes && typeof turathRes.text === 'string') {
+        const processed = processTextContent(turathRes.text);
+        pageCacheRef.current.set(pageNum, processed);
+        return processed;
+      }
+    } catch (err) {
+      console.warn('Fast Turath page fetch failed, falling back:', err);
+    }
+
+    // 3. Fallback to HF Space preview endpoint
+    try {
+      const baseUrl = import.meta.env.VITE_DATA_INGESTION_URL || 'https://abourida-zad-tutor-engine-space.hf.space';
+      const res = await fetch(`${baseUrl}/api/v1/data-ingestion/turath-page-preview/${book.id}/${pageNum}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data.text === 'string') {
+          const processed = processTextContent(data.text);
+          pageCacheRef.current.set(pageNum, processed);
+          return processed;
+        }
+      }
+    } catch (err) {
+      console.error('Fallback preview page fetch failed:', err);
+    }
+
+    return null;
+  }, [book.id]);
+
   const handleSetReadingMode = (mode: 'paged' | 'continuous') => {
     if (mode === readingMode) return;
 
@@ -1006,44 +1056,107 @@ export default function TurathReader({
     return () => clearTimeout(timeout);
   }, [activeTocIndex, sidebarTab]);
 
-  // Fetch book TOC
+  // Fetch book TOC & metadata with IndexedDB cache priority (0ms instant)
   useEffect(() => {
+    let isMounted = true;
     const fetchBookInfo = async () => {
-      try {
-        const baseUrl = import.meta.env.VITE_DATA_INGESTION_URL || 'https://abourida-zad-tutor-engine-space.hf.space';
-        const res = await fetch(`${baseUrl}/api/v1/data-ingestion/zad-book-info/${book.id}`)
-        if (res.ok) {
-          const data = await res.json()
+      setLoadingBook(true);
+      const bookNumId = Number(book.id);
 
-          if (data.meta && data.meta.info) {
-            const match = data.meta.info.match(/المؤلف:\s*([^\n]+)/);
-            if (match && match[1]) {
-              setAuthorName(match[1].trim());
+      // 1. Check IndexedDB cache first (0ms instant load!)
+      try {
+        const cachedTree = await idbGetTurathBookTree(bookNumId);
+        if (cachedTree && isMounted) {
+          if (cachedTree.meta) {
+            if (cachedTree.meta.info) {
+              const match = cachedTree.meta.info.match(/المؤلف:\s*([^\n]+)/);
+              if (match && match[1]) setAuthorName(match[1].trim());
+            }
+            if (cachedTree.meta.author_id) setAuthorId(cachedTree.meta.author_id);
+          }
+          if (cachedTree.indexes && Array.isArray(cachedTree.indexes.headings)) {
+            const mappedHeadings: Heading[] = cachedTree.indexes.headings.map((h: any, i: number) => ({
+              id: h.id ?? (i + 1),
+              title: h.title,
+              level: h.level ?? 1,
+              page: h.page
+            }));
+            setToc(mappedHeadings);
+            setExpandedNodes(new Set<number>());
+            if (mappedHeadings.length > 0) {
+              setCurrentPage(prev => (prev <= 1 ? mappedHeadings[0].page : prev));
             }
           }
+          setLoadingBook(false);
+          return;
+        }
+      } catch (e) {
+        console.warn('IndexedDB read error for book TOC:', e);
+      }
 
-          if (data.meta && data.meta.author_id) {
-            setAuthorId(data.meta.author_id);
+      // 2. Fetch using high-speed Turath Book Indexes API
+      try {
+        const turathData = await fetchTurathBookIndexes(bookNumId);
+        if (turathData && isMounted) {
+          if (turathData.meta) {
+            if (turathData.meta.info) {
+              const match = turathData.meta.info.match(/المؤلف:\s*([^\n]+)/);
+              if (match && match[1]) setAuthorName(match[1].trim());
+            }
+            if (turathData.meta.author_id) setAuthorId(turathData.meta.author_id);
           }
-
-          if (data.indexes && data.indexes.headings) {
-            setToc(data.indexes.headings)
-
-            // By default keep TOC collapsed
-            setExpandedNodes(new Set<number>())
+          if (turathData.indexes && Array.isArray(turathData.indexes.headings)) {
+            const mappedHeadings: Heading[] = turathData.indexes.headings.map((h, i) => ({
+              id: i + 1,
+              title: h.title,
+              level: h.level ?? 1,
+              page: h.page
+            }));
+            setToc(mappedHeadings);
+            setExpandedNodes(new Set<number>());
+            if (mappedHeadings.length > 0) {
+              setCurrentPage(prev => (prev <= 1 ? mappedHeadings[0].page : prev));
+            }
           }
-          if (data.indexes?.headings?.length > 0) {
-            setCurrentPage(prev => (prev <= 1 ? data.indexes.headings[0].page : prev))
-          }
+          // Cache in IndexedDB for subsequent 0ms loads
+          await idbSetTurathBookTree(bookNumId, turathData);
+          setLoadingBook(false);
+          return;
         }
       } catch (err) {
-        console.error("Failed to load book info", err)
-      } finally {
-        setLoadingBook(false)
+        console.warn('fetchTurathBookIndexes failed, trying fallback:', err);
       }
-    }
-    fetchBookInfo()
-  }, [book.id])
+
+      // 3. Fallback to HF Space zad-book-info
+      try {
+        const baseUrl = import.meta.env.VITE_DATA_INGESTION_URL || 'https://abourida-zad-tutor-engine-space.hf.space';
+        const res = await fetch(`${baseUrl}/api/v1/data-ingestion/zad-book-info/${book.id}`);
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (data.meta && data.meta.info) {
+            const match = data.meta.info.match(/المؤلف:\s*([^\n]+)/);
+            if (match && match[1]) setAuthorName(match[1].trim());
+          }
+          if (data.meta && data.meta.author_id) setAuthorId(data.meta.author_id);
+          if (data.indexes && data.indexes.headings) {
+            setToc(data.indexes.headings);
+            setExpandedNodes(new Set<number>());
+            if (data.indexes?.headings?.length > 0) {
+              setCurrentPage(prev => (prev <= 1 ? data.indexes.headings[0].page : prev));
+            }
+          }
+          await idbSetTurathBookTree(bookNumId, data);
+        }
+      } catch (err) {
+        console.error("Failed to load book info", err);
+      } finally {
+        if (isMounted) setLoadingBook(false);
+      }
+    };
+
+    fetchBookInfo();
+    return () => { isMounted = false; };
+  }, [book.id]);
 
   // Fetch page content
   useEffect(() => {
@@ -1060,53 +1173,46 @@ export default function TurathReader({
         return;
       }
 
-      // 2. If jumping or page not cached, fetch page and reset buffer starting at target page
+      // 2. Fetch page using fast fetchPageData
       pageSessionRef.current += 1;
       const currentSession = pageSessionRef.current;
       setLoadingPage(true);
       setLoadingNext(false);
       setLoadNextError(false);
       try {
-        const baseUrl = import.meta.env.VITE_DATA_INGESTION_URL || 'https://abourida-zad-tutor-engine-space.hf.space';
-        const res = await fetch(`${baseUrl}/api/v1/data-ingestion/turath-page-preview/${book.id}/${currentPage}`);
+        const processed = await fetchPageData(currentPage);
         if (currentSession !== pageSessionRef.current) return;
 
-        if (res.ok) {
-          const data = await res.json();
-          if (currentSession !== pageSessionRef.current) return;
+        if (processed && processed.main && processed.main !== 'هذه الصفحة فارغة.') {
+          setPageText({
+            main: processed.main,
+            matn: processed.matn,
+            sharh: processed.sharh,
+            footnote: processed.footnote
+          });
+          setContinuousPages([{
+            page: currentPage,
+            text: processed.main,
+            matn: processed.matn,
+            sharh: processed.sharh,
+            footnote: processed.footnote
+          }]);
+          setHasReachedEnd(false);
+          setHasReachedStart(currentPage <= 1);
+          setLoadNextError(false);
 
-          if (data.text) {
-            const { main, matn, sharh, footnote } = processTextContent(data.text);
-            setPageText({
-              main,
-              matn,
-              sharh,
-              footnote
-            });
-            setContinuousPages([{
-              page: currentPage,
-              text: main,
-              matn,
-              sharh,
-              footnote
-            }]);
-            setHasReachedEnd(false);
-            setHasReachedStart(currentPage <= 1);
-            setLoadNextError(false);
-
-            if (scrollContainerRef.current) {
-              scrollContainerRef.current.scrollTo({ top: 0 });
-            }
-          } else {
-            setPageText({ main: 'هذه الصفحة فارغة.', footnote: '' });
-            setContinuousPages([{
-              page: currentPage,
-              text: 'هذه الصفحة فارغة.',
-              footnote: ''
-            }]);
-            setHasReachedEnd(true);
-            setHasReachedStart(true);
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTo({ top: 0 });
           }
+        } else {
+          setPageText({ main: 'هذه الصفحة فارغة.', footnote: '' });
+          setContinuousPages([{
+            page: currentPage,
+            text: 'هذه الصفحة فارغة.',
+            footnote: ''
+          }]);
+          setHasReachedEnd(true);
+          setHasReachedStart(true);
         }
       } catch (err) {
         if (currentSession !== pageSessionRef.current) return;
@@ -1123,7 +1229,7 @@ export default function TurathReader({
       }
     };
     fetchPage();
-  }, [book.id, currentPage]);
+  }, [book.id, currentPage, fetchPageData]);
 
   const handlePageJump = (page: number, title?: string, index?: number) => {
     isJumpingRef.current = true;
@@ -1170,14 +1276,14 @@ export default function TurathReader({
   }, [pageText, continuousPages, targetHeading, loadingPage])
 
   const loadNextPage = async () => {
-    if (loadingNext || hasReachedEnd || !continuousPages.length) return
-    const lastPage = continuousPages[continuousPages.length - 1].page
+    if (loadingNext || hasReachedEnd || !continuousPages.length) return;
+    const lastPage = continuousPages[continuousPages.length - 1].page;
     const currentSession = pageSessionRef.current;
 
-    setLoadingNext(true)
-    setLoadNextError(false)
+    setLoadingNext(true);
+    setLoadNextError(false);
     try {
-      // Progressive Batching: Fetch 2 pages sequentially so the UI updates instantly and we don't spam the API
+      // Progressive batching with fast single page fetch
       const BATCH_SIZE = 2;
       const pagesToFetch = Array.from({ length: BATCH_SIZE }, (_, i) => lastPage + i + 1);
 
@@ -1187,56 +1293,44 @@ export default function TurathReader({
       for (let i = 0; i < pagesToFetch.length; i++) {
         if (currentSession !== pageSessionRef.current) return;
 
-        try {
-          const baseUrl = import.meta.env.VITE_DATA_INGESTION_URL || 'https://abourida-zad-tutor-engine-space.hf.space';
-          const res = await fetch(`${baseUrl}/api/v1/data-ingestion/turath-page-preview/${book.id}/${pagesToFetch[i]}`);
-          if (!res.ok) {
-            reachedEnd = true;
-            break;
-          }
-          const data = await res.json();
+        const processed = await fetchPageData(pagesToFetch[i]);
+        if (processed && processed.main && processed.main !== 'هذه الصفحة فارغة.') {
+          const newPage = {
+            page: pagesToFetch[i],
+            text: processed.main,
+            matn: processed.matn,
+            sharh: processed.sharh,
+            footnote: processed.footnote || undefined
+          };
 
-          if (data && data.text) {
-            const { main, matn, sharh, footnote } = processTextContent(data.text);
-            const newPage = {
-              page: pagesToFetch[i],
-              text: main,
-              matn,
-              sharh,
-              footnote: footnote || undefined
-            };
-
-            setContinuousPages(prev => {
-              if (prev.length === 0 || prev[prev.length - 1].page !== pagesToFetch[i] - 1) {
-                return prev;
-              }
-              return [...prev, newPage];
-            });
-            loadedAtLeastOne = true;
-          } else {
-            reachedEnd = true;
-            break;
-          }
-        } catch {
+          setContinuousPages(prev => {
+            if (prev.length === 0 || prev[prev.length - 1].page !== pagesToFetch[i] - 1) {
+              return prev;
+            }
+            return [...prev, newPage];
+          });
+          loadedAtLeastOne = true;
+        } else {
+          reachedEnd = true;
           break;
         }
       }
 
       if (reachedEnd) {
-        setHasReachedEnd(true)
+        setHasReachedEnd(true);
       } else if (!loadedAtLeastOne) {
-        setLoadNextError(true)
+        setLoadNextError(true);
       }
     } catch (err) {
       if (currentSession !== pageSessionRef.current) return;
-      console.error("Error loading next page:", err)
-      setLoadNextError(true)
+      console.error("Error loading next page:", err);
+      setLoadNextError(true);
     } finally {
       if (currentSession === pageSessionRef.current) {
-        setLoadingNext(false)
+        setLoadingNext(false);
       }
     }
-  }
+  };
 
   const loadPrevPage = async () => {
     if (loadingPrev || hasReachedStart || !continuousPages.length) return;
@@ -1256,23 +1350,16 @@ export default function TurathReader({
 
       for (let i = pagesToFetch.length - 1; i >= 0; i--) {
         if (currentSession !== pageSessionRef.current) break;
-        try {
-          const baseUrl = import.meta.env.VITE_DATA_INGESTION_URL || 'https://abourida-zad-tutor-engine-space.hf.space';
-          const res = await fetch(`${baseUrl}/api/v1/data-ingestion/turath-page-preview/${book.id}/${pagesToFetch[i]}`);
-          if (!res.ok) break;
-          const data = await res.json();
-          if (data && data.text) {
-            const { main, matn, sharh, footnote } = processTextContent(data.text);
-            // Prepend sequentially
-            newPages.unshift({
-              page: pagesToFetch[i],
-              text: main,
-              matn,
-              sharh,
-              footnote: footnote || undefined
-            });
-          }
-        } catch {
+        const processed = await fetchPageData(pagesToFetch[i]);
+        if (processed && processed.main && processed.main !== 'هذه الصفحة فارغة.') {
+          newPages.unshift({
+            page: pagesToFetch[i],
+            text: processed.main,
+            matn: processed.matn,
+            sharh: processed.sharh,
+            footnote: processed.footnote || undefined
+          });
+        } else {
           break;
         }
       }
@@ -1299,11 +1386,6 @@ export default function TurathReader({
             isJumpingRef.current = false;
           }, 400);
         });
-      } else {
-        // If we failed to get pages but we aren't at page 1, maybe an error occurred
-        if (firstPage > 1) {
-          console.error("Failed to load previous pages");
-        }
       }
 
       if (pagesToFetch[0] <= 1) {

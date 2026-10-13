@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from '../../contexts/ThemeContext'
+import IslamicPattern from '../../features/knowledge/components/IslamicPattern'
 
 type Feature = {
   id: string
@@ -71,7 +72,7 @@ const features: Feature[] = [
 export default function FeatureCards() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
-  const { accentColor } = useTheme()
+  const { accentColor, isDark } = useTheme()
 
   const getMeteorGradient = () => {
     switch (accentColor) {
@@ -111,15 +112,28 @@ export default function FeatureCards() {
   }, [isPaused])
 
   return (
-    <section id="features" className="relative z-10 -mt-16 md:-mt-24 mx-auto max-w-6xl px-5 py-24 md:py-32">
-      <div className="mx-auto max-w-2xl text-center">
-        <h2 className="mt-3 font-display text-4xl text-foreground md:text-5xl">
-          علمٌ موثوق <span className="brand-text-gradient">بين يديك</span>
-        </h2>
-        <p className="mt-4 text-lg text-stone-600 dark:text-white">
-          يغطّي زاد المجالات الشرعية الأساسية بإجاباتٍ دقيقة ومصادر معتمدة.
-        </p>
+    <section id="features" className="relative z-10 mt-0 w-full px-5 py-24 md:py-32 overflow-hidden">
+      {/* Authentic Islamic Geometric Tessellation Background (from Study Mode) */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <IslamicPattern
+          className="text-accent"
+          opacity={isDark ? 0.08 : 0.045}
+          scale={0.85}
+        />
+        {/* Soft radial and linear fading masks to seamlessly integrate with page background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background opacity-90 pointer-events-none" />
+        <div className="absolute inset-0 [background:radial-gradient(ellipse_at_center,transparent_30%,var(--color-background)_80%)] opacity-80 pointer-events-none" />
       </div>
+
+      <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="mt-3 font-display text-4xl text-foreground md:text-5xl">
+            علمٌ موثوق <span className="brand-text-gradient">بين يديك</span>
+          </h2>
+          <p className="mt-4 text-lg text-stone-600 dark:text-white">
+            يغطّي زاد المجالات الشرعية الأساسية بإجاباتٍ دقيقة ومصادر معتمدة.
+          </p>
+        </div>
 
       <div className="mt-16 flex flex-col items-center">
         {/* Main Showcase Container */}
@@ -202,7 +216,8 @@ export default function FeatureCards() {
           ))}
         </div>
       </div>
-    </section>
+    </div>
+  </section>
   )
 }
 

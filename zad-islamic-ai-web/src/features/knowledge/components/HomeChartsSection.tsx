@@ -10,6 +10,7 @@ import {
   Sparkles,
   ChevronLeft
 } from 'lucide-react';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface DomainStat {
   name: string;
@@ -38,6 +39,106 @@ export default function HomeChartsSection({
   onSelectDomain
 }: HomeChartsSectionProps) {
   const [activeDomainHover, setActiveDomainHover] = useState<string | null>(null);
+  const { isDark, accentColor } = useTheme();
+
+  const getMetricCardStyle = () => {
+    if (isDark) {
+      return 'bg-[#131620]/90 border border-white/10 shadow-md shadow-black/20';
+    }
+    return 'bg-white/80 border-slate-200/80';
+  };
+
+  const getChartCardStyle = () => {
+    if (isDark) {
+      return 'bg-[#131620]/95 border border-white/10 shadow-lg shadow-black/20';
+    }
+    return 'bg-white/85 border-slate-200/80';
+  };
+
+  const getBookIconStyle = () => {
+    switch (accentColor) {
+      case 'amber':
+        return 'bg-[#dfbf83]/15 text-[#8a652a] dark:text-[#eed8ad]';
+      case 'emerald':
+        return 'bg-teal-500/15 text-teal-600 dark:text-teal-400';
+      case 'blue':
+        return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
+      case 'purple':
+      default:
+        return 'bg-purple-500/10 text-purple-600 dark:text-purple-400';
+    }
+  };
+
+  const getTimelineBarStyle = () => {
+    switch (accentColor) {
+      case 'amber':
+        return 'bg-gradient-to-t from-[#76541f] via-[#b88d46] to-[#dfbf83] group-hover:from-[#b88d46] group-hover:to-[#eed8ae] shadow-md shadow-amber-950/20';
+      case 'emerald':
+        return 'bg-gradient-to-t from-teal-900 via-teal-600 to-teal-400 group-hover:from-teal-600 group-hover:to-teal-300 shadow-md shadow-teal-950/20';
+      case 'blue':
+        return 'bg-gradient-to-t from-blue-900 via-blue-600 to-sky-400 group-hover:from-blue-600 group-hover:to-sky-300 shadow-md shadow-blue-950/20';
+      case 'purple':
+      default:
+        return 'bg-gradient-to-t from-brand-deep via-brand-magenta to-purple-400 group-hover:from-brand-magenta group-hover:to-pink-400 shadow-md shadow-brand-magenta/20';
+    }
+  };
+
+  const getGoldenAgeBadgeStyle = () => {
+    switch (accentColor) {
+      case 'amber':
+        return 'bg-[#dfbf83]/15 text-[#8a652a] dark:text-[#eed8ad]';
+      case 'emerald':
+        return 'bg-teal-500/15 text-teal-600 dark:text-teal-400';
+      case 'blue':
+        return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
+      case 'purple':
+      default:
+        return 'bg-purple-500/15 text-purple-600 dark:text-purple-400';
+    }
+  };
+
+  const getAccentTextColor = () => {
+    switch (accentColor) {
+      case 'amber':
+        return 'text-[#8a652a] dark:text-[#eed8ad]';
+      case 'emerald':
+        return 'text-teal-600 dark:text-teal-400';
+      case 'blue':
+        return 'text-blue-600 dark:text-blue-400';
+      case 'purple':
+      default:
+        return 'text-brand-magenta';
+    }
+  };
+
+  const getAccentDotColor = () => {
+    switch (accentColor) {
+      case 'amber':
+        return 'bg-[#dfbf83]';
+      case 'emerald':
+        return 'bg-teal-400';
+      case 'blue':
+        return 'bg-blue-400';
+      case 'purple':
+      default:
+        return 'bg-brand-magenta';
+    }
+  };
+
+  const getHoverItemStyle = (isSelected: boolean) => {
+    if (!isSelected) return 'hover:bg-slate-50 dark:hover:bg-white/5';
+    switch (accentColor) {
+      case 'amber':
+        return 'bg-[#dfbf83]/15 scale-[1.01]';
+      case 'emerald':
+        return 'bg-teal-500/15 scale-[1.01]';
+      case 'blue':
+        return 'bg-blue-500/15 scale-[1.01]';
+      case 'purple':
+      default:
+        return 'bg-purple-500/10 scale-[1.01]';
+    }
+  };
 
   // Define curated colors for key disciplines
   const disciplineColors: Record<string, string> = {
@@ -97,10 +198,10 @@ export default function HomeChartsSection({
     <div className="space-y-6 pt-2">
       {/* 4 Overview Metric Badges */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="rounded-2xl p-4 bg-white/80 dark:bg-[#15062b]/80 border border-slate-200/80 dark:border-purple-500/20 backdrop-blur-md shadow-sm hover:shadow-md transition-all">
+        <div className={`rounded-2xl p-4 backdrop-blur-md shadow-sm hover:shadow-md transition-all ${getMetricCardStyle()}`}>
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold text-muted-foreground">أمهات المصنفات</span>
-            <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${getBookIconStyle()}`}>
               <BookOpen className="w-4 h-4" />
             </div>
           </div>
@@ -110,7 +211,7 @@ export default function HomeChartsSection({
           <p className="text-[11px] text-muted-foreground mt-0.5">كتاب ومخطوط محقق</p>
         </div>
 
-        <div className="rounded-2xl p-4 bg-white/80 dark:bg-[#15062b]/80 border border-slate-200/80 dark:border-purple-500/20 backdrop-blur-md shadow-sm hover:shadow-md transition-all">
+        <div className={`rounded-2xl p-4 backdrop-blur-md shadow-sm hover:shadow-md transition-all ${getMetricCardStyle()}`}>
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold text-muted-foreground">أعلام ومصنفو التراث</span>
             <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
@@ -123,7 +224,7 @@ export default function HomeChartsSection({
           <p className="text-[11px] text-muted-foreground mt-0.5">إمام وعالم محقق</p>
         </div>
 
-        <div className="rounded-2xl p-4 bg-white/80 dark:bg-[#15062b]/80 border border-slate-200/80 dark:border-purple-500/20 backdrop-blur-md shadow-sm hover:shadow-md transition-all">
+        <div className={`rounded-2xl p-4 backdrop-blur-md shadow-sm hover:shadow-md transition-all ${getMetricCardStyle()}`}>
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold text-muted-foreground">المجالات والتخصصات</span>
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
@@ -136,7 +237,7 @@ export default function HomeChartsSection({
           <p className="text-[11px] text-muted-foreground mt-0.5">باباً وتخصصاً علمياً</p>
         </div>
 
-        <div className="rounded-2xl p-4 bg-white/80 dark:bg-[#15062b]/80 border border-slate-200/80 dark:border-purple-500/20 backdrop-blur-md shadow-sm hover:shadow-md transition-all">
+        <div className={`rounded-2xl p-4 backdrop-blur-md shadow-sm hover:shadow-md transition-all ${getMetricCardStyle()}`}>
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold text-muted-foreground">النطاق الزمني الهجري</span>
             <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
@@ -154,11 +255,11 @@ export default function HomeChartsSection({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
         {/* Chart 1: Distribution of Disciplines (توزيع المصنفات حسب العلوم الشرعية) */}
-        <div className="lg:col-span-5 rounded-3xl p-5 sm:p-6 bg-white/85 dark:bg-[#15062b]/85 border border-slate-200/80 dark:border-purple-500/25 backdrop-blur-md shadow-sm flex flex-col justify-between">
+        <div className={`lg:col-span-5 rounded-3xl p-5 sm:p-6 backdrop-blur-md shadow-sm flex flex-col justify-between ${getChartCardStyle()}`}>
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${getBookIconStyle()}`}>
                   <PieIcon className="w-4 h-4" />
                 </div>
                 <div>
@@ -170,7 +271,7 @@ export default function HomeChartsSection({
                   </p>
                 </div>
               </div>
-              <span className="text-xs font-bold text-brand-magenta font-mono">
+              <span className={`text-xs font-bold font-mono ${getAccentTextColor()}`}>
                 {stats.total_books} كتاب
               </span>
             </div>
@@ -201,11 +302,7 @@ export default function HomeChartsSection({
                   onClick={() => onSelectDomain && onSelectDomain(d.name)}
                   onMouseEnter={() => setActiveDomainHover(d.name)}
                   onMouseLeave={() => setActiveDomainHover(null)}
-                  className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                    activeDomainHover === d.name 
-                      ? 'bg-purple-500/10 scale-[1.01]' 
-                      : 'hover:bg-slate-50 dark:hover:bg-white/5'
-                  }`}
+                  className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-3 ${getHoverItemStyle(activeDomainHover === d.name)}`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span 
@@ -235,16 +332,16 @@ export default function HomeChartsSection({
 
           <div className="pt-3 mt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px] text-muted-foreground">
             <span>بيانات حية محدثة من قاعدة المكتبة</span>
-            <span className="text-brand-magenta font-bold">تصفح بالضغط على المجال ↗</span>
+            <span className={`font-bold cursor-pointer ${getAccentTextColor()}`}>تصفح بالضغط على المجال ↗</span>
           </div>
         </div>
 
         {/* Chart 2: Timeline of Authorship Across Islamic Centuries (حركة التدوين عبر القرون) */}
-        <div className="lg:col-span-7 rounded-3xl p-5 sm:p-6 bg-white/85 dark:bg-[#15062b]/85 border border-slate-200/80 dark:border-purple-500/25 backdrop-blur-md shadow-sm flex flex-col justify-between">
+        <div className={`lg:col-span-7 rounded-3xl p-5 sm:p-6 backdrop-blur-md shadow-sm flex flex-col justify-between ${getChartCardStyle()}`}>
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${getGoldenAgeBadgeStyle()}`}>
                   <BarChart3 className="w-4 h-4" />
                 </div>
                 <div>
@@ -256,7 +353,7 @@ export default function HomeChartsSection({
                   </p>
                 </div>
               </div>
-              <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center gap-1">
+              <span className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${getGoldenAgeBadgeStyle()}`}>
                 <TrendingUp className="w-3.5 h-3.5" />
                 العصور الذهبية
               </span>
@@ -277,12 +374,12 @@ export default function HomeChartsSection({
 
                   {/* The Bar */}
                   <div 
-                    className="w-full max-w-[28px] rounded-t-xl bg-gradient-to-t from-brand-deep via-brand-magenta to-purple-400 group-hover:from-brand-magenta group-hover:to-pink-400 transition-all duration-300 shadow-md shadow-brand-magenta/20 group-hover:scale-105"
+                    className={`w-full max-w-[28px] rounded-t-xl transition-all duration-300 group-hover:scale-105 ${getTimelineBarStyle()}`}
                     style={{ height: c.height }}
                   />
                   
                   {/* Centurial Label */}
-                  <span className="text-[10px] font-bold text-muted-foreground mt-2 group-hover:text-brand-magenta transition-colors whitespace-nowrap">
+                  <span className={`text-[10px] font-bold text-muted-foreground mt-2 transition-colors whitespace-nowrap group-hover:${getAccentTextColor()}`}>
                     {c.century}
                   </span>
                 </div>
@@ -292,7 +389,7 @@ export default function HomeChartsSection({
 
           <div className="pt-3 mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-brand-magenta" />
+              <span className={`w-2 h-2 rounded-full ${getAccentDotColor()}`} />
               الذروة في القرنين 7 و 8 هـ (عصر كبار الأئمة والموسوعات)
             </span>
             <span className="font-mono">ق 2 - ق 10 هـ</span>

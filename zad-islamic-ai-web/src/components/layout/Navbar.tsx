@@ -5,7 +5,7 @@ import darkLogo from '@/assets/images/ZadDarkLogo.webp'
 import {
   User, LogOut, Settings, LayoutDashboard, Sun, Moon, Sparkles, LogIn, Loader2,
   Activity, Zap, Server, Cpu, Home, BookOpen, GraduationCap, MessageSquare, Mic,
-  ChevronLeft, ShieldCheck, Database, Video, X, BookOpenCheck, Bell, Palette, Menu,
+  ChevronLeft, ChevronDown, ShieldCheck, Database, Video, X, BookOpenCheck, Bell, Palette, Menu,
   Share2, Smartphone, Copy, Check, Globe, Mail
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -33,6 +33,8 @@ export default function Navbar({
   onOpenLessons,
   onOpenYoutubeImporter,
   onOpenSystemObservability,
+  onNavigateHome,
+  activeTab = 'home',
 }: {
   onTryChat: () => void
   onOpenKnowledge: () => void
@@ -47,6 +49,8 @@ export default function Navbar({
   onOpenVoiceChat?: () => void
   onOpenYoutubeImporter?: () => void
   onOpenSystemObservability?: () => void
+  onNavigateHome?: () => void
+  activeTab?: 'home' | 'knowledge' | 'lessons' | 'study' | 'chat' | 'voice'
 }) {
   const [open, setOpen] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
@@ -55,6 +59,8 @@ export default function Navbar({
   const [showShareModal, setShowShareModal] = useState(false)
   const [copiedType, setCopiedType] = useState<'web' | 'app' | null>(null)
   const [showThemeMenu, setShowThemeMenu] = useState(false)
+  const [isAdminMenuExpanded, setIsAdminMenuExpanded] = useState(false)
+  const [isMobileAdminMenuExpanded, setIsMobileAdminMenuExpanded] = useState(false)
 
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const themeMenuRef = useRef<HTMLDivElement>(null)
@@ -186,16 +192,94 @@ export default function Navbar({
     switch (accentColor) {
       case 'emerald': return isDark ? 'text-teal-400' : 'text-teal-700'
       case 'amber': return isDark ? 'text-[#dfbf83]' : 'text-[#8a652a]'
-      case 'blue': return isDark ? 'text-blue-400' : 'text-blue-700'
-      default: return isDark ? 'text-purple-300' : 'text-purple-700'
+      case 'blue':
+        return isDark
+          ? 'bg-gradient-to-l from-[#38bdf8] via-[#60a5fa] to-[#2563eb] bg-clip-text text-transparent font-black drop-shadow-[0_2px_10px_rgba(37,99,235,0.45)]'
+          : 'bg-gradient-to-l from-[#0284c7] via-[#1d4ed8] to-[#1e40af] bg-clip-text text-transparent font-black'
+      case 'purple':
+      default:
+        return isDark
+          ? 'bg-gradient-to-l from-[#c084fc] via-[#9d32ec] to-[#801bcc] bg-clip-text text-transparent font-black drop-shadow-[0_2px_10px_rgba(157,50,236,0.4)]'
+          : 'bg-gradient-to-l from-[#7b1fa2] via-[#8e24aa] to-[#5e1482] bg-clip-text text-transparent font-black'
+    }
+  }
+
+  const renderBrandLogo = (sizeClass = 'h-8 w-8 lg:h-10 lg:w-10') => {
+    if (accentColor === 'purple') {
+      return (
+        <img
+          src={darkLogo}
+          alt="شعار زاد"
+          className={`${sizeClass} shrink-0 object-contain drop-shadow-[0_3px_12px_rgba(157,50,236,0.35)] transition-all`}
+        />
+      )
+    }
+
+    const shadowClass = isDark
+      ? accentColor === 'blue'
+        ? 'drop-shadow-[0_3px_12px_rgba(37,99,235,0.45)]'
+        : accentColor === 'emerald'
+        ? 'drop-shadow-[0_3px_12px_rgba(20,184,166,0.4)]'
+        : 'drop-shadow-[0_3px_12px_rgba(223,191,131,0.4)]'
+      : accentColor === 'blue'
+      ? 'drop-shadow-[0_2px_8px_rgba(2,132,199,0.35)]'
+      : accentColor === 'emerald'
+      ? 'drop-shadow-[0_2px_8px_rgba(13,148,136,0.35)]'
+      : 'drop-shadow-[0_2px_8px_rgba(184,141,70,0.35)]'
+
+    return (
+      <div
+        aria-hidden="true"
+        className={`${sizeClass} shrink-0 transition-colors duration-300 ${shadowClass} ${getLogoBgColorClass()}`}
+        style={{
+          WebkitMaskImage: `url(${whiteLogo})`,
+          maskImage: `url(${whiteLogo})`,
+          WebkitMaskSize: 'contain',
+          maskSize: 'contain',
+          WebkitMaskRepeat: 'no-repeat',
+          maskRepeat: 'no-repeat',
+          WebkitMaskPosition: 'center',
+          maskPosition: 'center',
+        }}
+      />
+    )
+  }
+
+  const getTabIndicatorClass = () => {
+    switch (accentColor) {
+      case 'emerald': return 'bg-teal-400 shadow-[0_0_12px_rgba(45,212,191,0.95)]'
+      case 'amber': return 'bg-[#dfbf83] shadow-[0_0_12px_rgba(223,191,131,0.95)]'
+      case 'blue': return 'bg-gradient-to-r from-[#38bdf8] to-[#2563eb] shadow-[0_0_12px_rgba(37,99,235,0.95)]'
+      default: return 'bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.95)]'
+    }
+  }
+
+  const getTabLinkClass = (isActive = false) => {
+    if (isDark) {
+      return isActive
+        ? 'text-white font-bold'
+        : 'text-white/80 hover:text-white font-semibold'
+    } else {
+      return isActive
+        ? 'text-stone-950 font-bold'
+        : 'text-stone-800 hover:text-black font-semibold'
     }
   }
 
   const getLogoBgColorClass = () => {
     switch (accentColor) {
-      case 'emerald': return isDark ? 'bg-teal-400' : 'bg-teal-700'
-      case 'amber': return isDark ? 'bg-[#dfbf83]' : 'bg-[#8a652a]'
-      case 'blue': return isDark ? 'bg-blue-400' : 'bg-blue-700'
+      case 'emerald':
+        return isDark
+          ? 'bg-gradient-to-b from-[#5eead4] via-[#14b8a6] to-[#0f766e]'
+          : 'bg-gradient-to-b from-[#14b8a6] via-[#0d9488] to-[#134e4a]'
+      case 'amber':
+        return isDark
+          ? 'bg-gradient-to-b from-[#f5ecd5] via-[#dfbf83] to-[#8e682d]'
+          : 'bg-gradient-to-b from-[#dfbf83] via-[#b88d46] to-[#5e431a]'
+      case 'blue':
+        return isDark
+          ? 'bg-gradient-to-b from-[#38bdf8] via-[#2563eb] to-[#1e40af]'
+          : 'bg-gradient-to-b from-[#0284c7] via-[#1d4ed8] to-[#1e3a8a]'
       default: return isDark ? 'bg-purple-300' : 'bg-purple-700'
     }
   }
@@ -418,90 +502,87 @@ export default function Navbar({
       }`}>
 
         {/* Brand (Right Section in RTL) */}
-        <a href="#home" className="flex shrink-0 items-center gap-2 lg:gap-2.5 transition-transform hover:scale-105">
-          {isDark ? (
-            <div
-              aria-hidden="true"
-              className={`h-8 w-8 lg:h-10 lg:w-10 shrink-0 transition-colors duration-300 ${getLogoBgColorClass()}`}
-              style={{
-                WebkitMaskImage: `url(${whiteLogo})`,
-                maskImage: `url(${whiteLogo})`,
-                WebkitMaskSize: 'contain',
-                maskSize: 'contain',
-                WebkitMaskRepeat: 'no-repeat',
-                maskRepeat: 'no-repeat',
-                WebkitMaskPosition: 'center',
-                maskPosition: 'center',
-              }}
-            />
-          ) : (
-            <img src={darkLogo} alt="شعار زاد" className="h-8 w-8 lg:h-10 lg:w-10 object-contain" />
-          )}
-          <span className={`font-display text-[22px] lg:text-[28px] transition-colors ${getZadWordClass()}`}>زاد</span>
+        <a
+          href="#home"
+          onClick={(e) => {
+            if (onNavigateHome) {
+              e.preventDefault()
+              onNavigateHome()
+            }
+          }}
+          className="flex shrink-0 items-center gap-2 lg:gap-2.5 transition-transform hover:scale-105 cursor-pointer"
+        >
+          {renderBrandLogo('h-8 w-8 lg:h-10 lg:w-10')}
+          <span className={`font-display text-[22px] lg:text-[28px] inline-block transition-colors ${getZadWordClass()}`}>زاد</span>
         </a>
 
         {/* Center Section: Tabs (Adapts and shrinks down to 768px) */}
         <div className="hidden flex-1 items-center justify-center md:flex px-1 lg:px-2 xl:px-4 min-w-0">
           <ul className="flex items-center gap-1.5 sm:gap-2.5 lg:gap-3.5 xl:gap-6">
-            {links.map((l, index) => (
-              <li key={l.href} className="shrink-0">
-                <a
-                  href={l.href}
-                  className="group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] font-semibold text-white/80 transition-colors duration-300 hover:text-white whitespace-nowrap"
-                >
-                  {l.label}
-                  <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.9)] transition-all duration-300 ${index === 0 ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
-                </a>
-              </li>
-            ))}
+            <li className="shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onNavigateHome) {
+                    onNavigateHome()
+                  } else {
+                    window.location.hash = '#home'
+                  }
+                }}
+                className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'home')}`}
+              >
+                الرئيسية
+                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'home' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
+              </button>
+            </li>
             <li className="shrink-0">
               <button
                 type="button"
                 onClick={onOpenKnowledge}
-                className="group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] font-semibold text-white/80 transition-colors duration-300 hover:text-white whitespace-nowrap"
+                className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'knowledge')}`}
               >
                 المكتبة
-                <span className="absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] w-0 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.9)] transition-all duration-300 group-hover:w-6 lg:group-hover:w-8" />
+                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'knowledge' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
               </button>
             </li>
             <li className="shrink-0">
               <button
                 type="button"
                 onClick={onOpenLessons}
-                className="group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] font-semibold text-white/80 transition-colors duration-300 hover:text-white whitespace-nowrap"
+                className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'lessons')}`}
               >
                 الشروحات والدروس
-                <span className="absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] w-0 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.9)] transition-all duration-300 group-hover:w-6 lg:group-hover:w-8" />
+                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'lessons' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
               </button>
             </li>
             <li className="shrink-0">
               <button
                 type="button"
                 onClick={onOpenStudy}
-                className="group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] font-semibold text-white/80 transition-colors duration-300 hover:text-white whitespace-nowrap"
+                className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'study')}`}
               >
                 وضع الدراسة
-                <span className="absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] w-0 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.9)] transition-all duration-300 group-hover:w-6 lg:group-hover:w-8" />
+                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'study' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
               </button>
             </li>
             <li className="shrink-0">
               <button
                 type="button"
                 onClick={onTryChat}
-                className="group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] font-semibold text-white/80 transition-colors duration-300 hover:text-white whitespace-nowrap"
+                className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'chat')}`}
               >
                 المحادثة النصية
-                <span className="absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] w-0 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.9)] transition-all duration-300 group-hover:w-6 lg:group-hover:w-8" />
+                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'chat' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
               </button>
             </li>
             <li className="shrink-0">
               <button
                 type="button"
                 onClick={onOpenVoiceChat}
-                className="group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] font-semibold text-white/80 transition-colors duration-300 hover:text-white whitespace-nowrap"
+                className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'voice')}`}
               >
                 المحادثة الصوتية
-                <span className="absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] w-0 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.9)] transition-all duration-300 group-hover:w-6 lg:group-hover:w-8" />
+                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'voice' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
               </button>
             </li>
           </ul>
@@ -512,16 +593,16 @@ export default function Navbar({
           {/* جرس الإشعارات */}
           <NotificationBell />
 
-          {/* زر القائمة (مدخل الإعدادات والبروفايل في وضع الكمبيوتر) */}
+          {/* زر القائمة والإعدادات (مدخل الإعدادات والبروفايل في وضع الكمبيوتر) */}
           <div className="relative" ref={profileMenuRef}>
             <button
               type="button"
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              aria-label="القائمة والإعدادات"
-              title="القائمة والإعدادات"
-              className={`flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-full border backdrop-blur-md transition-all active:scale-95 ${getNavActionBtnClass()}`}
+              aria-label="الإعدادات والمظهر"
+              title="الإعدادات والمظهر"
+              className={`flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-full border backdrop-blur-md transition-all active:scale-95 group ${getNavActionBtnClass()}`}
             >
-              <Menu className="h-4 w-4 lg:h-[18px] lg:w-[18px]" strokeWidth={2.2} />
+              <Settings className="h-4 w-4 lg:h-[18px] lg:w-[18px] transition-transform group-hover:rotate-45 duration-300" strokeWidth={2.2} />
             </button>
 
             {showProfileMenu && (
@@ -596,147 +677,185 @@ export default function Navbar({
 
                 {/* لوحات إدارة النظام (للأدمن) */}
                 {isAuthenticated && isAdmin && (
-                  <div className={`pt-2 border-t space-y-1 ${isDark ? 'border-white/10' : 'border-stone-200/60'}`}>
-                    <div className={`flex items-center gap-2 px-2 py-1 text-[11px] font-bold ${getDrawerSectionHeadingClass()}`}>
-                      <ShieldCheck size={13} className={accentColor === 'emerald' ? 'text-teal-400' : accentColor === 'amber' ? 'text-[#dfbf83]' : accentColor === 'blue' ? 'text-blue-400' : 'text-purple-400'} />
-                      <span>لوحة تحكم المسؤول</span>
-                    </div>
-
-                    {onOpenAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          onOpenAdmin()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-brand-blue hover:bg-white/10' : 'text-blue-700 hover:bg-blue-50'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <LayoutDashboard size={13} />
-                          <span>إدارة وضع الدراسة</span>
+                  <div className={`rounded-xl border transition-all overflow-hidden ${getNavItemCardClass()}`}>
+                    <button
+                      type="button"
+                      onClick={() => setIsAdminMenuExpanded(!isAdminMenuExpanded)}
+                      className="flex w-full items-center justify-between px-3.5 py-2.5 text-right transition-colors cursor-pointer select-none"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
+                          <ShieldCheck size={16} />
                         </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-blue-400/50' : 'text-blue-700/50'} />
-                      </button>
-                    )}
-
-                    {onOpenTurathRag && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          onOpenTurathRag()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-sky-400 hover:bg-white/10' : 'text-sky-700 hover:bg-sky-50'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Zap size={13} />
-                          <span>استخراج وتخزين الكتب</span>
+                        <div className="text-right">
+                          <div className="flex items-center gap-2">
+                            <span className="block text-sm font-bold">لوحات إدارة النظام</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getThemeBadgeClass()}`}>
+                              أدمن
+                            </span>
+                          </div>
+                          <span className={`text-[11px] font-normal ${isDark ? 'text-white/60' : 'text-stone-500'}`}>
+                            صفحات وأدوات التحكم الإداري
+                          </span>
                         </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-sky-400/50' : 'text-sky-700/50'} />
-                      </button>
-                    )}
-
-                    {onOpenEngineControl && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          onOpenEngineControl()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-purple-400 hover:bg-white/10' : 'text-purple-700 hover:bg-purple-50'}`}
+                      </div>
+                      <motion.div
+                        animate={{ rotate: isAdminMenuExpanded ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        <div className="flex items-center gap-2">
-                          <Cpu size={13} />
-                          <span>التحكم في محركات RAG</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-purple-400/50' : 'text-purple-700/50'} />
-                      </button>
-                    )}
+                        <ChevronDown size={16} className={isDark ? 'text-white/50' : 'text-stone-400'} />
+                      </motion.div>
+                    </button>
 
-                    {onOpenDataIngestion && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          onOpenDataIngestion()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-emerald-400 hover:bg-white/10' : 'text-emerald-700 hover:bg-emerald-50'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Database size={13} />
-                          <span>إدارة البيانات</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-emerald-400/50' : 'text-emerald-700/50'} />
-                      </button>
-                    )}
+                    <AnimatePresence>
+                      {isAdminMenuExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className={`border-t px-2 py-2 space-y-1 ${
+                            isDark ? 'border-white/10 bg-black/25' : 'border-stone-200/80 bg-stone-50/80'
+                          }`}
+                        >
+                          {onOpenAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowProfileMenu(false)
+                                onOpenAdmin()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-brand-blue hover:bg-white/10' : 'text-blue-700 hover:bg-blue-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <LayoutDashboard size={13} />
+                                <span>إدارة وضع الدراسة</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-blue-400/50' : 'text-blue-700/50'} />
+                            </button>
+                          )}
 
-                    {onOpenV2PipelineAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          onOpenV2PipelineAdmin()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-blue-400 hover:bg-white/10' : 'text-blue-700 hover:bg-blue-50'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Sparkles size={13} />
-                          <span>إدخال بيانات AI</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-blue-400/50' : 'text-blue-700/50'} />
-                      </button>
-                    )}
+                          {onOpenTurathRag && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowProfileMenu(false)
+                                onOpenTurathRag()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-sky-400 hover:bg-white/10' : 'text-sky-700 hover:bg-sky-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Zap size={13} />
+                                <span>استخراج وتخزين الكتب</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-sky-400/50' : 'text-sky-700/50'} />
+                            </button>
+                          )}
 
-                    {onOpenAdminLibrary && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          onOpenAdminLibrary()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-amber-400 hover:bg-white/10' : 'text-amber-700 hover:bg-amber-50'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <BookOpen size={13} />
-                          <span>إدارة مكتبة القراءة</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-amber-400/50' : 'text-amber-700/50'} />
-                      </button>
-                    )}
+                          {onOpenEngineControl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowProfileMenu(false)
+                                onOpenEngineControl()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-purple-400 hover:bg-white/10' : 'text-purple-700 hover:bg-purple-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Cpu size={13} />
+                                <span>التحكم في محركات RAG</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-purple-400/50' : 'text-purple-700/50'} />
+                            </button>
+                          )}
 
-                    {onOpenYoutubeImporter && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          onOpenYoutubeImporter()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-red-400 hover:bg-white/10' : 'text-red-700 hover:bg-red-50'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Video size={13} />
-                          <span>استيراد شروحات يوتيوب</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-red-400/50' : 'text-red-700/50'} />
-                      </button>
-                    )}
+                          {onOpenDataIngestion && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowProfileMenu(false)
+                                onOpenDataIngestion()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-emerald-400 hover:bg-white/10' : 'text-emerald-700 hover:bg-emerald-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Database size={13} />
+                                <span>إدارة البيانات</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-emerald-400/50' : 'text-emerald-700/50'} />
+                            </button>
+                          )}
 
-                    {onOpenSystemObservability && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowProfileMenu(false)
-                          onOpenSystemObservability()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-amber-300 hover:bg-white/10' : 'text-amber-700 hover:bg-amber-50'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Activity size={13} />
-                          <span>مراقبة النظام والـ AI</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-amber-300/50' : 'text-amber-700/50'} />
-                      </button>
-                    )}
+                          {onOpenV2PipelineAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowProfileMenu(false)
+                                onOpenV2PipelineAdmin()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-blue-400 hover:bg-white/10' : 'text-blue-700 hover:bg-blue-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Sparkles size={13} />
+                                <span>إدخال بيانات AI</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-blue-400/50' : 'text-blue-700/50'} />
+                            </button>
+                          )}
+
+                          {onOpenAdminLibrary && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowProfileMenu(false)
+                                onOpenAdminLibrary()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-amber-400 hover:bg-white/10' : 'text-amber-700 hover:bg-amber-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <BookOpen size={13} />
+                                <span>إدارة مكتبة القراءة</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-amber-400/50' : 'text-amber-700/50'} />
+                            </button>
+                          )}
+
+                          {onOpenYoutubeImporter && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowProfileMenu(false)
+                                onOpenYoutubeImporter()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-red-400 hover:bg-white/10' : 'text-red-700 hover:bg-red-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Video size={13} />
+                                <span>استيراد شروحات يوتيوب</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-red-400/50' : 'text-red-700/50'} />
+                            </button>
+                          )}
+
+                          {onOpenSystemObservability && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowProfileMenu(false)
+                                onOpenSystemObservability()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-amber-300 hover:bg-white/10' : 'text-amber-700 hover:bg-amber-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Activity size={13} />
+                                <span>مراقبة النظام والـ AI</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-amber-300/50' : 'text-amber-700/50'} />
+                            </button>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
 
@@ -930,21 +1049,8 @@ export default function Navbar({
               {/* 1. Header: Logo Zad, "زاد", Close button (X) on the left */}
               <div className={`flex items-center justify-between px-5 py-4 border-b ${getDrawerBorderClass()}`}>
                 <div className="flex items-center gap-2.5">
-                  <div
-                    aria-hidden="true"
-                    className={`h-9 w-9 shrink-0 transition-colors duration-300 ${getLogoBgColorClass()}`}
-                    style={{
-                      WebkitMaskImage: `url(${whiteLogo})`,
-                      maskImage: `url(${whiteLogo})`,
-                      WebkitMaskSize: 'contain',
-                      maskSize: 'contain',
-                      WebkitMaskRepeat: 'no-repeat',
-                      maskRepeat: 'no-repeat',
-                      WebkitMaskPosition: 'center',
-                      maskPosition: 'center',
-                    }}
-                  />
-                  <span className={`font-display text-2xl font-bold tracking-wide transition-colors ${getZadWordClass()}`}>زاد</span>
+                  {renderBrandLogo('h-9 w-9')}
+                  <span className={`font-display text-2xl font-bold tracking-wide inline-block transition-colors ${getZadWordClass()}`}>زاد</span>
                 </div>
                 <button
                   type="button"
@@ -996,19 +1102,29 @@ export default function Navbar({
                     التنقل الأساسي
                   </div>
 
-                  {/* الرئيسية (Active / Highlighted) */}
+                  {/* الرئيسية */}
                   <a
                     href="#home"
-                    onClick={() => setOpen(false)}
-                    className={`flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-bold active:scale-[0.99] transition-all ${getActiveNavClass()}`}
+                    onClick={(e) => {
+                      setOpen(false)
+                      if (onNavigateHome) {
+                        e.preventDefault()
+                        onNavigateHome()
+                      }
+                    }}
+                    className={`flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm active:scale-[0.99] transition-all cursor-pointer ${activeTab === 'home' ? `font-bold ${getActiveNavClass()}` : `font-semibold ${getNavItemCardClass()}`}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg brand-gradient text-white shadow-sm">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${activeTab === 'home' ? 'brand-gradient text-white shadow-sm' : `border ${getNavIconBoxClass()}`}`}>
                         <Home size={16} />
                       </div>
                       <span>الرئيسية</span>
                     </div>
-                    <span className={`h-2 w-2 rounded-full ${getActiveDotClass()}`} />
+                    {activeTab === 'home' ? (
+                      <span className={`h-2 w-2 rounded-full ${getActiveDotClass()}`} />
+                    ) : (
+                      <ChevronLeft size={16} className={isDark ? 'text-white/55' : 'text-stone-400'} />
+                    )}
                   </a>
 
                   {/* المكتبة */}
@@ -1018,15 +1134,19 @@ export default function Navbar({
                       setOpen(false)
                       onOpenKnowledge()
                     }}
-                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${getNavItemCardClass()}`}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm active:scale-[0.99] transition-all cursor-pointer ${activeTab === 'knowledge' ? `font-bold ${getActiveNavClass()}` : `font-semibold ${getNavItemCardClass()}`}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${activeTab === 'knowledge' ? 'brand-gradient text-white shadow-sm' : `border ${getNavIconBoxClass()}`}`}>
                         <BookOpen size={16} />
                       </div>
                       <span>المكتبة</span>
                     </div>
-                    <ChevronLeft size={16} className={isDark ? 'text-white/55' : 'text-stone-400'} />
+                    {activeTab === 'knowledge' ? (
+                      <span className={`h-2 w-2 rounded-full ${getActiveDotClass()}`} />
+                    ) : (
+                      <ChevronLeft size={16} className={isDark ? 'text-white/55' : 'text-stone-400'} />
+                    )}
                   </button>
 
                   {/* الشروحات والدورات (Video Icon) */}
@@ -1036,15 +1156,19 @@ export default function Navbar({
                       setOpen(false)
                       onOpenLessons()
                     }}
-                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-semibold active:scale-[0.99] transition-all ${getNavItemCardClass()}`}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm active:scale-[0.99] transition-all cursor-pointer ${activeTab === 'lessons' ? `font-bold ${getActiveNavClass()}` : `font-semibold ${getNavItemCardClass()}`}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${activeTab === 'lessons' ? 'brand-gradient text-white shadow-sm' : `border ${getNavIconBoxClass()}`}`}>
                         <Video size={16} />
                       </div>
                       <span>الشروحات والدورات</span>
                     </div>
-                    <ChevronLeft size={16} className={isDark ? 'text-white/55' : 'text-stone-400'} />
+                    {activeTab === 'lessons' ? (
+                      <span className={`h-2 w-2 rounded-full ${getActiveDotClass()}`} />
+                    ) : (
+                      <ChevronLeft size={16} className={isDark ? 'text-white/55' : 'text-stone-400'} />
+                    )}
                   </button>
                 </div>
 
@@ -1113,155 +1237,185 @@ export default function Navbar({
 
                 {/* Admin Management Tools (If admin) */}
                 {isAuthenticated && isAdmin && (
-                  <div className={`pt-2 border-t space-y-1 ${isDark ? 'border-white/10' : 'border-stone-200/60'}`}>
-                    <div className={`flex items-center gap-2 px-2 py-1 text-[11px] font-bold ${getDrawerSectionHeadingClass()}`}>
-                      <ShieldCheck size={13} className={accentColor === 'emerald' ? 'text-teal-400' : accentColor === 'amber' ? 'text-[#dfbf83]' : accentColor === 'blue' ? 'text-blue-400' : 'text-purple-400'} />
-                      <span>لوحة تحكم المسؤول</span>
-                    </div>
-
-                    {onOpenTurathRag && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpen(false)
-                          onOpenTurathRag()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-sky-400 hover:bg-white/10' : 'text-sky-700 hover:bg-sky-50'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Zap size={13} />
-                          <span>استخراج وتخزين الكتب</span>
+                  <div className={`rounded-xl border transition-all overflow-hidden ${getNavItemCardClass()}`}>
+                    <button
+                      type="button"
+                      onClick={() => setIsMobileAdminMenuExpanded(!isMobileAdminMenuExpanded)}
+                      className="flex w-full items-center justify-between px-3.5 py-2.5 text-right transition-colors cursor-pointer select-none"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${getNavIconBoxClass()}`}>
+                          <ShieldCheck size={16} />
                         </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-sky-400/50' : 'text-sky-700/50'} />
-                      </button>
-                    )}
-
-                    {onOpenEngineControl && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpen(false)
-                          onOpenEngineControl()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-purple-400 hover:bg-white/10' : 'text-purple-700 hover:bg-purple-50'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Cpu size={13} />
-                          <span>التحكم في محركات RAG</span>
+                        <div className="text-right">
+                          <div className="flex items-center gap-2">
+                            <span className="block text-sm font-bold">لوحات إدارة النظام</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getThemeBadgeClass()}`}>
+                              أدمن
+                            </span>
+                          </div>
+                          <span className={`text-[11px] font-normal ${isDark ? 'text-white/60' : 'text-stone-500'}`}>
+                            صفحات وأدوات التحكم الإداري
+                          </span>
                         </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-purple-400/50' : 'text-purple-700/50'} />
-                      </button>
-                    )}
-
-                    {onOpenAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpen(false)
-                          onOpenAdmin()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-brand-blue hover:bg-white/10' : 'text-blue-700 hover:bg-blue-50'
-                          }`}
+                      </div>
+                      <motion.div
+                        animate={{ rotate: isMobileAdminMenuExpanded ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        <div className="flex items-center gap-2">
-                          <LayoutDashboard size={13} />
-                          <span>إدارة وضع الدراسة</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-blue-400/50' : 'text-blue-700/50'} />
-                      </button>
-                    )}
+                        <ChevronDown size={16} className={isDark ? 'text-white/50' : 'text-stone-400'} />
+                      </motion.div>
+                    </button>
 
-                    {onOpenDataIngestion && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpen(false)
-                          onOpenDataIngestion()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-emerald-400 hover:bg-white/10' : 'text-emerald-700 hover:bg-emerald-50'
+                    <AnimatePresence>
+                      {isMobileAdminMenuExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className={`border-t px-2 py-2 space-y-1 ${
+                            isDark ? 'border-white/10 bg-black/25' : 'border-stone-200/80 bg-stone-50/80'
                           }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Database size={13} />
-                          <span>إدارة البيانات</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-emerald-400/50' : 'text-emerald-700/50'} />
-                      </button>
-                    )}
+                        >
+                          {onOpenAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpen(false)
+                                onOpenAdmin()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-brand-blue hover:bg-white/10' : 'text-blue-700 hover:bg-blue-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <LayoutDashboard size={13} />
+                                <span>إدارة وضع الدراسة</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-blue-400/50' : 'text-blue-700/50'} />
+                            </button>
+                          )}
 
-                    {onOpenV2PipelineAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpen(false)
-                          onOpenV2PipelineAdmin()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-blue-400 hover:bg-white/10' : 'text-blue-700 hover:bg-blue-50'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Sparkles size={13} />
-                          <span>إدخال بيانات AI</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-blue-400/50' : 'text-blue-700/50'} />
-                      </button>
-                    )}
+                          {onOpenTurathRag && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpen(false)
+                                onOpenTurathRag()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-sky-400 hover:bg-white/10' : 'text-sky-700 hover:bg-sky-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Zap size={13} />
+                                <span>استخراج وتخزين الكتب</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-sky-400/50' : 'text-sky-700/50'} />
+                            </button>
+                          )}
 
-                    {onOpenAdminLibrary && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpen(false)
-                          onOpenAdminLibrary()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-amber-400 hover:bg-white/10' : 'text-amber-700 hover:bg-amber-50'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Settings size={13} />
-                          <span>إدارة مكتبة القراءة</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-amber-400/50' : 'text-amber-700/50'} />
-                      </button>
-                    )}
+                          {onOpenEngineControl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpen(false)
+                                onOpenEngineControl()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-purple-400 hover:bg-white/10' : 'text-purple-700 hover:bg-purple-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Cpu size={13} />
+                                <span>التحكم في محركات RAG</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-purple-400/50' : 'text-purple-700/50'} />
+                            </button>
+                          )}
 
-                    {onOpenYoutubeImporter && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpen(false)
-                          onOpenYoutubeImporter()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-red-400 hover:bg-white/10' : 'text-red-700 hover:bg-red-50'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Video size={13} />
-                          <span>استيراد شروحات يوتيوب</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-red-400/50' : 'text-red-700/50'} />
-                      </button>
-                    )}
+                          {onOpenDataIngestion && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpen(false)
+                                onOpenDataIngestion()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-emerald-400 hover:bg-white/10' : 'text-emerald-700 hover:bg-emerald-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Database size={13} />
+                                <span>إدارة البيانات</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-emerald-400/50' : 'text-emerald-700/50'} />
+                            </button>
+                          )}
 
-                    {onOpenSystemObservability && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpen(false)
-                          onOpenSystemObservability()
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-amber-300 hover:bg-white/10' : 'text-amber-700 hover:bg-amber-50'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Activity size={13} />
-                          <span>مراقبة النظام والـ AI</span>
-                        </div>
-                        <ChevronLeft size={12} className={isDark ? 'text-amber-300/50' : 'text-amber-700/50'} />
-                      </button>
-                    )}
+                          {onOpenV2PipelineAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpen(false)
+                                onOpenV2PipelineAdmin()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-blue-400 hover:bg-white/10' : 'text-blue-700 hover:bg-blue-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Sparkles size={13} />
+                                <span>إدخال بيانات AI</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-blue-400/50' : 'text-blue-700/50'} />
+                            </button>
+                          )}
+
+                          {onOpenAdminLibrary && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpen(false)
+                                onOpenAdminLibrary()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-amber-400 hover:bg-white/10' : 'text-amber-700 hover:bg-amber-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <BookOpen size={13} />
+                                <span>إدارة مكتبة القراءة</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-amber-400/50' : 'text-amber-700/50'} />
+                            </button>
+                          )}
+
+                          {onOpenYoutubeImporter && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpen(false)
+                                onOpenYoutubeImporter()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-red-400 hover:bg-white/10' : 'text-red-700 hover:bg-red-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Video size={13} />
+                                <span>استيراد شروحات يوتيوب</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-red-400/50' : 'text-red-700/50'} />
+                            </button>
+                          )}
+
+                          {onOpenSystemObservability && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpen(false)
+                                onOpenSystemObservability()
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-right text-xs font-semibold transition-colors ${isDark ? 'text-amber-300 hover:bg-white/10' : 'text-amber-700 hover:bg-amber-50'}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Activity size={13} />
+                                <span>مراقبة النظام والـ AI</span>
+                              </div>
+                              <ChevronLeft size={12} className={isDark ? 'text-amber-300/50' : 'text-amber-700/50'} />
+                            </button>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
 

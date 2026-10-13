@@ -15,6 +15,7 @@ import whiteLogo from '@/assets/images/WhiteLogo.png';
 import darkLogo from '@/assets/images/ZadDarkLogo.png';
 import { Settings, Sun, Moon, Image as ImageIcon, Layers as LayersIcon } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 export type MainTab = 'home' | 'categories' | 'authors' | 'featured' | 'media' | 'favorites' | 'courses';
 
@@ -64,6 +65,21 @@ export default function LibrarySidebar({
   onOpenSettings
 }: LibrarySidebarProps) {
   const { user } = useAuth();
+  const { accentColor, isDark } = useTheme();
+
+  const getActiveTabClass = () => {
+    switch (accentColor) {
+      case 'emerald':
+        return 'bg-teal-600 text-white shadow-lg shadow-teal-500/30';
+      case 'amber':
+        return 'bg-[#b88d46] text-stone-950 font-black shadow-lg shadow-[#b88d46]/30';
+      case 'blue':
+        return 'bg-blue-600 text-white shadow-lg shadow-blue-500/30';
+      case 'purple':
+      default:
+        return 'bg-brand-magenta text-white shadow-lg shadow-brand-magenta/30';
+    }
+  };
 
   return (
     <>
@@ -71,8 +87,14 @@ export default function LibrarySidebar({
         className={`fixed top-0 right-0 z-[70] h-screen w-80 sm:w-96 transition-all duration-300 ease-in-out flex flex-col border-l shadow-2xl ${isOpen
           ? 'translate-x-0 pointer-events-auto visible opacity-100'
           : 'translate-x-full pointer-events-none invisible opacity-0'
-          } ${theme === 'dark'
-            ? 'bg-[#120526]/98 border-purple-500/30 shadow-[-20px_0_60px_rgba(0,0,0,0.9)] backdrop-blur-2xl'
+          } ${isDark
+            ? 'bg-[#10131d]/98 border-white/10 shadow-[-20px_0_60px_rgba(0,0,0,0.8)] backdrop-blur-2xl'
+            : accentColor === 'emerald'
+            ? 'bg-white/98 border-teal-200/90 shadow-[-15px_0_45px_rgba(20,184,166,0.18)] backdrop-blur-2xl'
+            : accentColor === 'amber'
+            ? 'bg-white/98 border-[#ebd9b5] shadow-[-15px_0_45px_rgba(223,191,131,0.18)] backdrop-blur-2xl'
+            : accentColor === 'blue'
+            ? 'bg-white/98 border-blue-200/90 shadow-[-15px_0_45px_rgba(59,130,246,0.18)] backdrop-blur-2xl'
             : 'bg-white/98 border-purple-200/80 shadow-[-15px_0_45px_rgba(122,23,201,0.18)] backdrop-blur-2xl'
           }`}
       >
@@ -117,8 +139,8 @@ export default function LibrarySidebar({
                   onClose();
                 }}
                 className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${activeMainTab === 'home'
-                  ? 'bg-gradient-to-r from-brand-magenta to-brand-deep text-white shadow-lg shadow-brand-magenta/30'
-                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-purple-500/20'
+                  ? getActiveTabClass()
+                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10'
                   }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -136,8 +158,8 @@ export default function LibrarySidebar({
                   onClose();
                 }}
                 className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${activeMainTab === 'categories'
-                  ? 'bg-brand-magenta text-white shadow-lg shadow-brand-magenta/30'
-                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-purple-500/20'
+                  ? getActiveTabClass()
+                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10'
                   }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -158,7 +180,7 @@ export default function LibrarySidebar({
                 }}
                 className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${activeMainTab === 'authors'
                   ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/30'
-                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-purple-500/20'
+                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10'
                   }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -179,7 +201,7 @@ export default function LibrarySidebar({
                 }}
                 className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${activeMainTab === 'featured'
                   ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30'
-                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-purple-500/20'
+                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10'
                   }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -208,7 +230,7 @@ export default function LibrarySidebar({
                 }}
                 className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${activeMainTab === 'media'
                   ? 'bg-gradient-to-r from-purple-600 to-brand-magenta text-white shadow-lg shadow-purple-600/30'
-                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-purple-500/20'
+                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10'
                   }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -226,7 +248,7 @@ export default function LibrarySidebar({
                 }}
                 className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${activeMainTab === 'courses'
                   ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-lg shadow-teal-600/30'
-                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-purple-500/20'
+                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10'
                   }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -252,7 +274,7 @@ export default function LibrarySidebar({
                 }}
                 className={`w-full flex items-center justify-between p-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${activeMainTab === 'favorites'
                   ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30'
-                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-purple-500/20'
+                  : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10'
                   }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -329,7 +351,11 @@ export default function LibrarySidebar({
         </div>
 
         {/* Sidebar Footer: Profile & Settings Button */}
-        <div className="p-4 border-t border-slate-200/60 dark:border-white/10 bg-slate-50/50 dark:bg-[#0c0319]/80 shrink-0">
+        <div className={`p-4 border-t border-slate-200/60 dark:border-white/10 shrink-0 ${
+          isDark
+            ? 'bg-[#0c0e15]/90'
+            : 'bg-slate-50/50'
+        }`}>
 
           <button
             onClick={onOpenSettings}
@@ -363,7 +389,7 @@ export default function LibrarySidebar({
       {isOpen && (
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 transition-opacity duration-300 animate-in fade-in cursor-pointer"
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[65] transition-opacity duration-300 animate-in fade-in cursor-pointer"
           title="انقر للإغلاق"
         />
       )}

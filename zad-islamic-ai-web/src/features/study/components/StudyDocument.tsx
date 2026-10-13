@@ -163,7 +163,7 @@ export function StudyDocument({
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 text-sm font-bold">
                 <BookOpen size={18} className="text-sky-500 shrink-0 stroke-[2.2]" />
-                <span>النص الأصلي</span>
+                <span>نص الدرس</span>
               </div>
 
               {/* View Mode Toggle: Paged (Single Page) vs Continuous */}
@@ -215,7 +215,7 @@ export function StudyDocument({
               onClick={() => setIsDocumentOpen(false)}
               className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${isDark ? 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
                 }`}
-              title="إغلاق النص الأصلي"
+              title="إغلاق نص الدرس"
             >
               <X size={15} />
             </button>

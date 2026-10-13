@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Book, Folder, CheckCircle, Plus, Search, Loader2, Trash2, ChevronDown, AlertTriangle, Sparkles } from 'lucide-react';
 import { idbGet, idbSet } from '../../utils/indexedDbStorage';
 
@@ -44,6 +44,8 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
   const [authorsList, setAuthorsList] = useState<string[]>([]);
   const [catFilter, setCatFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const allCatalogBooksRef = useRef<TurathBook[]>([]);
+
   const [featuredBooksSet, setFeaturedBooksSet] = useState<Set<number | string>>(() => {
     try {
       const saved = localStorage.getItem('zad_featured_book_ids');
@@ -97,7 +99,7 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(searchInput);
-    }, 300);
+    }, 200);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
@@ -119,6 +121,11 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
 
       if (cachedCats && cachedCats.length > 0) {
         setCategories(cachedCats);
+        allCatalogBooksRef.current = cachedCats.flatMap(c => c.books || []);
+        const bMap: Record<number, TurathBook[]> = {};
+        cachedCats.forEach(c => { bMap[c.cat_id] = c.books || []; });
+        setCategoryBooksMap(bMap);
+
         if (cachedPubBooks) {
           setPublishedBooksList(cachedPubBooks);
           setLibraryBooks(new Set(cachedPubBooks.map((b: any) => b.id)));
@@ -126,46 +133,69 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
         if (cachedAuthors && cachedAuthors.length > 0) {
           setAuthorsList(cachedAuthors);
         }
-        setLoading(false); // Instant rendering in 0ms!
+        setLoading(false);
       }
     } catch (e) {
       console.warn("IndexedDB cache read error:", e);
     }
 
-    // 2. Fresh Network Sync from MongoDB Atlas in background
+    // 2. Load Local Static Catalog (/data/turath_catalog.json) instantly
+    try {
+      const catRes = await fetch('/data/turath_catalog.json');
+      if (catRes.ok) {
+        const rawCatalog = await catRes.json();
+        if (Array.isArray(rawCatalog) && rawCatalog.length > 0) {
+          const parsedCats: TurathCategory[] = rawCatalog.map((cat: any, idx: number) => {
+            const catId = idx + 1;
+            const bks: TurathBook[] = (cat.children || []).map((b: any) => ({
+              id: Number(b.turath_id),
+              name: b.title,
+              author_name: b.author,
+              cat_id: catId,
+              cat_name: cat.title
+            }));
+            return {
+              cat_id: catId,
+              name: cat.title,
+              count: cat.children_count || bks.length,
+              books: bks
+            };
+          });
+
+          setCategories(parsedCats);
+          allCatalogBooksRef.current = parsedCats.flatMap(c => c.books || []);
+          const bMap: Record<number, TurathBook[]> = {};
+          parsedCats.forEach(c => { bMap[c.cat_id] = c.books || []; });
+          setCategoryBooksMap(bMap);
+
+          const allAuthors = Array.from(new Set(allCatalogBooksRef.current.map(b => b.author_name).filter(Boolean) as string[])).sort();
+          setAuthorsList(allAuthors);
+
+          idbSet('admin_turath_categories', parsedCats);
+          idbSet('admin_turath_authors', allAuthors);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load local turath_catalog.json:", e);
+    }
+
+    // 3. Sync published books list from MongoDB backend
     try {
       const baseUrl = getIngestionBaseUrl();
-      const [catsRes, libRes, authorsRes] = await Promise.all([
-        fetch(`${baseUrl}/api/v1/data-ingestion/admin/turath-categories`),
-        fetch(`${baseUrl}/api/v1/data-ingestion/admin/library-books`),
-        fetch(`${baseUrl}/api/v1/data-ingestion/admin/turath-authors`).catch(() => null)
-      ]);
-
-      if (catsRes && catsRes.ok && libRes && libRes.ok) {
-        const catsData = await catsRes.json();
+      const libRes = await fetch(`${baseUrl}/api/v1/data-ingestion/admin/library-books`);
+      if (libRes.ok) {
         const libData = await libRes.json();
-        const freshCats = catsData.categories || [];
-        setCategories(freshCats);
-
         const freshPubBooks: TurathBook[] = libData.books || [];
         setPublishedBooksList(freshPubBooks);
         setLibraryBooks(new Set(freshPubBooks.map((b: any) => b.id)));
 
-        // Update IndexedDB silently for future visits
-        idbSet('admin_turath_categories', freshCats);
         idbSet('admin_published_books', freshPubBooks);
-      }
-
-      if (authorsRes && authorsRes.ok) {
-        const authorsData = await authorsRes.json();
-        const freshAuthors: string[] = authorsData.authors || [];
-        if (freshAuthors.length > 0) {
-          setAuthorsList(freshAuthors);
-          idbSet('admin_turath_authors', freshAuthors);
-        }
+        localStorage.setItem('zad_cached_library_books_v5', JSON.stringify(freshPubBooks));
+        localStorage.setItem('zad_library_synced', 'true');
+        window.dispatchEvent(new Event('zad_library_books_changed'));
       }
     } catch (err) {
-      console.error("Error fetching admin data:", err);
+      console.error("Error fetching published books from backend:", err);
     } finally {
       setLoading(false);
     }
@@ -191,10 +221,8 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
     const allSelected = unaddedBooks.every(b => selectedBooks.some(sb => sb.id === b.id));
 
     if (allSelected) {
-      // Deselect all in this category
       setSelectedBooks(prev => prev.filter(sb => !unaddedBooks.some(ub => ub.id === sb.id)));
     } else {
-      // Select all unadded books in this category
       setSelectedBooks(prev => {
         const newSelection = [...prev];
         unaddedBooks.forEach(ub => {
@@ -218,8 +246,14 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
         body: JSON.stringify({ books: selectedBooks })
       });
       if (res.ok) {
-        // Refresh data & cache
-        await fetchData();
+        const newPublishedList = [...publishedBooksList, ...selectedBooks];
+        setPublishedBooksList(newPublishedList);
+        setLibraryBooks(new Set(newPublishedList.map(b => b.id)));
+        idbSet('admin_published_books', newPublishedList);
+        localStorage.setItem('zad_cached_library_books_v5', JSON.stringify(newPublishedList));
+        localStorage.setItem('zad_library_synced', 'true');
+        window.dispatchEvent(new Event('zad_library_books_changed'));
+
         setSelectedBooks([]);
         showToast(`تمت إضافة ${selectedBooks.length} كتاب بنجاح إلى المكتبة!`, 'success');
       }
@@ -231,27 +265,8 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
     }
   };
 
-  const toggleCategory = async (catId: number) => {
-    if (expandedCategory === catId) {
-      setExpandedCategory(null);
-      return;
-    }
-    setExpandedCategory(catId);
-    if (!categoryBooksMap[catId]) {
-      setLoadingCategory(catId);
-      try {
-        const baseUrl = getIngestionBaseUrl();
-        const res = await fetch(`${baseUrl}/api/v1/data-ingestion/admin/turath-categories/${catId}/books`);
-        if (res.ok) {
-          const data = await res.json();
-          setCategoryBooksMap(prev => ({ ...prev, [catId]: data.books || [] }));
-        }
-      } catch (err) {
-        console.error("Error fetching category books:", err);
-      } finally {
-        setLoadingCategory(null);
-      }
-    }
+  const toggleCategory = (catId: number) => {
+    setExpandedCategory(prev => (prev === catId ? null : catId));
   };
 
   const handleRemoveBook = (bookId: number, e: React.MouseEvent) => {
@@ -277,6 +292,9 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
             setPublishedBooksList(prev => {
               const updated = prev.filter(b => b.id !== bookId);
               idbSet('admin_published_books', updated);
+              localStorage.setItem('zad_cached_library_books_v5', JSON.stringify(updated));
+              localStorage.setItem('zad_library_synced', 'true');
+              window.dispatchEvent(new Event('zad_library_books_changed'));
               return updated;
             });
             showToast('تمت إزالة الكتاب من المنصة بنجاح', 'info');
@@ -309,6 +327,9 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
             setLibraryBooks(new Set());
             setPublishedBooksList([]);
             idbSet('admin_published_books', []);
+            localStorage.setItem('zad_cached_library_books_v5', JSON.stringify([]));
+            localStorage.setItem('zad_library_synced', 'true');
+            window.dispatchEvent(new Event('zad_library_books_changed'));
             showToast('تم مسح جميع الكتب من المكتبة نهائياً', 'success');
           }
         } catch (err) {
@@ -319,42 +340,31 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
     });
   };
 
-  // Cloud Search Effect directly from MongoDB Atlas
+  // High-speed In-Memory Search over Local Catalog
   useEffect(() => {
-    const q = searchQuery.trim();
+    const q = searchQuery.trim().toLowerCase();
     if (!q && authorFilter === "all" && catFilter === "all") {
       setSearchResults([]);
       setSearching(false);
       return;
     }
 
-    let isCancelled = false;
-    const executeSearch = async () => {
-      setSearching(true);
-      try {
-        const baseUrl = getIngestionBaseUrl();
-        const searchParam = q || (authorFilter !== "all" ? authorFilter : "");
-        let url = `${baseUrl}/api/v1/data-ingestion/admin/turath-search?q=${encodeURIComponent(searchParam)}`;
-        if (catFilter !== "all") url += `&cat_id=${catFilter}`;
-
-        const res = await fetch(url);
-        if (res.ok && !isCancelled) {
-          const data = await res.json();
-          let results: TurathBook[] = data.data || [];
-          if (authorFilter !== "all" && authorFilter !== "") {
-            results = results.filter(b => b.author_name?.includes(authorFilter));
-          }
-          setSearchResults(results);
-        }
-      } catch (e) {
-        console.error("Search error:", e);
-      } finally {
-        if (!isCancelled) setSearching(false);
-      }
-    };
-
-    executeSearch();
-    return () => { isCancelled = true; };
+    setSearching(true);
+    let results = allCatalogBooksRef.current;
+    if (q) {
+      results = results.filter(b =>
+        (b.name && b.name.toLowerCase().includes(q)) ||
+        (b.author_name && b.author_name.toLowerCase().includes(q))
+      );
+    }
+    if (authorFilter !== "all" && authorFilter !== "") {
+      results = results.filter(b => b.author_name?.includes(authorFilter));
+    }
+    if (catFilter !== "all" && catFilter !== "") {
+      results = results.filter(b => b.cat_id?.toString() === catFilter);
+    }
+    setSearchResults(results);
+    setSearching(false);
   }, [searchQuery, catFilter, authorFilter]);
 
   const uniqueAuthors = authorsList.length > 0
