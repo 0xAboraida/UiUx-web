@@ -1319,6 +1319,7 @@ export function AuthorsView({
               {(authorsByCentury || []).map((cGroup, idx) => {
                 const isOpen = openCentury === cGroup.century;
                 const authorCount = cGroup?.authors?.length || 0;
+                const booksCount = (cGroup.authors || []).reduce((sum, a) => sum + (a.books?.length || 0), 0) || cGroup.totalBooks || 0;
 
                 return (
                   <div
@@ -1350,18 +1351,22 @@ export function AuthorsView({
                           <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 leading-snug">
                             {cGroup.centuryName}
                           </h3>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">
-                            يحتوي على <span className={`font-bold ${getThemeAccentTextClass()}`}>{authorCount >= 3 && authorCount <= 10 ? `${authorCount} مؤلفون` : `${authorCount} مؤلفاً`}</span> • {cGroup.totalBooks || 0} كتب معتمدة
-                          </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        <span className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold transition-colors ${isOpen
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold transition-colors ${isOpen
                           ? getCategoryActiveBadgeStyle()
                           : 'bg-slate-100 dark:bg-white/[0.04] text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/5 group-hover:border-white/10'
                           }`}>
                           {authorCount} مؤلف
+                        </span>
+
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold transition-colors ${isOpen
+                          ? getCategoryActiveBadgeStyle()
+                          : 'bg-slate-100 dark:bg-white/[0.04] text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/5 group-hover:border-white/10'
+                          }`}>
+                          {booksCount} كتاب
                         </span>
 
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform duration-300 ${isOpen ? `${getCategoryActiveIconStyle()} rotate-180` : 'bg-slate-100 dark:bg-white/5 text-muted-foreground group-hover:text-foreground'
