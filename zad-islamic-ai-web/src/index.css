@@ -415,6 +415,26 @@ body {
   font-family: var(--font-display);
 }
 
+@font-face {
+  font-family: 'Kitab';
+  src: url('/fonts/kitab-base.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Kitab';
+  src: url('/fonts/kitab-base-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-kitab {
+  font-family: 'Kitab', 'Amiri', 'Traditional Arabic', serif;
+}
+
 .font-read,
 .font-amiri {
   font-family: 'Amiri', 'Traditional Arabic', serif;
@@ -425,7 +445,7 @@ body {
 }
 
 .font-noto-naskh {
-  font-family: 'Noto Naskh Arabic', 'Amiri', serif;
+  font-family: 'Noto Naskh Arabic', 'Kitab', 'Amiri', serif;
 }
 
 .font-cairo {
@@ -801,6 +821,60 @@ li .strong-vertical-dash {
   background-color: rgba(149, 11, 196, 0.8);
 }
 
+/* Emerald Accent Scrollbar */
+[data-accent="emerald"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(13, 148, 136, 0.45) !important;
+}
+[data-accent="emerald"] .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(13, 148, 136, 0.75) !important;
+}
+.dark[data-accent="emerald"] .custom-scrollbar::-webkit-scrollbar-thumb,
+[data-accent="emerald"] .dark .custom-scrollbar::-webkit-scrollbar-thumb,
+[data-accent="emerald"].dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(20, 184, 166, 0.45) !important;
+}
+.dark[data-accent="emerald"] .custom-scrollbar:hover::-webkit-scrollbar-thumb,
+[data-accent="emerald"] .dark .custom-scrollbar:hover::-webkit-scrollbar-thumb,
+[data-accent="emerald"].dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(45, 212, 191, 0.8) !important;
+}
+
+/* Amber Accent Scrollbar */
+[data-accent="amber"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(184, 141, 70, 0.45) !important;
+}
+[data-accent="amber"] .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(184, 141, 70, 0.75) !important;
+}
+.dark[data-accent="amber"] .custom-scrollbar::-webkit-scrollbar-thumb,
+[data-accent="amber"] .dark .custom-scrollbar::-webkit-scrollbar-thumb,
+[data-accent="amber"].dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(223, 191, 131, 0.45) !important;
+}
+.dark[data-accent="amber"] .custom-scrollbar:hover::-webkit-scrollbar-thumb,
+[data-accent="amber"] .dark .custom-scrollbar:hover::-webkit-scrollbar-thumb,
+[data-accent="amber"].dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(237, 216, 174, 0.8) !important;
+}
+
+/* Blue Accent Scrollbar */
+[data-accent="blue"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(37, 99, 235, 0.45) !important;
+}
+[data-accent="blue"] .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(37, 99, 235, 0.75) !important;
+}
+.dark[data-accent="blue"] .custom-scrollbar::-webkit-scrollbar-thumb,
+[data-accent="blue"] .dark .custom-scrollbar::-webkit-scrollbar-thumb,
+[data-accent="blue"].dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(59, 130, 246, 0.45) !important;
+}
+.dark[data-accent="blue"] .custom-scrollbar:hover::-webkit-scrollbar-thumb,
+[data-accent="blue"] .dark .custom-scrollbar:hover::-webkit-scrollbar-thumb,
+[data-accent="blue"].dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(96, 165, 250, 0.8) !important;
+}
+
 /* Premium Glassmorphic Scrollbar for Study Document Reader */
 .study-document-scrollbar {
   scrollbar-width: thin;
@@ -909,4 +983,26 @@ li .strong-vertical-dash {
 .dark[data-accent="purple"] .desktop-moving-border,
 [data-accent="purple"] .dark .desktop-moving-border {
   filter: drop-shadow(0 0 8px rgba(192, 38, 211, 0.4));
+}
+
+/* ========================================================
+   STAGGERED CARD ENTRANCE ANIMATION (ظهور البطاقات التدريجي الانسيابي الهادئ)
+   ======================================================== */
+@keyframes libraryCardEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(32px) scale(0.94);
+  }
+  50% {
+    opacity: 0.65;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-card-entrance {
+  animation: libraryCardEntrance 1.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
 }

@@ -22,7 +22,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden flex flex-col" dir="rtl">
       {/* Authentic Islamic Geometric Pattern in Subtle Accent */}
-      <IslamicPattern className="text-accent pointer-events-none" opacity={0.05} />
+      <IslamicPattern className="text-accent pointer-events-none" opacity={0.075} />
 
       {/* Top Bar / Admin Sub-bar */}
       {!hideHeader ? (

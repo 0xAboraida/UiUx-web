@@ -14,7 +14,7 @@ import bgDarkMobilePurple from '@/assets/images/mobile view main page background
 import bgDarkMobileBlue from '@/assets/images/mobile view main page background dark blue.webp'
 import bgDarkMobileTeal from '@/assets/images/mobile view main page background dark teal.webp'
 import bgDarkMobileAmber from '@/assets/images/mobile view main page background dark agee.webp'
-import bgLightMobile from '@/assets/images/mobile view main page background light4.webp'
+import bgLightMobile from '@/assets/images/mobile view main page background light5.webp'
 import { useTheme } from '../../contexts/ThemeContext'
 
 const samplePrompts = [
@@ -56,6 +56,59 @@ export default function Hero({
       default: return bgDarkMobilePurple
     }
   }
+
+  const renderMobileLogo = () => {
+    if (dark) {
+      return (
+        <img
+          src={whiteLogo}
+          alt="شعار زاد"
+          className="mx-auto h-44 w-44 sm:h-44 sm:w-44 object-contain drop-shadow-[0_12px_30px_rgba(255,255,255,0.25)] transition-transform duration-300 hover:scale-105 select-none"
+        />
+      )
+    }
+
+    if (accentColor === 'purple') {
+      return (
+        <img
+          src={darkLogo}
+          alt="شعار زاد"
+          className="mx-auto h-44 w-44 sm:h-44 sm:w-44 object-contain drop-shadow-[0_12px_30px_rgba(168,85,247,0.4)] transition-transform duration-300 hover:scale-105 select-none"
+        />
+      )
+    }
+
+    const gradientClass = (() => {
+      switch (accentColor) {
+        case 'emerald':
+          return 'bg-gradient-to-b from-[#14b8a6] via-[#0d9488] to-[#134e4a] drop-shadow-[0_10px_25px_rgba(13,148,136,0.35)]'
+        case 'amber':
+          return 'bg-gradient-to-b from-[#dfbf83] via-[#b88d46] to-[#5e431a] drop-shadow-[0_10px_25px_rgba(184,141,70,0.35)]'
+        case 'blue':
+          return 'bg-gradient-to-b from-[#0284c7] via-[#1d4ed8] to-[#1e3a8a] drop-shadow-[0_10px_25px_rgba(2,132,199,0.35)]'
+        default:
+          return 'bg-gradient-to-b from-[#c084fc] via-[#9d32ec] to-[#801bcc] drop-shadow-[0_12px_30px_rgba(168,85,247,0.4)]'
+      }
+    })()
+
+    return (
+      <div
+        aria-hidden="true"
+        className={`mx-auto h-44 w-44 sm:h-44 sm:w-44 hover:scale-105 transition-transform duration-300 select-none ${gradientClass}`}
+        style={{
+          WebkitMaskImage: `url(${whiteLogo})`,
+          maskImage: `url(${whiteLogo})`,
+          WebkitMaskSize: 'contain',
+          maskSize: 'contain',
+          WebkitMaskRepeat: 'no-repeat',
+          maskRepeat: 'no-repeat',
+          WebkitMaskPosition: 'center',
+          maskPosition: 'center',
+        }}
+      />
+    )
+  }
+
   const [question, setQuestion] = useState('')
   const [baseQuestion, setBaseQuestion] = useState('')
   const [focused, setFocused] = useState(false)
@@ -118,7 +171,7 @@ export default function Hero({
   }, [question, focused])
 
   return (
-    <section id="home" className="relative flex min-h-[100dvh] flex-col justify-center overflow-hidden pb-14 pt-20 sm:pt-24 md:pb-48 md:pt-40">
+    <section id="home" className="relative flex min-h-[100svh] md:min-h-[100dvh] flex-col justify-center overflow-hidden pb-14 pt-20 sm:pt-24 md:pb-48 md:pt-40">
       {/* Desktop Background Image Layers (>= md) */}
       <img
         src={getDesktopDarkBg()}
@@ -155,11 +208,7 @@ export default function Hero({
         <div className="mx-auto max-w-3xl text-center">
           {/* Centered Zad logo on mobile */}
           <div className="block md:hidden mx-auto mb-4">
-            <img
-              src={dark ? whiteLogo : darkLogo}
-              alt="شعار زاد"
-              className="mx-auto h-44 w-44 sm:h-44 sm:w-44 object-contain drop-shadow-[0_12px_30px_rgba(168,85,247,0.4)] transition-transform duration-300 hover:scale-105"
-            />
+            {renderMobileLogo()}
           </div>
 
           <h1

@@ -35,6 +35,7 @@ export default function Navbar({
   onOpenSystemObservability,
   onNavigateHome,
   activeTab = 'home',
+  headerClassName,
 }: {
   onTryChat: () => void
   onOpenKnowledge: () => void
@@ -51,6 +52,7 @@ export default function Navbar({
   onOpenSystemObservability?: () => void
   onNavigateHome?: () => void
   activeTab?: 'home' | 'knowledge' | 'lessons' | 'study' | 'chat' | 'voice'
+  headerClassName?: string
 }) {
   const [open, setOpen] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
@@ -468,7 +470,7 @@ export default function Navbar({
   }, [open])
 
   return (
-    <header className="fixed md:absolute inset-x-0 top-4 sm:top-6 z-50 px-3 sm:px-4">
+    <header className={headerClassName || "fixed md:absolute inset-x-0 top-4 sm:top-6 z-50 px-3 sm:px-4"}>
       {/* Mobile top floating bar (< md): Menu toggle button on Right, NotificationBell on Left */}
       <div className="flex md:hidden items-center justify-between pointer-events-none w-full">
         <button
@@ -532,7 +534,15 @@ export default function Navbar({
                 className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'home')}`}
               >
                 الرئيسية
-                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'home' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
+                {activeTab === 'home' ? (
+                  <motion.span
+                    layoutId="desktopNavActiveIndicator"
+                    className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} w-6 lg:w-8`}
+                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                  />
+                ) : (
+                  <span className="absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full bg-white/25 dark:bg-white/15 w-0 group-hover:w-6 lg:group-hover:w-8 transition-all duration-300" />
+                )}
               </button>
             </li>
             <li className="shrink-0">
@@ -542,7 +552,15 @@ export default function Navbar({
                 className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'knowledge')}`}
               >
                 المكتبة
-                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'knowledge' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
+                {activeTab === 'knowledge' ? (
+                  <motion.span
+                    layoutId="desktopNavActiveIndicator"
+                    className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} w-6 lg:w-8`}
+                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                  />
+                ) : (
+                  <span className="absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full bg-white/25 dark:bg-white/15 w-0 group-hover:w-6 lg:group-hover:w-8 transition-all duration-300" />
+                )}
               </button>
             </li>
             <li className="shrink-0">
@@ -552,7 +570,15 @@ export default function Navbar({
                 className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'lessons')}`}
               >
                 الشروحات والدروس
-                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'lessons' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
+                {activeTab === 'lessons' ? (
+                  <motion.span
+                    layoutId="desktopNavActiveIndicator"
+                    className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} w-6 lg:w-8`}
+                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                  />
+                ) : (
+                  <span className="absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full bg-white/25 dark:bg-white/15 w-0 group-hover:w-6 lg:group-hover:w-8 transition-all duration-300" />
+                )}
               </button>
             </li>
             <li className="shrink-0">
@@ -562,7 +588,15 @@ export default function Navbar({
                 className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'study')}`}
               >
                 وضع الدراسة
-                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'study' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
+                {activeTab === 'study' ? (
+                  <motion.span
+                    layoutId="desktopNavActiveIndicator"
+                    className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} w-6 lg:w-8`}
+                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                  />
+                ) : (
+                  <span className="absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full bg-white/25 dark:bg-white/15 w-0 group-hover:w-6 lg:group-hover:w-8 transition-all duration-300" />
+                )}
               </button>
             </li>
             <li className="shrink-0">
@@ -572,7 +606,15 @@ export default function Navbar({
                 className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'chat')}`}
               >
                 المحادثة النصية
-                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'chat' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
+                {activeTab === 'chat' ? (
+                  <motion.span
+                    layoutId="desktopNavActiveIndicator"
+                    className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} w-6 lg:w-8`}
+                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                  />
+                ) : (
+                  <span className="absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full bg-white/25 dark:bg-white/15 w-0 group-hover:w-6 lg:group-hover:w-8 transition-all duration-300" />
+                )}
               </button>
             </li>
             <li className="shrink-0">
@@ -582,7 +624,15 @@ export default function Navbar({
                 className={`group relative flex flex-col items-center py-1 text-[12.5px] sm:text-[13px] lg:text-[15px] xl:text-[16.5px] transition-colors duration-300 whitespace-nowrap ${getTabLinkClass(activeTab === 'voice')}`}
               >
                 المحادثة الصوتية
-                <span className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} transition-all duration-300 ${activeTab === 'voice' ? 'w-6 lg:w-8' : 'w-0 group-hover:w-6 lg:group-hover:w-8'}`} />
+                {activeTab === 'voice' ? (
+                  <motion.span
+                    layoutId="desktopNavActiveIndicator"
+                    className={`absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full ${getTabIndicatorClass()} w-6 lg:w-8`}
+                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                  />
+                ) : (
+                  <span className="absolute -bottom-2 lg:-bottom-3 h-[2px] lg:h-[3px] rounded-full bg-white/25 dark:bg-white/15 w-0 group-hover:w-6 lg:group-hover:w-8 transition-all duration-300" />
+                )}
               </button>
             </li>
           </ul>

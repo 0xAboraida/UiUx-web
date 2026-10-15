@@ -199,3 +199,65 @@ export async function idbClearAllTurathBookTrees(): Promise<void> {
     console.warn('Error clearing Turath book trees:', e);
   }
 }
+
+// -------------------------------------------------------------
+// Offline Books Storage Helpers (حفظ الكتب للقراءة بدون إنترنت)
+// -------------------------------------------------------------
+
+export interface OfflineBookPackage {
+  bookId: number | string;
+  title: string;
+  author: string;
+  indexes: any;
+  cachedPages: Record<number, { text: string; main?: string; matn?: string; sharh?: string; footnote?: string }>;
+  savedAt: number;
+}
+
+export async function idbSaveBookOffline(bookPackage: OfflineBookPackage): Promise<void> {
+  return idbSet(`zad_offline_book_${bookPackage.bookId}`, bookPackage);
+}
+
+export async function idbGetOfflineBook(bookId: number | string): Promise<OfflineBookPackage | null> {
+  return idbGet<OfflineBookPackage>(`zad_offline_book_${bookId}`);
+}
+
+export async function idbIsBookSavedOffline(bookId: number | string): Promise<boolean> {
+  const pkg = await idbGet(`zad_offline_book_${bookId}`);
+  return !!pkg;
+}
+
+export async function idbRemoveOfflineBook(bookId: number | string): Promise<void> {
+  return idbDelete(`zad_offline_book_${bookId}`);
+}
+
+export async function idbGetAllOfflineBookPackages(): Promise<OfflineBookPackage[]> {
+  try {
+    const db = await getDB();
+    return new Promise((resolve) => {
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.openCursor();
+      const results: OfflineBookPackage[] = [];
+
+      request.onsuccess = (e: any) => {
+        const cursor = e.target.result;
+        if (cursor) {
+          if (typeof cursor.key === 'string' && cursor.key.startsWith('zad_offline_book_')) {
+            results.push(cursor.value);
+          }
+          cursor.continue();
+        } else {
+          resolve(results);
+        }
+      };
+
+      request.onerror = () => {
+        resolve([]);
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+

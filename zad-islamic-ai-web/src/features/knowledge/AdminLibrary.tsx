@@ -190,7 +190,7 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
         setLibraryBooks(new Set(freshPubBooks.map((b: any) => b.id)));
 
         idbSet('admin_published_books', freshPubBooks);
-        localStorage.setItem('zad_cached_library_books_v5', JSON.stringify(freshPubBooks));
+        localStorage.setItem('zad_cached_library_books_v7', JSON.stringify(freshPubBooks));
         localStorage.setItem('zad_library_synced', 'true');
         window.dispatchEvent(new Event('zad_library_books_changed'));
       }
@@ -250,7 +250,6 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
         setPublishedBooksList(newPublishedList);
         setLibraryBooks(new Set(newPublishedList.map(b => b.id)));
         idbSet('admin_published_books', newPublishedList);
-        localStorage.setItem('zad_cached_library_books_v5', JSON.stringify(newPublishedList));
         localStorage.setItem('zad_library_synced', 'true');
         window.dispatchEvent(new Event('zad_library_books_changed'));
 
@@ -292,7 +291,6 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
             setPublishedBooksList(prev => {
               const updated = prev.filter(b => b.id !== bookId);
               idbSet('admin_published_books', updated);
-              localStorage.setItem('zad_cached_library_books_v5', JSON.stringify(updated));
               localStorage.setItem('zad_library_synced', 'true');
               window.dispatchEvent(new Event('zad_library_books_changed'));
               return updated;
@@ -327,7 +325,7 @@ export default function AdminLibrary({ onExit, onNavigateToIngestion }: AdminLib
             setLibraryBooks(new Set());
             setPublishedBooksList([]);
             idbSet('admin_published_books', []);
-            localStorage.setItem('zad_cached_library_books_v5', JSON.stringify([]));
+            localStorage.setItem('zad_cached_library_books_v7', JSON.stringify([]));
             localStorage.setItem('zad_library_synced', 'true');
             window.dispatchEvent(new Event('zad_library_books_changed'));
             showToast('تم مسح جميع الكتب من المكتبة نهائياً', 'success');
