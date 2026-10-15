@@ -270,7 +270,7 @@ export function useLibraryData({
                   : bAuthor.includes(normQ) ? 20 : 0) + bTurathBonus;
 
         if (aScore !== bScore) return bScore - aScore;
-        return (a.title || '').localeCompare(b.title || '', 'ar');
+        return (a.title || '') < (b.title || '') ? -1 : 1;
       });
     }
 
@@ -326,7 +326,24 @@ export function useLibraryData({
 
   // 9. Live DB Analytics
   const liveStats = useMemo(() => {
-    if (analytics && analytics.total_books > 0) return analytics;
+    if (analytics && analytics.total_books > 0) {
+      const earliest = (analytics.timeline?.earliest_century && analytics.timeline.earliest_century < 14)
+        ? analytics.timeline.earliest_century
+        : (availableCenturies[0]?.century && availableCenturies[0].century < 14 ? availableCenturies[0].century : 2);
+      const latest = (analytics.timeline?.latest_century && analytics.timeline.latest_century >= earliest)
+        ? analytics.timeline.latest_century
+        : 15;
+
+      return {
+        ...analytics,
+        centuries: (analytics.centuries && analytics.centuries.length > 5) ? analytics.centuries : availableCenturies,
+        timeline: {
+          earliest_century: earliest,
+          latest_century: latest
+        }
+      };
+    }
+
     const uniqueAuthors = new Set(publishedBooks.map(b => b.author).filter(Boolean));
     return {
       total_books: publishedBooks.length,
@@ -551,29 +568,54 @@ export function useLibraryData({
   // 13. Selected Author Object
   const currentAuthorData = useMemo(() => {
     if (!selectedAuthor) return null;
+
+    const cleanRaw = (str: string) =>
+      str
+        .replace(/\s*\([^\)]*\)/g, '') // remove (ت 142هـ)
+        .replace(/^(الشيخ|الإمام|العلامة|الحافظ|الدكتور|د\.)\s+/, '')
+        .replace(/\bابن\b/g, 'بن')
+        .trim();
+
+    const cleanSelected = cleanRaw(selectedAuthor);
+
+    // 1. Direct or fuzzy match in authorsByCentury
     for (const cGroup of authorsByCentury) {
-      const found = cGroup.authors.find(a => 
-        a.authorName === selectedAuthor || 
-        a.authorName.includes(selectedAuthor) || 
-        selectedAuthor.includes(a.authorName)
-      );
+      const found = cGroup.authors.find(a => {
+        if (a.authorName === selectedAuthor) return true;
+        const cleanA = cleanRaw(a.authorName);
+        return (
+          cleanA === cleanSelected ||
+          cleanA.includes(cleanSelected) ||
+          cleanSelected.includes(cleanA)
+        );
+      });
       if (found) return found;
     }
-    const clean = selectedAuthor.replace(/^(الشيخ|الدكتور|د\.)\s+/, '').trim();
-    const authorBooks = publishedBooks.filter(b => 
-      b.author === selectedAuthor || 
-      (b.author && (b.author.includes(clean) || clean.includes(b.author)))
-    );
+
+    // 2. Direct or fuzzy match across all published books
+    const authorBooks = publishedBooks.filter(b => {
+      if (!b.author) return false;
+      if (b.author === selectedAuthor) return true;
+      const cleanB = cleanRaw(b.author);
+      return (
+        cleanB === cleanSelected ||
+        cleanB.includes(cleanSelected) ||
+        cleanSelected.includes(cleanB)
+      );
+    });
+
     if (authorBooks.length > 0) {
+      const canonicalAuthor = authorBooks[0].author || selectedAuthor;
       const meta = inferCenturyAndDeath(authorBooks[0]);
       return {
-        authorName: selectedAuthor,
+        authorName: canonicalAuthor,
         deathYear: meta.deathYear,
         centuryName: meta.centuryName,
         sampleBook: authorBooks[0],
         books: authorBooks
       };
     }
+
     // Fallback so author page loads smoothly even before books are uploaded
     const isContemporary = selectedAuthor.includes('برهامي') || selectedAuthor.includes('المقدم');
     return {

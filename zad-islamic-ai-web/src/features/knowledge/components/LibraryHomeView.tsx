@@ -23,7 +23,6 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { Course, MediaPlaylist } from '../types/mediaTypes';
 import IslamicPattern from './IslamicPattern';
 import HomeChartsSection from './HomeChartsSection';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -76,8 +75,6 @@ interface LibraryHomeViewProps {
   onSelectDomain?: (domainName: string) => void;
   availableAuthors?: { name: string; count: number }[];
   onSelectAuthor?: (authorName: string) => void;
-  featuredPlaylist?: MediaPlaylist;
-  activeCourse?: Course;
   favoritesCount: number;
   onNavigateTab: (tab: 'categories' | 'authors' | 'featured' | 'media' | 'favorites' | 'courses') => void;
   onReadBook: (book: any) => void;
@@ -93,8 +90,6 @@ export default function LibraryHomeView({
   onSelectDomain,
   availableAuthors = [],
   onSelectAuthor,
-  featuredPlaylist,
-  activeCourse,
   favoritesCount,
   onNavigateTab,
   onReadBook,
@@ -399,13 +394,6 @@ export default function LibraryHomeView({
       default:
         return 'group-hover:text-purple-600 dark:group-hover:text-purple-400';
     }
-  };
-
-  const getSpotlightCardStyle = () => {
-    if (isDark) {
-      return 'border border-white/10 bg-[#131620]/90 shadow-lg shadow-black/20';
-    }
-    return 'border border-slate-200/80 bg-white/90';
   };
 
   const getFeaturedBookCardStyle = () => {
@@ -791,100 +779,10 @@ export default function LibraryHomeView({
           stats={liveStats}
           domainStats={displayDomains}
           onSelectDomain={handleDomainCardClick}
+          onNavigateTab={onNavigateTab}
         />
       </section>
 
-      {/* ========================================================================= */}
-      {/* 5. SPOTLIGHT: ACTIVE COURSE & MEDIA PLAYLISTS                             */}
-      {/* ========================================================================= */}
-      <section className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Spotlight 1: الدورة الحالية - الفقه الميسر للشيخ علاء حامد */}
-        {activeCourse && (
-          <div className={`rounded-3xl p-5 sm:p-6 shadow-sm backdrop-blur-md flex flex-col justify-between ${getSpotlightCardStyle()}`}>
-            <div>
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold">
-                  {activeCourse.badgeLabel}
-                </span>
-                <span className="text-xs text-muted-foreground font-bold">
-                  {activeCourse.totalLessons} محاضرة
-                </span>
-              </div>
-
-              <h4 className="text-lg font-black text-foreground mb-2">
-                {activeCourse.title}
-              </h4>
-              <p className="text-xs text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
-                {activeCourse.description}
-              </p>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => onNavigateTab('courses')}
-                className={`py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${getFeaturedBookButtonStyle()}`}
-              >
-                <span>الانتقال لصفحة الدورة</span>
-                <ArrowLeft className="w-3.5 h-3.5" />
-              </button>
-
-              <a
-                href={activeCourse.playlistUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-bold text-brand-blue hover:underline"
-              >
-                فتح على يوتيوب ↗
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* Spotlight 2: شرح الفقه الميسر للشيخ علاء حامد */}
-        {featuredPlaylist && (
-          <div className={`rounded-3xl p-5 sm:p-6 shadow-sm backdrop-blur-md flex flex-col justify-between ${getSpotlightCardStyle()}`}>
-            <div>
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <span className="px-2.5 py-0.5 rounded-full bg-brand-magenta/10 text-brand-magenta text-xs font-bold">
-                  سلسلة فقهية مميزة
-                </span>
-                <span className="text-xs text-brand-blue font-bold">
-                  {featuredPlaylist.sheikhName}
-                </span>
-              </div>
-
-              <h4 className="text-lg font-black text-foreground mb-2">
-                {featuredPlaylist.title}
-              </h4>
-              <p className="text-xs text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
-                {featuredPlaylist.description}
-              </p>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => onNavigateTab('media')}
-                className="py-2 px-4 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-brand-magenta hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>بروفايل الشيخ والشروحات</span>
-                <ArrowLeft className="w-3.5 h-3.5" />
-              </button>
-
-              {featuredPlaylist.linkedBook && onOpenLinkedBook && (
-                <button
-                  type="button"
-                  onClick={() => onOpenLinkedBook(featuredPlaylist.linkedBook!.bookTitle)}
-                  className="text-xs font-bold text-brand-magenta hover:underline cursor-pointer"
-                >
-                  قراءة متن الفقه الميسر
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </section>
 
       {/* ========================================================================= */}
       {/* 6. FEATURED CLASSICAL BOOKS ROW (أمهات الكتب المختارة)                     */}

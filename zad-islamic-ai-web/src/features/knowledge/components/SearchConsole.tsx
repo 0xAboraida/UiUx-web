@@ -106,29 +106,58 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
   }, [setIsHomeSearchResultsDismissed]);
 
   const getHeroSearchContainerStyle = () => {
+    // If we're on the home page hero, provide an ultra-clean, transparent glassmorphic aesthetic
+    if (activeMainTab === 'home') {
+      if (isDark) {
+        switch (accentColor) {
+          case 'emerald':
+            return 'bg-black/25 hover:bg-black/35 backdrop-blur-xl border border-teal-500/35 hover:border-teal-400/55 shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] ring-1 ring-teal-500/20 text-white';
+          case 'amber':
+            return 'bg-black/25 hover:bg-black/35 backdrop-blur-xl border border-[#dfbf83]/35 hover:border-[#dfbf83]/55 shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] ring-1 ring-[#dfbf83]/20 text-white';
+          case 'blue':
+            return 'bg-black/25 hover:bg-black/35 backdrop-blur-xl border border-blue-500/35 hover:border-blue-400/55 shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] ring-1 ring-blue-500/20 text-white';
+          case 'purple':
+          default:
+            return 'bg-black/25 hover:bg-black/35 backdrop-blur-xl border border-purple-500/35 hover:border-purple-400/55 shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] ring-1 ring-purple-500/20 text-white';
+        }
+      } else {
+        switch (accentColor) {
+          case 'emerald':
+            return 'bg-white/18 hover:bg-white/28 backdrop-blur-xl border border-white/50 hover:border-teal-200/80 shadow-[0_8px_32px_rgba(0,0,0,0.22),inset_0_1px_2px_rgba(255,255,255,0.85)] ring-1 ring-white/25 text-white';
+          case 'amber':
+            return 'bg-white/18 hover:bg-white/28 backdrop-blur-xl border border-white/50 hover:border-[#dfbf83]/80 shadow-[0_8px_32px_rgba(0,0,0,0.22),inset_0_1px_2px_rgba(255,255,255,0.85)] ring-1 ring-white/25 text-white';
+          case 'blue':
+            return 'bg-white/18 hover:bg-white/28 backdrop-blur-xl border border-white/50 hover:border-blue-200/80 shadow-[0_8px_32px_rgba(0,0,0,0.22),inset_0_1px_2px_rgba(255,255,255,0.85)] ring-1 ring-white/25 text-white';
+          case 'purple':
+          default:
+            return 'bg-white/18 hover:bg-white/28 backdrop-blur-xl border border-white/50 hover:border-purple-200/80 shadow-[0_8px_32px_rgba(0,0,0,0.22),inset_0_1px_2px_rgba(255,255,255,0.85)] ring-1 ring-white/25 text-white';
+        }
+      }
+    }
+
     if (isDark) {
       switch (accentColor) {
         case 'emerald':
-          return 'bg-[#0f1724]/75 hover:bg-[#0f1724]/85 backdrop-blur-2xl border border-teal-500/35 hover:border-teal-400/55 shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.18)] ring-1 ring-teal-500/20 text-teal-100';
+          return 'bg-[#0f1724]/80 hover:bg-[#0f1724]/90 backdrop-blur-2xl border border-teal-500/35 hover:border-teal-400/55 shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.18)] ring-1 ring-teal-500/20 text-teal-100';
         case 'amber':
-          return 'bg-[#15141b]/75 hover:bg-[#15141b]/85 backdrop-blur-2xl border border-[#dfbf83]/35 hover:border-[#dfbf83]/55 shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.18)] ring-1 ring-[#dfbf83]/20 text-[#eed8ad]';
+          return 'bg-[#15141b]/80 hover:bg-[#15141b]/90 backdrop-blur-2xl border border-[#dfbf83]/35 hover:border-[#dfbf83]/55 shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.18)] ring-1 ring-[#dfbf83]/20 text-[#eed8ad]';
         case 'blue':
-          return 'bg-[#0f1724]/75 hover:bg-[#0f1724]/85 backdrop-blur-2xl border border-blue-500/35 hover:border-blue-400/55 shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.18)] ring-1 ring-blue-500/20 text-blue-100';
+          return 'bg-[#0f1724]/80 hover:bg-[#0f1724]/90 backdrop-blur-2xl border border-blue-500/35 hover:border-blue-400/55 shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.18)] ring-1 ring-blue-500/20 text-blue-100';
         case 'purple':
         default:
-          return 'bg-[#140e24]/75 hover:bg-[#140e24]/85 backdrop-blur-2xl border border-purple-500/35 hover:border-purple-400/55 shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.18)] ring-1 ring-purple-500/20 text-purple-100';
+          return 'bg-[#140e24]/80 hover:bg-[#140e24]/90 backdrop-blur-2xl border border-purple-500/35 hover:border-purple-400/55 shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.18)] ring-1 ring-purple-500/20 text-purple-100';
       }
     } else {
       switch (accentColor) {
         case 'emerald':
-          return 'bg-white/70 hover:bg-white/80 backdrop-blur-2xl border border-teal-200/80 hover:border-teal-300 shadow-[0_10px_35px_rgba(20,184,166,0.08),inset_0_1px_2px_rgba(255,255,255,0.95)] ring-1 ring-teal-500/15 text-slate-900';
+          return 'bg-white/85 hover:bg-white/95 backdrop-blur-2xl border border-teal-200/80 hover:border-teal-300 shadow-[0_10px_35px_rgba(20,184,166,0.08),inset_0_1px_2px_rgba(255,255,255,0.95)] ring-1 ring-teal-500/15 text-slate-900';
         case 'amber':
-          return 'bg-white/70 hover:bg-white/80 backdrop-blur-2xl border border-[#dfbf83]/60 hover:border-[#dfbf83] shadow-[0_10px_35px_rgba(184,141,70,0.08),inset_0_1px_2px_rgba(255,255,255,0.95)] ring-1 ring-[#dfbf83]/15 text-slate-900';
+          return 'bg-white/85 hover:bg-white/95 backdrop-blur-2xl border border-[#dfbf83]/60 hover:border-[#dfbf83] shadow-[0_10px_35px_rgba(184,141,70,0.08),inset_0_1px_2px_rgba(255,255,255,0.95)] ring-1 ring-[#dfbf83]/15 text-slate-900';
         case 'blue':
-          return 'bg-white/70 hover:bg-white/80 backdrop-blur-2xl border border-blue-200/80 hover:border-blue-300 shadow-[0_10px_35px_rgba(59,130,246,0.08),inset_0_1px_2px_rgba(255,255,255,0.95)] ring-1 ring-blue-500/15 text-slate-900';
+          return 'bg-white/85 hover:bg-white/95 backdrop-blur-2xl border border-blue-200/80 hover:border-blue-300 shadow-[0_10px_35px_rgba(59,130,246,0.08),inset_0_1px_2px_rgba(255,255,255,0.95)] ring-1 ring-blue-500/15 text-slate-900';
         case 'purple':
         default:
-          return 'bg-white/70 hover:bg-white/80 backdrop-blur-2xl border border-purple-200/80 hover:border-purple-300 shadow-[0_10px_35px_rgba(168,85,247,0.08),inset_0_1px_2px_rgba(255,255,255,0.95)] ring-1 ring-purple-500/15 text-slate-900';
+          return 'bg-white/85 hover:bg-white/95 backdrop-blur-2xl border border-purple-200/80 hover:border-purple-300 shadow-[0_10px_35px_rgba(168,85,247,0.08),inset_0_1px_2px_rgba(255,255,255,0.95)] ring-1 ring-purple-500/15 text-slate-900';
       }
     }
   };
@@ -176,6 +205,19 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
   };
 
   const getFilterPillActiveStyle = () => {
+    if (!isCompact && activeMainTab === 'home') {
+      switch (accentColor) {
+        case 'amber':
+          return 'bg-[#b88d46]/45 border-[#dfbf83] text-white shadow-md shadow-amber-950/40 backdrop-blur-md font-bold';
+        case 'emerald':
+          return 'bg-teal-500/45 border-teal-300 text-white shadow-md shadow-teal-950/40 backdrop-blur-md font-bold';
+        case 'blue':
+          return 'bg-blue-500/45 border-blue-300 text-white shadow-md shadow-blue-950/40 backdrop-blur-md font-bold';
+        case 'purple':
+        default:
+          return 'bg-purple-500/45 border-purple-300 text-white shadow-md shadow-purple-950/40 backdrop-blur-md font-bold';
+      }
+    }
     if (isDark) {
       switch (accentColor) {
         case 'amber':
@@ -204,7 +246,11 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
   };
 
   const getFilterPillIconColor = (isActive: boolean) => {
-    if (!isActive) return isDark ? 'text-white/60' : 'text-stone-600';
+    if (!isActive) {
+      if (!isCompact && activeMainTab === 'home') return 'text-white/80';
+      return isDark ? 'text-white/60' : 'text-stone-600';
+    }
+    if (!isCompact && activeMainTab === 'home') return 'text-white';
     switch (accentColor) {
       case 'amber': return 'text-[#dfbf83] dark:text-[#eed9b0]';
       case 'emerald': return 'text-teal-600 dark:text-teal-300';
@@ -215,6 +261,9 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
   };
 
   const getFilterPillCloseBtnStyle = () => {
+    if (!isCompact && activeMainTab === 'home') {
+      return 'bg-white/20 hover:bg-white/40 text-white';
+    }
     switch (accentColor) {
       case 'amber':
         return 'bg-[#b88d46]/30 hover:bg-[#b88d46] hover:text-stone-950 text-amber-200';
@@ -445,9 +494,11 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
               }
             }}
             placeholder="ابحث عن كتاب (مثل: عمدة الفقه)، مؤلف (مثل: ابن قدامة)، أو باب شرعي..."
-            className={`min-w-0 flex-1 bg-transparent outline-none ${Boolean(currentSearchValue) ? 'font-bold' : 'font-normal'} ${isDark
-              ? 'text-white placeholder:text-slate-400/50 placeholder:font-normal'
-              : 'text-stone-900 placeholder:text-stone-400 placeholder:font-normal'
+            className={`min-w-0 flex-1 bg-transparent outline-none ${Boolean(currentSearchValue) ? 'font-bold' : 'font-normal'} ${!isCompact && activeMainTab === 'home'
+              ? 'text-white placeholder:text-white/70 placeholder:font-normal drop-shadow-xs'
+              : isDark
+                ? 'text-white placeholder:text-slate-400/50 placeholder:font-normal'
+                : 'text-stone-900 placeholder:text-stone-400 placeholder:font-normal'
               } text-xs sm:text-sm py-1`}
           />
 
@@ -456,9 +507,11 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
             <button
               type="button"
               onClick={() => handleSearchChange('')}
-              className={`p-1.5 rounded-full transition-colors shrink-0 cursor-pointer ${isDark
-                ? 'text-white/80 hover:text-white hover:bg-white/10'
-                : 'text-stone-700 hover:text-stone-900 hover:bg-black/5'
+              className={`p-1.5 rounded-full transition-colors shrink-0 cursor-pointer ${!isCompact && activeMainTab === 'home'
+                ? 'text-white/80 hover:text-white hover:bg-white/15'
+                : isDark
+                  ? 'text-white/80 hover:text-white hover:bg-white/10'
+                  : 'text-stone-700 hover:text-stone-900 hover:bg-black/5'
                 }`}
               title="مسح البحث"
             >
@@ -467,7 +520,11 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
           )}
 
           {/* Subtle Vertical Divider */}
-          <div className={`w-px shrink-0 ${isDark ? 'bg-white/20' : 'bg-stone-400/50'
+          <div className={`w-px shrink-0 ${!isCompact && activeMainTab === 'home'
+            ? 'bg-white/30'
+            : isDark
+              ? 'bg-white/20'
+              : 'bg-stone-400/50'
             } ${isCompact ? 'h-5' : 'h-6 sm:h-7'}`} />
 
           {/* Dropdown Filters: Domain & Author */}
@@ -483,9 +540,11 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
                 className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 rounded-full border transition-all duration-200 font-bold font-sans cursor-pointer active:scale-95 ${isCompact ? 'h-[30px] sm:h-[32px] text-[11px] sm:text-xs' : 'h-[32px] sm:h-[34px] text-xs'
                   } ${selectedDomain !== 'all'
                     ? getFilterPillActiveStyle()
-                    : isDark
-                      ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md'
-                      : 'bg-white/40 hover:bg-white/60 border-white/60 hover:border-white text-stone-900 font-bold backdrop-blur-md shadow-2xs'
+                    : !isCompact && activeMainTab === 'home'
+                      ? 'bg-white/15 hover:bg-white/25 border-white/35 hover:border-white/60 text-white backdrop-blur-md shadow-xs drop-shadow-xs'
+                      : isDark
+                        ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md'
+                        : 'bg-white/40 hover:bg-white/60 border-white/60 hover:border-white text-stone-900 font-bold backdrop-blur-md shadow-2xs'
                   }`}
                 title="تصفية حسب القسم الشرعي"
               >
@@ -506,7 +565,7 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
                     <X className="w-2.5 h-2.5" />
                   </span>
                 ) : (
-                  <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isDomainPickerOpen ? 'rotate-180' : 'rotate-0 opacity-70'}`} />
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isDomainPickerOpen ? 'rotate-180' : 'rotate-0'} ${!isCompact && activeMainTab === 'home' ? 'text-white/80' : 'opacity-70'}`} />
                 )}
               </button>
 
@@ -573,9 +632,11 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
                 className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 rounded-full border transition-all duration-200 font-bold font-sans cursor-pointer active:scale-95 ${isCompact ? 'h-[30px] sm:h-[32px] text-[11px] sm:text-xs' : 'h-[32px] sm:h-[34px] text-xs'
                   } ${filterAuthor !== 'all'
                     ? getFilterPillActiveStyle()
-                    : isDark
-                      ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md'
-                      : 'bg-white/40 hover:bg-white/60 border-white/60 hover:border-white text-stone-900 font-bold backdrop-blur-md shadow-2xs'
+                    : !isCompact && activeMainTab === 'home'
+                      ? 'bg-white/15 hover:bg-white/25 border-white/35 hover:border-white/60 text-white backdrop-blur-md shadow-xs drop-shadow-xs'
+                      : isDark
+                        ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white backdrop-blur-md'
+                        : 'bg-white/40 hover:bg-white/60 border-white/60 hover:border-white text-stone-900 font-bold backdrop-blur-md shadow-2xs'
                   }`}
                 title="تصفية حسب المؤلف"
               >
@@ -596,7 +657,7 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
                     <X className="w-2.5 h-2.5" />
                   </span>
                 ) : (
-                  <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isAuthorPickerOpen ? 'rotate-180' : 'rotate-0 opacity-70'}`} />
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isAuthorPickerOpen ? 'rotate-180' : 'rotate-0'} ${!isCompact && activeMainTab === 'home' ? 'text-white/80' : 'opacity-70'}`} />
                 )}
               </button>
 
@@ -738,7 +799,7 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
             </div>
           ) : (
             <div className="max-h-[55vh] sm:max-h-[460px] overflow-y-auto p-3 sm:p-4 space-y-2.5 custom-scrollbar">
-              {homeSearchResults.map((book) => (
+              {homeSearchResults.slice(0, 8).map((book) => (
                 <BookCard
                   key={book.id || book.title}
                   book={book}

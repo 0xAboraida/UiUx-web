@@ -174,16 +174,30 @@ export default function LibraryHero({
   };
 
   const getBrowseLibraryButtonStyle = () => {
-    switch (accentColor) {
-      case 'emerald':
-        return 'bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-500 hover:from-teal-700 hover:to-teal-600 text-white shadow-teal-500/30 border border-teal-300/30';
-      case 'amber':
-        return 'bg-gradient-to-r from-[#8e682d] via-[#b88d46] to-[#dfbf83] hover:from-[#76541f] hover:to-[#b88d46] text-stone-950 font-black shadow-[#dfbf83]/30 border border-[#dfbf83]/40';
-      case 'blue':
-        return 'bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 hover:from-blue-800 hover:to-blue-700 text-white shadow-blue-500/30 border border-blue-300/30';
-      case 'purple':
-      default:
-        return 'bg-gradient-to-r from-brand-magenta via-purple-600 to-brand-deep hover:from-brand-deep hover:to-purple-800 text-white shadow-brand-magenta/30 border border-purple-300/30';
+    if (isDark) {
+      switch (accentColor) {
+        case 'emerald':
+          return 'bg-black/25 hover:bg-black/35 text-white backdrop-blur-xl border border-teal-500/35 hover:border-teal-400/60 shadow-[0_8px_25px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] ring-1 ring-teal-500/20';
+        case 'amber':
+          return 'bg-black/25 hover:bg-black/35 text-white backdrop-blur-xl border border-[#dfbf83]/35 hover:border-[#dfbf83]/60 shadow-[0_8px_25px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] ring-1 ring-[#dfbf83]/20';
+        case 'blue':
+          return 'bg-black/25 hover:bg-black/35 text-white backdrop-blur-xl border border-blue-500/35 hover:border-blue-400/60 shadow-[0_8px_25px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] ring-1 ring-blue-500/20';
+        case 'purple':
+        default:
+          return 'bg-black/25 hover:bg-black/35 text-white backdrop-blur-xl border border-purple-500/35 hover:border-purple-400/60 shadow-[0_8px_25px_rgba(0,0,0,0.45),inset_0_1px_1px_rgba(255,255,255,0.2)] ring-1 ring-purple-500/20';
+      }
+    } else {
+      switch (accentColor) {
+        case 'emerald':
+          return 'bg-white/18 hover:bg-white/28 text-white backdrop-blur-xl border border-white/50 hover:border-teal-200/80 shadow-[0_8px_25px_rgba(0,0,0,0.22),inset_0_1px_2px_rgba(255,255,255,0.85)] ring-1 ring-white/25 drop-shadow-xs';
+        case 'amber':
+          return 'bg-white/18 hover:bg-white/28 text-white backdrop-blur-xl border border-white/50 hover:border-[#dfbf83]/80 shadow-[0_8px_25px_rgba(0,0,0,0.22),inset_0_1px_2px_rgba(255,255,255,0.85)] ring-1 ring-white/25 drop-shadow-xs';
+        case 'blue':
+          return 'bg-white/18 hover:bg-white/28 text-white backdrop-blur-xl border border-white/50 hover:border-blue-200/80 shadow-[0_8px_25px_rgba(0,0,0,0.22),inset_0_1px_2px_rgba(255,255,255,0.85)] ring-1 ring-white/25 drop-shadow-xs';
+        case 'purple':
+        default:
+          return 'bg-white/18 hover:bg-white/28 text-white backdrop-blur-xl border border-white/50 hover:border-purple-200/80 shadow-[0_8px_25px_rgba(0,0,0,0.22),inset_0_1px_2px_rgba(255,255,255,0.85)] ring-1 ring-white/25 drop-shadow-xs';
+      }
     }
   };
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   User, Calendar, Clock, BookCheck, List, LayoutGrid,
-  ChevronDown, BookOpen, FileText, ChevronLeft, ArrowRight,
+  ChevronDown, BookOpen, FileText, ChevronLeft, ArrowRight, ArrowLeft,
   GraduationCap, X, Quote, Sparkles, ChevronUp, Loader2, Search, Layers
 } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -49,6 +49,8 @@ export interface AuthorsViewProps {
   selectedDomain?: string;
   filterAuthor?: string;
   handleSearchChange?: (value: string) => void;
+  returnToReaderBook?: BookMeta | null;
+  onReturnToReader?: () => void;
 }
 
 export function AuthorsView({
@@ -70,6 +72,8 @@ export function AuthorsView({
   selectedDomain = 'all',
   filterAuthor = 'all',
   handleSearchChange,
+  returnToReaderBook,
+  onReturnToReader,
 }: AuthorsViewProps) {
   const { accentColor, isDark } = useTheme();
 
@@ -176,10 +180,25 @@ export function AuthorsView({
     const fetchAuthorBio = async () => {
       try {
         const baseUrl = import.meta.env.VITE_DATA_INGESTION_URL || 'https://abourida-zad-tutor-engine-space.hf.space';
-        const targetAuthorId = currentAuthorData.sampleBook?.author_id ||
+        let targetAuthorId = currentAuthorData.sampleBook?.author_id ||
           currentAuthorData.books.find(b => b.author_id)?.author_id;
 
-        // Step A: If targetAuthorId is present, fetch directly from Turath API
+        // Step 1: If authorId is not known, resolve it instantly from sampleBook indexes via Turath API
+        if (!targetAuthorId) {
+          const sampleBookId = (currentAuthorData.sampleBook as any)?.turath_id || currentAuthorData.sampleBook?.id;
+          if (sampleBookId && Number(sampleBookId) > 0) {
+            try {
+              const turathData = await fetchTurathBookIndexes(Number(sampleBookId));
+              if (turathData?.meta?.author_id) {
+                targetAuthorId = turathData.meta.author_id;
+              }
+            } catch (e) {
+              console.warn('Could not resolve author_id from sampleBook:', e);
+            }
+          }
+        }
+
+        // Step 2: Fetch author biography directly from official Turath API
         if (targetAuthorId) {
           try {
             const turathRes = await fetch(`https://api.turath.io/author?id=${targetAuthorId}&ver=3`);
@@ -201,11 +220,11 @@ export function AuthorsView({
               }
             }
           } catch (e) {
-            // continue
+            console.warn('Turath author API fetch error:', e);
           }
         }
 
-        // Step B: Query zad-author-info by name
+        // Step 3: Fallback to zad-author-info ingestion endpoint by name
         try {
           const nameRes = await fetch(`${baseUrl}/api/v1/data-ingestion/zad-author-info/${encodeURIComponent(authorName)}?author_name=${encodeURIComponent(authorName)}`);
           if (nameRes.ok) {
@@ -227,50 +246,6 @@ export function AuthorsView({
           }
         } catch (e) {
           // continue
-        }
-
-        // Step C: Fallback to resolve author_id via sampleBook ID (Turath API first, then ingestion)
-        if (currentAuthorData.sampleBook?.id) {
-          try {
-            let resolvedAuthorId: number | undefined;
-            try {
-              const turathData = await fetchTurathBookIndexes(Number(currentAuthorData.sampleBook.id));
-              resolvedAuthorId = turathData?.meta?.author_id;
-            } catch (te) {
-              console.warn('Error querying turath indexes for author_id:', te);
-            }
-
-            if (!resolvedAuthorId) {
-              const bookRes = await fetch(`${baseUrl}/api/v1/data-ingestion/zad-book-info/${currentAuthorData.sampleBook.id}`);
-              if (bookRes.ok) {
-                const bData = await bookRes.json();
-                resolvedAuthorId = bData?.meta?.author_id;
-              }
-            }
-
-            if (resolvedAuthorId) {
-              const authorRes = await fetch(`https://api.turath.io/author?id=${resolvedAuthorId}&ver=3`);
-                if (authorRes.ok) {
-                  const data = await authorRes.json();
-                  if (data?.biography && data.biography.trim().length > 10) {
-                    if (isMounted) {
-                      const entry = {
-                        id: data.id,
-                        name: data.name || authorName,
-                        death: data.death || (currentAuthorData.deathYear ? String(currentAuthorData.deathYear) : undefined),
-                        biography: data.biography
-                      };
-                      bioCacheRef.current.set(authorName, entry);
-                      setBioData(entry);
-                      setIsBioLoading(false);
-                      return;
-                    }
-                  }
-                }
-              }
-          } catch (e) {
-            // continue
-          }
         }
 
         if (isMounted) {
@@ -774,32 +749,48 @@ export function AuthorsView({
       {selectedAuthor && currentAuthorData ? (
         <div className="space-y-4">
 
-          {/* Breadcrumbs Navigation */}
-          <nav aria-label="مسار التنقل" className="flex items-center gap-2 text-xs sm:text-sm font-medium py-1 px-1 select-none overflow-x-auto no-scrollbar">
-            <button
-              type="button"
-              onClick={() => setSelectedAuthor(null)}
-              className="hover:text-brand-magenta transition-colors flex items-center gap-1.5 group font-bold text-slate-600 dark:text-slate-300 cursor-pointer"
-            >
-              <ArrowRight className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-              <span>المؤلفون والقرون</span>
-            </button>
+          {/* Breadcrumbs Navigation & Return to Reading Book Button */}
+          <div className="flex items-center justify-between gap-3 flex-wrap py-1 px-1 select-none">
+            <nav aria-label="مسار التنقل" className="flex items-center gap-2 text-xs sm:text-sm font-medium overflow-x-auto no-scrollbar">
+              <button
+                type="button"
+                onClick={() => setSelectedAuthor(null)}
+                className="hover:text-brand-magenta transition-colors flex items-center gap-1.5 group font-bold text-slate-600 dark:text-slate-300 cursor-pointer"
+              >
+                <ArrowRight className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                <span>المؤلفون والقرون</span>
+              </button>
 
-            <ChevronLeft className="w-3.5 h-3.5 shrink-0 text-stone-500 dark:text-stone-300" strokeWidth={2.5} />
+              <ChevronLeft className="w-3.5 h-3.5 shrink-0 text-stone-500 dark:text-stone-300" strokeWidth={2.5} />
 
-            {currentAuthorData.centuryName && (
-              <>
-                <span className="text-slate-600 dark:text-slate-400 font-medium shrink-0">
-                  {currentAuthorData.centuryName}
-                </span>
-                <ChevronLeft className="w-3.5 h-3.5 shrink-0 text-stone-500 dark:text-stone-300" strokeWidth={2.5} />
-              </>
+              {currentAuthorData.centuryName && (
+                <>
+                  <span className="text-slate-600 dark:text-slate-400 font-medium shrink-0">
+                    {currentAuthorData.centuryName}
+                  </span>
+                  <ChevronLeft className="w-3.5 h-3.5 shrink-0 text-stone-500 dark:text-stone-300" strokeWidth={2.5} />
+                </>
+              )}
+
+              <span className={`font-extrabold truncate max-w-[160px] sm:max-w-[280px] ${getThemeAccentTextClass()}`}>
+                {currentAuthorData.authorName}
+              </span>
+            </nav>
+
+            {returnToReaderBook && onReturnToReader && (
+              <button
+                type="button"
+                onClick={onReturnToReader}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl brand-gradient text-white font-bold text-xs sm:text-sm shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all group cursor-pointer shrink-0 animate-in fade-in active:scale-95"
+                title={`العودة لمتابعة قراءة: ${returnToReaderBook.title}`}
+              >
+                <BookOpen className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline">متابعة قراءة:</span>
+                <span className="truncate max-w-[140px] sm:max-w-[220px] font-black">{returnToReaderBook.title}</span>
+                <ArrowLeft className="w-4 h-4 shrink-0 group-hover:-translate-x-1 transition-transform" />
+              </button>
             )}
-
-            <span className={`font-extrabold truncate max-w-[200px] sm:max-w-[320px] ${getThemeAccentTextClass()}`}>
-              {currentAuthorData.authorName}
-            </span>
-          </nav>
+          </div>
 
           {/* UNIFIED AUTHOR PROFILE & BIOGRAPHY CARD */}
           <div ref={bioCardRef} className="rounded-3xl border border-brand-magenta/25 dark:border-white/10 bg-gradient-to-br from-brand-magenta/[0.04] via-white to-brand-blue/[0.03] dark:from-[#131726] dark:via-[#121624] dark:to-[#17102b] p-6 sm:p-8 shadow-sm transition-all relative overflow-hidden backdrop-blur-md">

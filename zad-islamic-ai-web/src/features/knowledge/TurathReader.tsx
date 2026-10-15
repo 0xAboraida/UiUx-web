@@ -2348,7 +2348,7 @@ export default function TurathReader({
                     type="button"
                     onClick={() => {
                       if (onSelectAuthor) {
-                        onSelectAuthor(authorName || book.author);
+                        onSelectAuthor(book.author || authorName);
                       }
                     }}
                     className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold border backdrop-blur-md shadow-sm transition-all shrink-0 hover:scale-105 cursor-pointer ${getHeaderAuthorBadgeClass()}`}

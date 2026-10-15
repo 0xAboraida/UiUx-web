@@ -9,8 +9,8 @@ import {
   Heart, Sun, Moon, Hash, Settings, Palette, LogOut,
   Smartphone, Share2, LogIn, ShieldCheck, Download, FileDown
 } from 'lucide-react'
-import libraryBgLight from '@/assets/images/library background light 2.webp'
-import libraryBgDark from '@/assets/images/library background Sunset 1.webp'
+import libraryBgLight from '@/assets/images/library background light 5.png'
+import libraryBgDark from '@/assets/images/library background dark5.png'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useAuth } from '../../contexts/AuthContext'
 import { getAvatarUrl } from '../../api/client'
@@ -24,9 +24,6 @@ import LibraryHomeView from './components/LibraryHomeView'
 import IslamicPattern from './components/IslamicPattern'
 import MediaExplanationsView from './components/MediaExplanationsView'
 import CurrentCoursesView from './components/CurrentCoursesView'
-import FavoriteBooksView from './components/FavoriteBooksView'
-import CategoriesView from './components/CategoriesView'
-import AuthorsView from './components/AuthorsView'
 import UnifiedCatalogView, { CatalogSubTab } from './components/UnifiedCatalogView'
 import { BrowseBooksView } from './components/BrowseBooksView'
 import LibraryNavbar from './components/LibraryNavbar'
@@ -429,6 +426,9 @@ export default function KnowledgeBase({
   };
 
   const handleSearchSubmit = () => {
+    setCategorySearch(searchInput);
+    setAuthorSearch(searchInput);
+    setQuery(searchInput);
     if (activeMainTab === 'home') {
       window.scrollTo({ top: 0, behavior: 'instant' });
       setActiveMainTab('categories');
@@ -441,6 +441,7 @@ export default function KnowledgeBase({
   const [modalInfoLongText, setModalInfoLongText] = useState<string | null>(null)
   const [loadingInfo, setLoadingInfo] = useState(false)
   const [bookDetailsCache, setBookDetailsCache] = useState<Record<string, { info: string; infoLong?: string | null }>>({})
+  const [returnToReaderBook, setReturnToReaderBook] = useState<BookMeta | null>(null)
 
   // Library Data Hook (إدارة البيانات، التخزين المؤقت، والتصفية فائقة السرعة)
   const {
@@ -611,6 +612,7 @@ export default function KnowledgeBase({
         onAskBook={onAskBook}
         globalFontSize={fontSize}
         onSelectAuthor={(authorName) => {
+          setReturnToReaderBook(selectedBook);
           setView('search');
           setActiveMainTab('authors');
           setSelectedAuthor(authorName);
@@ -716,7 +718,7 @@ export default function KnowledgeBase({
           {/* ============================================================= */}
           {/* SECTION 1: TOP HERO (القسم الأول: النافبار + الهيدر + صورة الغروب - شاشة كاملة 100vh) */}
           {/* ============================================================= */}
-          <div className={`relative z-20 w-full overflow-hidden ${isDark ? 'bg-[#0c0e14]' : 'bg-[#fbfbfb]'} ${activeMainTab === 'home'
+          <div className={`relative z-30 w-full ${isDark ? 'bg-[#0c0e14]' : 'bg-[#fbfbfb]'} ${activeMainTab === 'home'
             ? 'min-h-screen flex flex-col justify-between'
             : ''
             }`}>
@@ -824,8 +826,6 @@ export default function KnowledgeBase({
                     setSelectedAuthor(authorName);
                     setActiveMainTab('authors');
                   }}
-                  featuredPlaylist={playlists.find(p => p.id === 'pl-alaa-fiqh-muyassar') || playlists[0]}
-                  activeCourse={courses.find(c => c.playlistId === 'PLRG850GgVGNY') || courses[0]}
                   favoritesCount={favoriteBooksList.length}
                   onNavigateTab={(tab) => {
                     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -929,6 +929,14 @@ export default function KnowledgeBase({
                     selectedDomain,
                     filterAuthor,
                     handleSearchChange,
+                    returnToReaderBook,
+                    onReturnToReader: () => {
+                      if (returnToReaderBook) {
+                        setSelectedBook(returnToReaderBook);
+                        setView('reader');
+                        window.scrollTo({ top: 0, behavior: 'instant' });
+                      }
+                    },
                   }}
                   favoriteBooks={favoriteBooksList}
                   onRemoveFavorite={(id) => toggleFavorite(id)}

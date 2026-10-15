@@ -502,9 +502,6 @@ export function CategoriesView({
                       <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 leading-snug">
                         {cat.name}
                       </h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        يحتوي على <span className={`font-bold ${getThemeAccentTextClass()}`}>{cat.books.length >= 3 && cat.books.length <= 10 ? `${cat.books.length} كتب` : `${cat.books.length} كتاباً`}</span> معتمدة
-                      </p>
                     </div>
                   </div>
 
