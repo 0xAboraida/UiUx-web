@@ -29,6 +29,15 @@ let cachedTotalCount: number = 18989;
 let cachedActiveNarrator: TurathNarratorItem | null = null;
 let cachedActiveDetail: TurathNarratorDetail | null = null;
 
+// Helper to truncate long biographical death quotes (e.g. historical narrations) to first few words
+const formatDeathText = (text: string, maxWords: number = 7): string => {
+  if (!text) return '';
+  const clean = text.trim().replace(/\s+/g, ' ');
+  const words = clean.split(' ');
+  if (words.length <= maxWords) return clean;
+  return words.slice(0, maxWords).join(' ') + '...';
+};
+
 interface NarratorsViewProps {
   onReadBook?: (book: any, page?: number) => void;
   publishedBooks?: any[];
@@ -524,34 +533,41 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
               <div
                 key={narrator.id}
                 onClick={() => handleOpenNarrator(narrator)}
-                className="group rounded-xl py-2 px-3.5 sm:px-4.5 bg-white/95 dark:bg-[#131620]/95 border border-slate-200/80 dark:border-white/10 hover:border-amber-500/50 dark:hover:border-amber-400/50 shadow-2xs hover:shadow-sm transition-all duration-150 cursor-pointer flex items-center justify-between gap-2.5"
+                className="group rounded-xl py-2.5 px-3.5 sm:px-4.5 bg-white/95 dark:bg-[#131620]/95 border border-slate-200/80 dark:border-white/10 hover:border-amber-500/50 dark:hover:border-amber-400/50 shadow-2xs hover:shadow-sm transition-all duration-150 cursor-pointer flex items-center justify-between gap-3"
               >
-                {/* 1. Name & Badges in a compact inline row */}
+                {/* 1. Narrator Info (Stacked: Name -> Full Name -> Date & Summary) */}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                      {narrator.name}
-                    </h3>
+                  {/* Row 1: Name only on its own line */}
+                  <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors leading-snug">
+                    {narrator.name}
+                  </h3>
 
-                    {narrator.rank && (
-                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shadow-2xs ${getRankBadgeStyle(narrator.rank)}`}>
-                        {narrator.rank}
-                      </span>
-                    )}
-
-                    {/* Only show date if available - NO 'غير محدد' */}
-                    {hasDeathDate && (
-                      <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-amber-500/80" />
-                        <span>{deathDisplay}</span>
-                      </span>
-                    )}
-                  </div>
-
+                  {/* Row 2: Detailed full name if available and different */}
                   {narrator.full_name && narrator.full_name !== narrator.name && (
-                    <p className="text-[11px] text-muted-foreground line-clamp-1 opacity-75 mt-0.5">
+                    <p className="text-[11px] sm:text-xs text-muted-foreground/80 line-clamp-1 opacity-80 mt-0.5 leading-normal">
                       {narrator.full_name}
                     </p>
+                  )}
+
+                  {/* Row 3: Death date with words limit, then Summary / Rank */}
+                  {(hasDeathDate || narrator.rank) && (
+                    <div className="flex items-center gap-2 flex-wrap mt-1">
+                      {hasDeathDate && (
+                        <span
+                          title={deathDisplay}
+                          className="text-[10px] sm:text-[11px] font-mono text-muted-foreground flex items-center gap-1 shrink-0"
+                        >
+                          <Calendar className="w-3 h-3 text-amber-500/80 shrink-0" />
+                          <span>{formatDeathText(deathDisplay, 7)}</span>
+                        </span>
+                      )}
+
+                      {narrator.rank && (
+                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shadow-2xs ${getRankBadgeStyle(narrator.rank)}`}>
+                          {narrator.rank}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -579,32 +595,40 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
                 className="group rounded-xl p-3.5 bg-white/95 dark:bg-[#131620]/95 border border-slate-200/80 dark:border-white/10 hover:border-amber-500/50 dark:hover:border-amber-400/50 shadow-2xs hover:shadow-sm transition-all duration-150 cursor-pointer flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-1.5 mb-1.5">
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1 flex-1">
+                  {/* Row 1: Name and Arrow */}
+                  <div className="flex items-start justify-between gap-1.5 mb-1">
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1 flex-1 leading-snug">
                       {narrator.name}
                     </h3>
                     <ArrowLeft className="w-3.5 h-3.5 text-muted-foreground group-hover:text-amber-500 group-hover:-translate-x-0.5 transition-transform shrink-0 mt-0.5" />
                   </div>
 
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {narrator.rank && (
-                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shadow-2xs ${getRankBadgeStyle(narrator.rank)}`}>
-                        {narrator.rank}
-                      </span>
-                    )}
-
-                    {hasDeathDate && (
-                      <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-amber-500/80" />
-                        <span>{deathDisplay}</span>
-                      </span>
-                    )}
-                  </div>
-
+                  {/* Row 2: Detailed full name if available and different */}
                   {narrator.full_name && narrator.full_name !== narrator.name && (
-                    <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1 leading-relaxed opacity-75">
+                    <p className="text-[11px] text-muted-foreground line-clamp-1 leading-normal opacity-80 mb-1.5">
                       {narrator.full_name}
                     </p>
+                  )}
+
+                  {/* Row 3: Death date with words limit, then Summary / Rank */}
+                  {(hasDeathDate || narrator.rank) && (
+                    <div className="flex items-center gap-1.5 flex-wrap mt-auto pt-1">
+                      {hasDeathDate && (
+                        <span
+                          title={deathDisplay}
+                          className="text-[10px] font-mono text-muted-foreground flex items-center gap-1"
+                        >
+                          <Calendar className="w-3 h-3 text-amber-500/80 shrink-0" />
+                          <span>{formatDeathText(deathDisplay, 7)}</span>
+                        </span>
+                      )}
+
+                      {narrator.rank && (
+                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shadow-2xs ${getRankBadgeStyle(narrator.rank)}`}>
+                          {narrator.rank}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
