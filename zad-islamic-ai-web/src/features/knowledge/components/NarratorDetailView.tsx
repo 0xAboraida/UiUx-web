@@ -53,6 +53,46 @@ export default function NarratorDetailView({
   const displayRank = narrator?.rank || narratorBasicInfo?.rank || null;
   const displayDeath = narrator?.death_text || (narratorBasicInfo?.death ? `${narratorBasicInfo.death} هـ` : null);
 
+  const getThemeAccentText = () => {
+    switch (accentColor) {
+      case 'emerald': return 'text-teal-600 dark:text-teal-400';
+      case 'amber': return 'text-[#b88d46] dark:text-[#dfbf83]';
+      case 'blue': return 'text-blue-600 dark:text-blue-400';
+      case 'purple':
+      default: return 'text-brand-magenta dark:text-purple-400';
+    }
+  };
+
+  const getThemeIconColor = () => {
+    switch (accentColor) {
+      case 'emerald': return 'text-teal-500 dark:text-teal-400';
+      case 'amber': return 'text-[#b88d46] dark:text-[#dfbf83]';
+      case 'blue': return 'text-blue-500 dark:text-blue-400';
+      case 'purple':
+      default: return 'text-brand-magenta dark:text-purple-400';
+    }
+  };
+
+  const getThemeSpinnerColor = () => {
+    switch (accentColor) {
+      case 'emerald': return 'text-teal-500';
+      case 'amber': return 'text-amber-500';
+      case 'blue': return 'text-blue-500';
+      case 'purple':
+      default: return 'text-brand-magenta';
+    }
+  };
+
+  const getThemeHoverBorder = () => {
+    switch (accentColor) {
+      case 'emerald': return 'hover:border-teal-500/40';
+      case 'amber': return 'hover:border-[#dfbf83]/50';
+      case 'blue': return 'hover:border-blue-500/40';
+      case 'purple':
+      default: return 'hover:border-purple-500/40';
+    }
+  };
+
   const getRankBadgeStyle = (rank?: string | null) => {
     const r = (rank || '').toLowerCase();
     if (r.includes('صحابي')) {
@@ -198,7 +238,7 @@ export default function NarratorDetailView({
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 pt-3 mt-1 border-t border-slate-200/60 dark:border-white/10 text-xs sm:text-sm">
               {displayDeath && (
                 <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <Calendar className="w-4 h-4 text-amber-500 shrink-0" />
+                  <Calendar className={`w-4 h-4 shrink-0 ${getThemeIconColor()}`} />
                   <span className="text-muted-foreground font-bold">الوفاة:</span>
                   <span className="font-semibold text-foreground">{displayDeath}</span>
                 </div>
@@ -238,10 +278,10 @@ export default function NarratorDetailView({
                 return (
                   <div
                     key={i}
-                    className="rounded-xl p-3.5 bg-white/70 dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/5 flex flex-col justify-between gap-1 hover:border-amber-500/30 transition-all"
+                    className={`rounded-xl p-3.5 bg-white/70 dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/5 flex flex-col justify-between gap-1 ${getThemeHoverBorder()} transition-all`}
                   >
                     {label && (
-                      <div className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                      <div className={`text-xs font-bold ${getThemeAccentText()}`}>
                         {label}
                       </div>
                     )}
@@ -261,7 +301,7 @@ export default function NarratorDetailView({
       {/* ========================================================================= */}
       {loading ? (
         <div className="rounded-3xl p-16 border border-slate-200/90 dark:border-white/10 bg-white/95 dark:bg-[#131620]/95 shadow-md flex flex-col items-center justify-center gap-4 text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
+          <Loader2 className={`w-10 h-10 animate-spin ${getThemeSpinnerColor()}`} />
           <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
             جارٍ استدعاء ترجمة الراوي وأقوال أئمة الجرح والتعديل من موسوعة تراث...
           </p>

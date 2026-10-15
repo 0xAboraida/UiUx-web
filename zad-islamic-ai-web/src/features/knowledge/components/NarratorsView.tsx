@@ -304,9 +304,99 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
 
   const getCardStyle = () => {
     if (isDark) {
-      return 'border border-white/10 bg-[#131620]/95 shadow-md shadow-black/30 backdrop-blur-md hover:bg-[#181b26]';
+      switch (accentColor) {
+        case 'emerald':
+          return 'border border-white/10 bg-[#131620]/95 shadow-md shadow-black/30 backdrop-blur-md hover:bg-[#181b26] hover:border-teal-400/40';
+        case 'amber':
+          return 'border border-white/10 bg-[#131620]/95 shadow-md shadow-black/30 backdrop-blur-md hover:bg-[#181b26] hover:border-[#dfbf83]/40';
+        case 'blue':
+          return 'border border-white/10 bg-[#131620]/95 shadow-md shadow-black/30 backdrop-blur-md hover:bg-[#181b26] hover:border-blue-400/40';
+        case 'purple':
+        default:
+          return 'border border-white/10 bg-[#131620]/95 shadow-md shadow-black/30 backdrop-blur-md hover:bg-[#181b26] hover:border-purple-400/40';
+      }
     }
-    return 'border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md hover:border-amber-400';
+    switch (accentColor) {
+      case 'emerald':
+        return 'border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md hover:border-teal-400';
+      case 'amber':
+        return 'border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md hover:border-[#dfbf83]';
+      case 'blue':
+        return 'border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md hover:border-blue-400';
+      case 'purple':
+      default:
+        return 'border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md hover:border-purple-400';
+    }
+  };
+
+  const getThemeAccentText = () => {
+    switch (accentColor) {
+      case 'emerald': return 'text-teal-600 dark:text-teal-400';
+      case 'amber': return 'text-[#b88d46] dark:text-[#dfbf83]';
+      case 'blue': return 'text-blue-600 dark:text-blue-400';
+      case 'purple':
+      default: return 'text-brand-magenta dark:text-purple-400';
+    }
+  };
+
+  const getThemeHoverText = () => {
+    switch (accentColor) {
+      case 'emerald': return 'group-hover:text-teal-600 dark:group-hover:text-teal-400';
+      case 'amber': return 'group-hover:text-[#b88d46] dark:group-hover:text-[#dfbf83]';
+      case 'blue': return 'group-hover:text-blue-600 dark:group-hover:text-blue-400';
+      case 'purple':
+      default: return 'group-hover:text-brand-magenta dark:group-hover:text-purple-400';
+    }
+  };
+
+  const getThemeHoverBorder = () => {
+    switch (accentColor) {
+      case 'emerald': return 'hover:border-teal-500/50 dark:hover:border-teal-400/50';
+      case 'amber': return 'hover:border-[#dfbf83]/50 dark:hover:border-[#dfbf83]/50';
+      case 'blue': return 'hover:border-blue-500/50 dark:hover:border-blue-400/50';
+      case 'purple':
+      default: return 'hover:border-purple-500/50 dark:hover:border-purple-400/50';
+    }
+  };
+
+  const getThemeIconColor = () => {
+    switch (accentColor) {
+      case 'emerald': return 'text-teal-500 dark:text-teal-400';
+      case 'amber': return 'text-[#b88d46] dark:text-[#dfbf83]';
+      case 'blue': return 'text-blue-500 dark:text-blue-400';
+      case 'purple':
+      default: return 'text-brand-magenta dark:text-purple-400';
+    }
+  };
+
+  const getThemeSpinnerColor = () => {
+    switch (accentColor) {
+      case 'emerald': return 'text-teal-500';
+      case 'amber': return 'text-amber-500';
+      case 'blue': return 'text-blue-500';
+      case 'purple':
+      default: return 'text-brand-magenta';
+    }
+  };
+
+  const getThemeDropdownActiveItem = () => {
+    switch (accentColor) {
+      case 'emerald': return 'bg-teal-500/15 text-teal-900 dark:text-teal-200 font-black';
+      case 'amber': return 'bg-amber-500/15 text-amber-900 dark:text-amber-200 font-black';
+      case 'blue': return 'bg-blue-500/15 text-blue-900 dark:text-blue-200 font-black';
+      case 'purple':
+      default: return 'bg-purple-500/15 text-purple-900 dark:text-purple-200 font-black';
+    }
+  };
+
+  const getThemeEmptyIconBox = () => {
+    switch (accentColor) {
+      case 'emerald': return 'bg-teal-500/10 text-teal-600 dark:text-teal-400';
+      case 'amber': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400';
+      case 'blue': return 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
+      case 'purple':
+      default: return 'bg-purple-500/10 text-brand-magenta dark:text-purple-400';
+    }
   };
 
   const getToggleActiveBtnStyle = () => {
@@ -400,7 +490,7 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
                   }`}
                 title="تصفية حسب رتبة الراوي"
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <ShieldCheck className={`w-3.5 h-3.5 shrink-0 ${getThemeIconColor()}`} />
                 <span className="truncate max-w-[130px]">{selectedRankLabel}</span>
                 <ChevronDown className={`w-3 h-3 transition-transform ${isRankPickerOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -421,12 +511,12 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
                           setIsRankPickerOpen(false);
                         }}
                         className={`w-full text-right px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between cursor-pointer ${rankFilter === opt.id
-                            ? 'bg-amber-500/15 text-amber-900 dark:text-amber-200 font-black'
+                            ? getThemeDropdownActiveItem()
                             : 'hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300'
                           }`}
                       >
                         <span>{opt.label}</span>
-                        {rankFilter === opt.id && <Check className="w-3.5 h-3.5 text-amber-500" />}
+                        {rankFilter === opt.id && <Check className={`w-3.5 h-3.5 ${getThemeIconColor()}`} />}
                       </button>
                     ))}
                   </div>
@@ -440,7 +530,7 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
       {/* Layout Toggle Bar (نفس شكل قسم الأقسام) */}
       <div className={`rounded-2xl border p-3 sm:px-5 flex items-center justify-between gap-3 ${getCardStyle()}`}>
         <div className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-amber-500 shrink-0" />
+          <ShieldCheck className={`w-5 h-5 shrink-0 ${getThemeIconColor()}`} />
           <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-slate-100">
             قائمة الرواة ({filteredNarrators.length})
           </h3>
@@ -482,7 +572,7 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
       {/* Results Content */}
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-3.5 text-center">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+          <Loader2 className={`w-8 h-8 animate-spin ${getThemeSpinnerColor()}`} />
           <p className="text-sm font-bold text-muted-foreground">
             جارٍ البحث في قاعدة بيانات الرواة (18,989 راوٍ)...
           </p>
@@ -501,7 +591,7 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
         </div>
       ) : filteredNarrators.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-200 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto ${getThemeEmptyIconBox()}`}>
             <Search className="w-7 h-7" />
           </div>
           <h4 className="text-base font-black text-slate-900 dark:text-white">
@@ -514,7 +604,7 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
             <button
               type="button"
               onClick={() => { setQuery(''); setRankFilter('all'); }}
-              className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+              className={`text-xs font-bold ${getThemeAccentText()} hover:underline cursor-pointer`}
             >
               عرض كل الرواة
             </button>
@@ -533,12 +623,12 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
               <div
                 key={narrator.id}
                 onClick={() => handleOpenNarrator(narrator)}
-                className="group rounded-xl py-2.5 px-3.5 sm:px-4.5 bg-white/95 dark:bg-[#131620]/95 border border-slate-200/80 dark:border-white/10 hover:border-amber-500/50 dark:hover:border-amber-400/50 shadow-2xs hover:shadow-sm transition-all duration-150 cursor-pointer flex items-center justify-between gap-3"
+                className={`group rounded-xl py-2.5 px-3.5 sm:px-4.5 bg-white/95 dark:bg-[#131620]/95 border border-slate-200/80 dark:border-white/10 ${getThemeHoverBorder()} shadow-2xs hover:shadow-sm transition-all duration-150 cursor-pointer flex items-center justify-between gap-3`}
               >
                 {/* 1. Narrator Info (Stacked: Name -> Full Name -> Date & Summary) */}
                 <div className="min-w-0 flex-1">
                   {/* Row 1: Name only on its own line */}
-                  <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors leading-snug">
+                  <h3 className={`font-bold text-sm sm:text-base text-slate-900 dark:text-white ${getThemeHoverText()} transition-colors leading-snug`}>
                     {narrator.name}
                   </h3>
 
@@ -557,7 +647,7 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
                           title={deathDisplay}
                           className="text-[10px] sm:text-[11px] font-mono text-muted-foreground flex items-center gap-1 shrink-0"
                         >
-                          <Calendar className="w-3 h-3 text-amber-500/80 shrink-0" />
+                          <Calendar className={`w-3 h-3 shrink-0 ${getThemeIconColor()}`} />
                           <span>{formatDeathText(deathDisplay, 7)}</span>
                         </span>
                       )}
@@ -572,7 +662,7 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
                 </div>
 
                 {/* 2. Arrow Action Button */}
-                <div className="flex items-center text-muted-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors shrink-0">
+                <div className={`flex items-center text-muted-foreground ${getThemeHoverText()} transition-colors shrink-0`}>
                   <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
                 </div>
               </div>
@@ -592,15 +682,15 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
               <div
                 key={narrator.id}
                 onClick={() => handleOpenNarrator(narrator)}
-                className="group rounded-xl p-3.5 bg-white/95 dark:bg-[#131620]/95 border border-slate-200/80 dark:border-white/10 hover:border-amber-500/50 dark:hover:border-amber-400/50 shadow-2xs hover:shadow-sm transition-all duration-150 cursor-pointer flex flex-col justify-between"
+                className={`group rounded-xl p-3.5 bg-white/95 dark:bg-[#131620]/95 border border-slate-200/80 dark:border-white/10 ${getThemeHoverBorder()} shadow-2xs hover:shadow-sm transition-all duration-150 cursor-pointer flex flex-col justify-between`}
               >
                 <div>
                   {/* Row 1: Name and Arrow */}
                   <div className="flex items-start justify-between gap-1.5 mb-1">
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1 flex-1 leading-snug">
+                    <h3 className={`font-bold text-sm text-slate-900 dark:text-white ${getThemeHoverText()} transition-colors line-clamp-1 flex-1 leading-snug`}>
                       {narrator.name}
                     </h3>
-                    <ArrowLeft className="w-3.5 h-3.5 text-muted-foreground group-hover:text-amber-500 group-hover:-translate-x-0.5 transition-transform shrink-0 mt-0.5" />
+                    <ArrowLeft className={`w-3.5 h-3.5 text-muted-foreground ${getThemeHoverText()} group-hover:-translate-x-0.5 transition-transform shrink-0 mt-0.5`} />
                   </div>
 
                   {/* Row 2: Detailed full name if available and different */}
@@ -618,7 +708,7 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
                           title={deathDisplay}
                           className="text-[10px] font-mono text-muted-foreground flex items-center gap-1"
                         >
-                          <Calendar className="w-3 h-3 text-amber-500/80 shrink-0" />
+                          <Calendar className={`w-3 h-3 shrink-0 ${getThemeIconColor()}`} />
                           <span>{formatDeathText(deathDisplay, 7)}</span>
                         </span>
                       )}
@@ -648,7 +738,7 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
           >
             {loadingMore ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                <Loader2 className={`w-4 h-4 animate-spin ${getThemeSpinnerColor()}`} />
                 <span>جارٍ تحميل المزيد من الرواة...</span>
               </>
             ) : (
