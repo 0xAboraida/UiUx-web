@@ -15,7 +15,6 @@ import { useTheme } from '../../contexts/ThemeContext'
 import { useAuth } from '../../contexts/AuthContext'
 import { getAvatarUrl } from '../../api/client'
 import NotificationBell from '../../components/layout/NotificationBell'
-import { AuthorBiographyModal } from '../../components/common/AuthorBiographyModal'
 import UserProfileModal from '../profile/UserProfileModal'
 import TurathReader from './TurathReader'
 import LibrarySidebar from './components/LibrarySidebar'
@@ -582,7 +581,16 @@ export default function KnowledgeBase({
   // View State (Reader vs Browser)
   const [view, setView] = useState<'search' | 'reader'>('search');
   const [selectedBook, setSelectedBook] = useState<BookMeta | null>(null);
-  const [selectedAuthorBook, setSelectedAuthorBook] = useState<BookMeta | null>(null);
+
+  // Navigate to official Author profile page
+  const handleOpenAuthorProfile = (book: BookMeta) => {
+    const author = book.author?.trim();
+    if (author && author !== 'من غير معروف') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      setSelectedAuthor(author);
+      setActiveMainTab('authors');
+    }
+  };
 
   // Collapsible Sidebar & Recent Book State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -645,7 +653,7 @@ export default function KnowledgeBase({
         toggleFavorite={toggleFavorite}
         handleReadBook={handleReadBook}
         onAskBook={onAskBook}
-        setSelectedAuthorBook={setSelectedAuthorBook}
+        setSelectedAuthorBook={handleOpenAuthorProfile}
         setActiveInfoBook={setActiveInfoBook}
       />
     );
@@ -879,7 +887,7 @@ export default function KnowledgeBase({
                   setVisibleBrowseBooksLimit={setVisibleBrowseBooksLimit}
                   handleReadBook={handleReadBook}
                   onAskBook={onAskBook}
-                  setSelectedAuthorBook={setSelectedAuthorBook}
+                  setSelectedAuthorBook={handleOpenAuthorProfile}
                   setActiveInfoBook={setActiveInfoBook}
                   favoriteBookIds={favoriteBookIds}
                   toggleFavorite={toggleFavorite}
@@ -904,7 +912,7 @@ export default function KnowledgeBase({
                     renderSearchConsole,
                     handleReadBook,
                     onAskBook,
-                    setSelectedAuthorBook,
+                    setSelectedAuthorBook: handleOpenAuthorProfile,
                     setActiveInfoBook,
                     favoriteBookIds,
                     toggleFavorite,
@@ -921,7 +929,7 @@ export default function KnowledgeBase({
                     renderSearchConsole,
                     handleReadBook,
                     onAskBook,
-                    setSelectedAuthorBook,
+                    setSelectedAuthorBook: handleOpenAuthorProfile,
                     setActiveInfoBook,
                     favoriteBookIds,
                     toggleFavorite,
@@ -940,7 +948,7 @@ export default function KnowledgeBase({
                   }}
                   favoriteBooks={favoriteBooksList}
                   onRemoveFavorite={(id) => toggleFavorite(id)}
-                  onOpenAuthorBio={(b) => setSelectedAuthorBook(b)}
+                  onOpenAuthorBio={handleOpenAuthorProfile}
                   handleReadBook={handleReadBook}
                   onAskBook={onAskBook}
                   publishedBooks={publishedBooks}
@@ -963,34 +971,6 @@ export default function KnowledgeBase({
         modalInfoLongText={modalInfoLongText}
         onReadBook={handleReadBook}
         onAskBook={onAskBook}
-      />
-
-      {/* Author Biography Modal */}
-      <AuthorBiographyModal
-        isOpen={!!selectedAuthorBook}
-        onClose={() => setSelectedAuthorBook(null)}
-        bookId={selectedAuthorBook?.id}
-        authorId={selectedAuthorBook?.author_id}
-        authorName={selectedAuthorBook?.author}
-        bookTitle={selectedAuthorBook?.title}
-        authorBioText={selectedAuthorBook?.authorBioText}
-        onOpenBook={(bookId, bookName) => {
-          setSelectedBook({
-            id: Number(bookId),
-            title: bookName || "كتاب من المكتبة",
-            author: selectedAuthorBook?.author || ""
-          });
-          setView('reader');
-        }}
-        onAskZadAboutAuthor={(authorName) => {
-          setSelectedAuthorBook(null);
-          onAskBook({
-            id: selectedAuthorBook?.id || 0,
-            title: `سيرة ${authorName}`,
-            author: authorName,
-            initialPrompt: `حدثني بالتفصيل عن السيرة الذاتية والمذهب الفقهي وشيوخ ومصنفات ${authorName}`
-          });
-        }}
       />
 
       <UserProfileModal
