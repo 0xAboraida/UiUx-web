@@ -7,6 +7,7 @@ interface BookDetailsModalProps {
   onClose: () => void;
   loadingInfo: boolean;
   modalInfoText: string | null;
+  modalInfoLongText?: string | null;
   onReadBook: (book: BookMeta) => void;
   onAskBook?: (book: any) => void;
 }
@@ -16,6 +17,7 @@ export default function BookDetailsModal({
   onClose,
   loadingInfo,
   modalInfoText,
+  modalInfoLongText,
   onReadBook,
 }: BookDetailsModalProps) {
   if (!book) return null;
@@ -26,7 +28,7 @@ export default function BookDetailsModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-xl bg-white dark:bg-[#121624] rounded-3xl border border-slate-200 dark:border-white/10 p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-2xl sm:max-w-[720px] bg-white dark:bg-[#121624] rounded-3xl border border-slate-200 dark:border-white/10 p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Close Button */}
@@ -44,20 +46,17 @@ export default function BookDetailsModal({
             <BookOpen className="w-6 h-6" />
           </div>
           <div className="flex-1 min-w-0 pr-2">
-            <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-snug mb-1.5 line-clamp-2">
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-snug mb-2 line-clamp-2">
               {book.title}
             </h3>
             <div className="flex items-center gap-2 flex-wrap text-xs">
-              <span className="font-bold text-slate-700 dark:text-slate-200">
-                المؤلف: {book.author}
-              </span>
               {book.category && (
-                <span className="px-2 py-0.5 rounded-md bg-brand-magenta/10 text-brand-magenta font-bold border border-brand-magenta/20">
+                <span className="px-2.5 py-0.5 rounded-md bg-brand-magenta/10 text-brand-magenta font-bold border border-brand-magenta/20">
                   {book.category}
                 </span>
               )}
               {book.century_name && book.century_name !== 'غير محدد' && (
-                <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/20">
+                <span className="px-2.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/20">
                   {book.century_name}
                 </span>
               )}
@@ -69,15 +68,103 @@ export default function BookDetailsModal({
         <div className="h-px bg-slate-100 dark:bg-white/5 my-4" />
 
         {/* Content Body */}
-        <div className="max-h-[50vh] overflow-y-auto pr-1 text-sm text-slate-700 dark:text-slate-200 leading-relaxed font-sans">
+        <div className="max-h-[55vh] overflow-y-auto pr-1 text-slate-900 dark:text-slate-100">
           {loadingInfo ? (
             <div className="flex flex-col items-center justify-center gap-3 py-10 text-brand-magenta font-bold">
               <Loader2 className="w-7 h-7 animate-spin" />
               <span className="text-sm">جاري جلب تفاصيل وبطاقة الكتاب المطبوع...</span>
             </div>
           ) : (
-            <div className="whitespace-pre-line bg-slate-50 dark:bg-white/[0.03] p-4 sm:p-5 rounded-2xl border border-slate-200/70 dark:border-white/10 font-sans leading-[2.2] text-[13px] sm:text-sm">
-              {modalInfoText || 'لم تتوفر تفاصيل إضافية لهذا الكتاب حالياً.'}
+            <div className="bg-slate-50/80 dark:bg-white/[0.03] p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-white/10">
+              {(() => {
+                const hasInfo = !!(modalInfoText && modalInfoText.trim());
+                const hasLong = !!(modalInfoLongText && modalInfoLongText.trim());
+
+                if (!hasInfo && !hasLong) {
+                  return (
+                    <div className="font-scheherazade text-base sm:text-lg text-slate-600 dark:text-slate-400 py-2">
+                      لم تتوفر تفاصيل إضافية لهذا الكتاب حالياً.
+                    </div>
+                  );
+                }
+
+                const lines = hasInfo
+                  ? modalInfoText!
+                      .split('\n')
+                      .map((l) => l.trim())
+                      .filter(Boolean)
+                  : [];
+
+                return (
+                  <div>
+                    {/* 1. Printed Book Metadata (بطاقة الكتاب المطبوع) */}
+                    {hasInfo && (
+                      <div className="space-y-1.5 font-scheherazade text-[16px] sm:text-[17px] leading-[1.8] text-slate-900 dark:text-slate-100 font-medium text-right">
+                        {lines.map((line, idx) => {
+                          const match = line.match(/^([^:：]{2,25})[:：]\s*(.*)$/);
+                          if (match) {
+                            const [, key, value] = match;
+                            return (
+                              <div key={idx} className="leading-[1.8]">
+                                <span className="font-bold text-slate-950 dark:text-white ml-2">
+                                  {key} :
+                                </span>
+                                <span className="text-slate-900 dark:text-slate-100 font-normal">
+                                  {value}
+                                </span>
+                              </div>
+                            );
+                          }
+
+                          const isBracketed = line.startsWith('[') && line.endsWith(']');
+                          return (
+                            <div
+                              key={idx}
+                              className={`font-normal leading-[1.8] ${
+                                isBracketed
+                                  ? 'text-slate-600 dark:text-slate-400 pt-0.5 text-[15px] sm:text-[16px]'
+                                  : 'text-slate-900 dark:text-slate-100'
+                              }`}
+                            >
+                              {line}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* 2. Detailed Book Commentary / Description (التعريف المفصل بالكتاب من تراث) */}
+                    {hasLong && (
+                      <div className={hasInfo ? 'mt-5 pt-5 border-t border-slate-200/80 dark:border-white/10' : ''}>
+                        <div className="space-y-3 font-scheherazade text-[16px] sm:text-[17px] leading-[2.2] text-slate-900 dark:text-slate-100 font-normal text-right">
+                          {modalInfoLongText!
+                            .split(/\n\s*\n/)
+                            .map((para) => para.trim())
+                            .filter(Boolean)
+                            .map((para, pIdx) => {
+                              const isBracketed = para.startsWith('[') && para.endsWith(']');
+                              if (isBracketed) {
+                                return (
+                                  <div
+                                    key={pIdx}
+                                    className="text-center font-bold text-slate-950 dark:text-white py-1 text-[17px] sm:text-[18px]"
+                                  >
+                                    {para}
+                                  </div>
+                                );
+                              }
+                              return (
+                                <p key={pIdx} className="leading-[2.2] text-justify text-slate-800 dark:text-slate-200">
+                                  {para}
+                                </p>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>

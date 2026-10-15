@@ -438,7 +438,9 @@ export default function KnowledgeBase({
   // Book Info Floating Modal State
   const [activeInfoBook, setActiveInfoBook] = useState<BookMeta | null>(null)
   const [modalInfoText, setModalInfoText] = useState<string | null>(null)
+  const [modalInfoLongText, setModalInfoLongText] = useState<string | null>(null)
   const [loadingInfo, setLoadingInfo] = useState(false)
+  const [bookDetailsCache, setBookDetailsCache] = useState<Record<string, { info: string; infoLong?: string | null }>>({})
 
   // Library Data Hook (إدارة البيانات، التخزين المؤقت، والتصفية فائقة السرعة)
   const {
@@ -471,7 +473,6 @@ export default function KnowledgeBase({
   });
 
   // Cache for fetched book details to provide instant opening on subsequent clicks
-  const [bookDetailsCache, setBookDetailsCache] = useState<Record<string | number, string>>({});
 
   // Helper to verify if text is genuine printed book metadata rather than a generic auto-generated fallback
   const isRealBookInfo = (text?: string | null) => {
@@ -485,6 +486,7 @@ export default function KnowledgeBase({
   useEffect(() => {
     if (!activeInfoBook) {
       setModalInfoText(null);
+      setModalInfoLongText(null);
       return;
     }
 
@@ -492,7 +494,9 @@ export default function KnowledgeBase({
 
     // 1. Check memory cache first (instant response)
     if (bookId && bookDetailsCache[bookId]) {
-      setModalInfoText(bookDetailsCache[bookId]);
+      const cached = bookDetailsCache[bookId];
+      setModalInfoText(cached.info);
+      setModalInfoLongText(cached.infoLong || null);
       return;
     }
 
@@ -500,45 +504,52 @@ export default function KnowledgeBase({
     const existing = activeInfoBook.info || activeInfoBook.infoText;
     if (isRealBookInfo(existing)) {
       setModalInfoText(existing!);
+      setModalInfoLongText(null);
       if (bookId) {
-        setBookDetailsCache(prev => ({ ...prev, [bookId]: existing! }));
+        setBookDetailsCache(prev => ({ ...prev, [bookId]: { info: existing!, infoLong: null } }));
       }
       return;
     }
 
-    // 3. Fetch from API
+    // 3. Fetch book info directly from official Turath API (Primary: Instant without Ingestion)
     const fetchInfo = async () => {
       setLoadingInfo(true);
       setModalInfoText(null);
+      setModalInfoLongText(null);
       try {
-        const baseUrl = getBaseUrl();
         if (bookId) {
+          // 1. Primary: Direct fetch from Turath public API (returns both info and info_long)
           try {
+            const turathData = await fetchTurathBookIndexes(Number(bookId));
+            const infoStr = (turathData?.meta?.info || (turathData as any)?.info)?.trim();
+            const infoLongStr = (turathData?.meta?.info_long || (turathData as any)?.info_long)?.trim() || null;
+            if ((infoStr && infoStr.length > 5) || (infoLongStr && infoLongStr.length > 5)) {
+              setModalInfoText(infoStr || '');
+              setModalInfoLongText(infoLongStr);
+              setBookDetailsCache(prev => ({ ...prev, [bookId]: { info: infoStr || '', infoLong: infoLongStr } }));
+              return;
+            }
+          } catch (e) {
+            console.warn('Error fetching directly from Turath API:', e);
+          }
+
+          // 2. Secondary fallback: Local or remote Ingestion backend if available
+          try {
+            const baseUrl = getBaseUrl();
             const res = await fetch(`${baseUrl}/api/v1/data-ingestion/zad-book-info/${bookId}`);
             if (res.ok) {
               const data = await res.json();
-              if (data.meta?.info && typeof data.meta.info === 'string' && data.meta.info.trim()) {
-                const infoStr = data.meta.info.trim();
-                setModalInfoText(infoStr);
-                setBookDetailsCache(prev => ({ ...prev, [bookId]: infoStr }));
+              const infoStr = (data?.meta?.info || data?.info)?.trim();
+              const infoLongStr = (data?.meta?.info_long || data?.info_long)?.trim() || null;
+              if ((infoStr && infoStr.length > 5) || (infoLongStr && infoLongStr.length > 5)) {
+                setModalInfoText(infoStr || '');
+                setModalInfoLongText(infoLongStr);
+                setBookDetailsCache(prev => ({ ...prev, [bookId]: { info: infoStr || '', infoLong: infoLongStr } }));
                 return;
               }
             }
           } catch (e) {
-            console.error('Error fetching zad-book-info:', e);
-          }
-
-          // Fallback to official Turath API metadata
-          try {
-            const turathData = await fetchTurathBookIndexes(Number(bookId));
-            if (turathData?.meta?.info && typeof turathData.meta.info === 'string' && turathData.meta.info.trim()) {
-              const infoStr = turathData.meta.info.trim();
-              setModalInfoText(infoStr);
-              setBookDetailsCache(prev => ({ ...prev, [bookId]: infoStr }));
-              return;
-            }
-          } catch (e) {
-            console.error('Error fetching turath indexes fallback:', e);
+            console.warn('Ingestion fallback not responding:', e);
           }
         }
 
@@ -551,7 +562,7 @@ export default function KnowledgeBase({
     };
 
     fetchInfo();
-  }, [activeInfoBook, getBaseUrl]);
+  }, [activeInfoBook, getBaseUrl, bookDetailsCache]);
 
   // Handler to open linked book from explanation or course
   const handleOpenLinkedBook = (bookTitle: string) => {
@@ -941,6 +952,7 @@ export default function KnowledgeBase({
         onClose={() => setActiveInfoBook(null)}
         loadingInfo={loadingInfo}
         modalInfoText={modalInfoText}
+        modalInfoLongText={modalInfoLongText}
         onReadBook={handleReadBook}
         onAskBook={onAskBook}
       />

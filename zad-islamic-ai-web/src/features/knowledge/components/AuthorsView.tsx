@@ -8,6 +8,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { BookMeta } from '../types/bookTypes';
 import BookCard from './BookCard';
 import { createTurathSearchRegex, stripTashkeel } from '../utils/arabicText';
+import { fetchTurathBookIndexes } from '../../../api/turathApi';
 
 export interface AuthorItem {
   authorName: string;
@@ -228,15 +229,27 @@ export function AuthorsView({
           // continue
         }
 
-        // Step C: Fallback to resolve author_id via sampleBook ID
+        // Step C: Fallback to resolve author_id via sampleBook ID (Turath API first, then ingestion)
         if (currentAuthorData.sampleBook?.id) {
           try {
-            const bookRes = await fetch(`${baseUrl}/api/v1/data-ingestion/zad-book-info/${currentAuthorData.sampleBook.id}`);
-            if (bookRes.ok) {
-              const bData = await bookRes.json();
-              const resolvedAuthorId = bData?.meta?.author_id;
-              if (resolvedAuthorId) {
-                const authorRes = await fetch(`https://api.turath.io/author?id=${resolvedAuthorId}&ver=3`);
+            let resolvedAuthorId: number | undefined;
+            try {
+              const turathData = await fetchTurathBookIndexes(Number(currentAuthorData.sampleBook.id));
+              resolvedAuthorId = turathData?.meta?.author_id;
+            } catch (te) {
+              console.warn('Error querying turath indexes for author_id:', te);
+            }
+
+            if (!resolvedAuthorId) {
+              const bookRes = await fetch(`${baseUrl}/api/v1/data-ingestion/zad-book-info/${currentAuthorData.sampleBook.id}`);
+              if (bookRes.ok) {
+                const bData = await bookRes.json();
+                resolvedAuthorId = bData?.meta?.author_id;
+              }
+            }
+
+            if (resolvedAuthorId) {
+              const authorRes = await fetch(`https://api.turath.io/author?id=${resolvedAuthorId}&ver=3`);
                 if (authorRes.ok) {
                   const data = await authorRes.json();
                   if (data?.biography && data.biography.trim().length > 10) {
@@ -255,7 +268,6 @@ export function AuthorsView({
                   }
                 }
               }
-            }
           } catch (e) {
             // continue
           }

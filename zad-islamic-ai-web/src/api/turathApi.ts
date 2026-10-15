@@ -13,6 +13,7 @@ export interface TurathBookIndexesResponse {
     author_id?: number
     cat_id?: number
     info?: string
+    info_long?: string
     version?: string
     author_page_start?: number
     pdf_links?: {
