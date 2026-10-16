@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { parseFootnoteItems, replaceIslamicLigatures } from '../readerUtils';
+import { parseFootnoteItems, replaceIslamicLigatures, parseIslamicTypography } from '../readerUtils';
 
 export interface RenderSharhDividerProps {
   readerTheme: 'light' | 'dark' | 'sepia';
@@ -105,7 +105,7 @@ export const RenderFootnotes: React.FC<RenderFootnotesProps> = ({
               <div
                 className={`turath-content flex-1 leading-relaxed ${fontFamily}`}
                 style={{ fontSize: `${Math.max(13, fontSize - 3)}px` }}
-                dangerouslySetInnerHTML={{ __html: replaceIslamicLigatures(item.text) }}
+                dangerouslySetInnerHTML={{ __html: parseIslamicTypography(replaceIslamicLigatures(item.text)) }}
               />
             </div>
           ))}
@@ -114,7 +114,7 @@ export const RenderFootnotes: React.FC<RenderFootnotesProps> = ({
         <div
           className={`turath-content prose max-w-none leading-loose opacity-80 ${fontFamily}`}
           style={{ fontSize: `${Math.max(12, fontSize - 4)}px` }}
-          dangerouslySetInnerHTML={{ __html: footnoteText }}
+          dangerouslySetInnerHTML={{ __html: parseIslamicTypography(footnoteText) }}
         />
       )}
     </div>

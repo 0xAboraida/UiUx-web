@@ -44,6 +44,146 @@ const buildTree = (headings: Heading[]): TreeNode[] => {
   return root;
 }
 
+const renderSearchSnippet = (rawText: string, isDark: boolean, accentColor: string = 'amber') => {
+  if (!rawText) return null;
+  if (!rawText.includes('<em>')) {
+    return rawText;
+  }
+  const parts = rawText.split(/(<em>.*?<\/em>)/gi);
+  return parts.map((part, i) => {
+    if (part.toLowerCase().startsWith('<em>') && part.toLowerCase().endsWith('</em>')) {
+      const keyword = part.slice(4, -5);
+      return (
+        <mark
+          key={i}
+          className={`rounded-md px-1.5 py-0.5 font-bold mx-0.5 inline-block not-italic transition-colors ${isDark
+            ? 'bg-amber-400/30 text-amber-200 border border-amber-400/40 shadow-xs'
+            : 'bg-amber-200/95 text-[#693905] border border-amber-300 font-extrabold shadow-xs'
+            }`}
+        >
+          {keyword}
+        </mark>
+      );
+    }
+    return <React.Fragment key={i}>{part}</React.Fragment>;
+  });
+};
+
+function buildArabicRegex(query: string): RegExp | null {
+  const clean = query.trim();
+  if (!clean) return null;
+
+  const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const tashkeel = '[\\u064B-\\u065F\\u0670\\u06D6-\\u06ED]*';
+
+  let pattern = '';
+  for (let i = 0; i < escaped.length; i++) {
+    const ch = escaped[i];
+    if (/[\u064B-\u065F\u0670\u06D6-\u06ED]/.test(ch)) continue;
+
+    if (/[اأإآٱ]/.test(ch)) {
+      pattern += `[اأإآٱ]${tashkeel}`;
+    } else if (/[يى]/.test(ch)) {
+      pattern += `[ييى]${tashkeel}`;
+    } else if (/[هة]/.test(ch)) {
+      pattern += `[هة]${tashkeel}`;
+    } else if (/[وؤ]/.test(ch)) {
+      pattern += `[وؤ]${tashkeel}`;
+    } else if (/\s+/.test(ch)) {
+      pattern += `\\s+`;
+    } else {
+      pattern += `${ch}${tashkeel}`;
+    }
+  }
+
+  try {
+    return new RegExp(pattern, 'gi');
+  } catch {
+    return null;
+  }
+}
+
+function clearPageHighlights(container: HTMLElement) {
+  const marks = container.querySelectorAll('mark.page-search-match');
+  marks.forEach(mark => {
+    const parent = mark.parentNode;
+    if (parent) {
+      parent.replaceChild(document.createTextNode(mark.textContent || ''), mark);
+      parent.normalize();
+    }
+  });
+}
+
+function applyPageHighlights(container: HTMLElement, regex: RegExp): HTMLElement[] {
+  clearPageHighlights(container);
+  const matchedElements: HTMLElement[] = [];
+
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => {
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      const tag = parent.tagName.toLowerCase();
+      if (['script', 'style', 'input', 'textarea', 'button', 'mark'].includes(tag)) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const textNodes: Text[] = [];
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode as Text);
+  }
+
+  for (const textNode of textNodes) {
+    const text = textNode.nodeValue;
+    if (!text) continue;
+
+    regex.lastIndex = 0;
+    const matches: { start: number; end: number; text: string }[] = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(text)) !== null) {
+      if (match[0].length === 0) {
+        regex.lastIndex++;
+        continue;
+      }
+      matches.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        text: match[0]
+      });
+    }
+
+    if (matches.length === 0) continue;
+
+    const frag = document.createDocumentFragment();
+    let lastIndex = 0;
+
+    matches.forEach(m => {
+      if (m.start > lastIndex) {
+        frag.appendChild(document.createTextNode(text.slice(lastIndex, m.start)));
+      }
+      const mark = document.createElement('mark');
+      mark.className = 'page-search-match';
+      mark.textContent = m.text;
+      frag.appendChild(mark);
+      matchedElements.push(mark);
+      lastIndex = m.end;
+    });
+
+    if (lastIndex < text.length) {
+      frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+
+    textNode.parentNode?.replaceChild(frag, textNode);
+  }
+
+  return matchedElements;
+}
+
+
+
 const TocNode = ({
   node,
   expandedNodes,
@@ -366,6 +506,113 @@ const replaceIslamicLigatures = (text: string) => {
   return newText;
 }
 
+function makeTashkeelPattern(word: string): string {
+  const tashkeel = '[\\u064B-\\u065F\\u0670\\u06D6-\\u06ED]*';
+  let pattern = '';
+  for (const ch of word) {
+    if (ch === 'ا' || ch === 'أ' || ch === 'إ' || ch === 'آ') {
+      pattern += '[اأإآ]' + tashkeel;
+    } else if (ch === 'ي' || ch === 'ى') {
+      pattern += '[ييى]' + tashkeel;
+    } else {
+      pattern += ch + tashkeel;
+    }
+  }
+  return pattern;
+}
+
+const NARRATOR_WORDS = [
+  'وكقوله', 'كقوله', 'فكقوله',
+  'ولقوله', 'لقوله', 'فلقوله',
+  'وبقوله', 'بقوله',
+  'وقوله', 'قوله', 'فقوله',
+  'وقولهم', 'قولهم', 'فقولهم',
+  'وقال', 'قال', 'فقال',
+  'وقالت', 'قالت', 'فقالت',
+  'وقالوا', 'قالوا', 'فقالوا',
+  'ويقول', 'يقول', 'فيقول',
+  'وتقول', 'تقول', 'فتقول',
+  'ويقولون', 'يقولون', 'فيقولون',
+  'وقلت', 'قلت', 'فقلت',
+  'وقلنا', 'قلنا', 'فقلنا',
+  'وقيل', 'قيل', 'فقيل',
+  'ويقال', 'يقال', 'فيقال',
+  'وحدثنا', 'حدثنا', 'فحدثنا',
+  'وحدثني', 'حدثني', 'فحدثني',
+  'وأخبرنا', 'أخبرنا', 'فأخبرنا',
+  'وأخبرني', 'أخبرني', 'فأخبرني',
+  'وأنبأنا', 'أنبأنا', 'فأنبأنا',
+  'وأنبأني', 'أنبأني',
+  'وسمعت', 'سمعت',
+  'وروى', 'روى',
+  'وروي', 'روي',
+  'وروينا', 'روينا'
+];
+
+const SPEECH_PATTERNS_STR = NARRATOR_WORDS.map(w => makeTashkeelPattern(w)).join('|');
+const SPEECH_REGEX = new RegExp(`(?<!<[^>]*)(?<![\\p{L}\\p{M}])(${SPEECH_PATTERNS_STR})((?:[:：]|[-–—]|،)*(?=[\\s،:：-]|$))(?![^<]*>)`, 'gu');
+
+export function parseIslamicTypography(text: string): string {
+  if (!text) return '';
+
+  // 1. Protect titles
+  const titles: string[] = [];
+  let parsed = text.replace(/<span\s+data-type="title"[^>]*>[\s\S]*?<\/span>/gi, (match) => {
+    const idx = titles.length;
+    titles.push(match);
+    return `__TITLE_TOKEN_${idx}__`;
+  });
+
+  // 2. Protect existing HTML footnote badges
+  const footnoteTokens: string[] = [];
+  parsed = parsed.replace(/<span\s+class="[^"]*islamic-footnote-sup[^"]*"[^>]*>[\s\S]*?<\/span>/gi, (match) => {
+    const idx = footnoteTokens.length;
+    footnoteTokens.push(match);
+    return `__FN_TOKEN_${idx}__`;
+  });
+
+  // 3. Protect honorific spans
+  const honorificTokens: string[] = [];
+  parsed = parsed.replace(/<span\s+data-type="honorific"[^>]*>[\s\S]*?<\/span>/gi, (match) => {
+    const idx = honorificTokens.length;
+    honorificTokens.push(match);
+    return `__HONOR_TOKEN_${idx}__`;
+  });
+
+  // 4. Extract and wrap Quran verses in green styling (including ornate brackets ﴿ ﴾ or { })
+  const quranTokens: string[] = [];
+  const quranRegex = /([﴿﴾][^﴿﴾\r\n]+[﴿﴾]|\{[\u0600-\u06FF\s،.:!؟-]{3,}\})/gu;
+  parsed = parsed.replace(quranRegex, (match) => {
+    const idx = quranTokens.length;
+    quranTokens.push(`<span data-type="quran" class="islamic-quran-verse font-scheherazade">${match}</span>`);
+    return `__QURAN_TOKEN_${idx}__`;
+  });
+
+  // 5. Quotes / Hadith text: «...»
+  const quoteRegex = /(?<!<[^>]*)(«[^»\r\n]+»)(?![^<]*>)/gu;
+  parsed = parsed.replace(quoteRegex, '<span data-type="hadith-quote" class="islamic-hadith-quote">$1</span>');
+
+  // 6. Parentheses (...) and Brackets [...] (avoiding empty or single footnote numbers)
+  const parenRegex = /(?<!<[^>]*)\(([^()<>\r\n]+)\)(?![^<]*>)/gu;
+  parsed = parsed.replace(parenRegex, '<span data-type="parenthetical" class="islamic-parenthetical">($1)</span>');
+
+  const bracketRegex = /(?<!<[^>]*)(?<!\[)\[([^\[\]<>\r\n]+)\](?![^<]*>)/gu;
+  parsed = parsed.replace(bracketRegex, '<span data-type="bracketed-note" class="islamic-bracketed-note">[$1]</span>');
+
+  // 7. Speech / Attribution keywords (قال:، يقول:، حدثنا:، أخبرنا:...)
+  parsed = parsed.replace(SPEECH_REGEX, (match, word, punct) => {
+    return `<span data-type="narrator-keyword" class="islamic-narrator-keyword font-bold">${word}${punct}</span>`;
+  });
+
+  // 8. Restore tokens in reverse order
+  parsed = parsed.replace(/__QURAN_TOKEN_(\d+)__/g, (_, idx) => quranTokens[Number(idx)] || '');
+  parsed = parsed.replace(/__HONOR_TOKEN_(\d+)__/g, (_, idx) => honorificTokens[Number(idx)] || '');
+  parsed = parsed.replace(/__FN_TOKEN_(\d+)__/g, (_, idx) => footnoteTokens[Number(idx)] || '');
+  parsed = parsed.replace(/__TITLE_TOKEN_(\d+)__/g, (_, idx) => titles[Number(idx)] || '');
+
+  return parsed;
+}
+
 export interface ProcessedContent {
   main: string;
   matn: string;
@@ -401,14 +648,11 @@ const processTextContent = (rawText: string): ProcessedContent => {
   const formatMainText = (text: string) => {
     if (!text) return '';
 
-    // Remove blank lines and excessive breaks immediately preceding and following title elements.
-    // In white-space: pre-wrap, newlines around block-level title elements create massive unwanted vertical gaps.
+    // Preserve natural paragraph break before titles, but eliminate trailing blank lines after titles
+    // so titles never stick to the previous paragraph, and stay closely connected to their own text below
     let processedText = text
-      .replace(/(?:<br\s*\/?>|\s*[\r\n]+\s*)+(<span\s+data-type="title"[^>]*>|<h[1-6][^>]*>)/gi, '$1')
-      .replace(/(<\/span>|<\/h[1-6]>)(?:<br\s*\/?>|\s*[\r\n]+\s*)+/gi, '$1');
-
-    // Collapse 3+ consecutive newlines in normal text
-    processedText = processedText.replace(/\n{3,}/g, '\n\n');
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/(<\/span>|<\/h[1-6]>)\s*[\r\n]+/gi, '$1\n');
 
     // Tag title elements with data-level="1" or data-level="2" dynamically if missing
     processedText = processedText.replace(/<span\s+data-type="title"([^>]*)>([\s\S]*?)<\/span>/gi, (match, attrs, titleText) => {
@@ -424,7 +668,7 @@ const processTextContent = (rawText: string): ProcessedContent => {
     const fnBadge = (_: string, num: string) =>
       `<span class="islamic-footnote-sup inline-flex items-center justify-center mx-1 align-baseline"><a href="#fn-${num}" data-type="footnote-ref" class="islamic-footnote-ref font-scheherazade font-bold text-[13px] shadow-2xs no-underline transition-all hover:scale-110 border-b-0 cursor-pointer">${num}</a></span>`;
 
-    return processedText
+    const rawFormatted = processedText
       // 1. Wrapped markers: (^1), ^(1), ^1, (1), [1], (1^)
       .replace(/\s*[-–—]?\s*\(\^\s*([\d\u0660-\u0669]+)\)\s*[-–—]?/g, fnBadge)
       .replace(/\s*[-–—]?\s*\^\(([\d\u0660-\u0669]+)\)\s*[-–—]?/g, fnBadge)
@@ -439,6 +683,8 @@ const processTextContent = (rawText: string): ProcessedContent => {
 
       // 3. Digits immediately following quotes/punctuation before a period/comma (e.g., "من ماء" ٢.)
       .replace(/(?<=["'»])\s*([\d\u0660-\u0669]{1,2})(?=[.,،:;]|\s*[.,،:;])/gu, fnBadge);
+
+    return parseIslamicTypography(rawFormatted);
   };
 
   const formattedMatn = formatMainText(matnPart);
@@ -724,7 +970,7 @@ const RenderFootnotes = ({
               <div
                 className={`turath-content flex-1 leading-relaxed ${fontFamily}`}
                 style={{ fontSize: `${Math.max(13, fontSize - 3)}px` }}
-                dangerouslySetInnerHTML={{ __html: replaceIslamicLigatures(item.text) }}
+                dangerouslySetInnerHTML={{ __html: parseIslamicTypography(replaceIslamicLigatures(item.text)) }}
               />
             </div>
           ))}
@@ -733,7 +979,7 @@ const RenderFootnotes = ({
         <div
           className={`turath-content prose max-w-none leading-loose opacity-80 ${fontFamily}`}
           style={{ fontSize: `${Math.max(12, fontSize - 4)}px` }}
-          dangerouslySetInnerHTML={{ __html: footnoteText }}
+          dangerouslySetInnerHTML={{ __html: parseIslamicTypography(footnoteText) }}
         />
       )}
     </div>
@@ -1147,17 +1393,138 @@ export default function TurathReader({
   const [exportProgressText, setExportProgressText] = useState('')
   const [loadingPdf, setLoadingPdf] = useState(false)
 
+  // In-Page Quick Search State (بحث فوري في الصفحة المفتوحة)
+  const [isPageSearchOpen, setIsPageSearchOpen] = useState(false)
+  const [pageSearchQuery, setPageSearchQuery] = useState('')
+  const [pageMatchesCount, setPageMatchesCount] = useState(0)
+  const [activeMatchIndex, setActiveMatchIndex] = useState(0)
+  const pageSearchContainerRef = useRef<HTMLDivElement>(null)
+  const pageSearchInputRef = useRef<HTMLInputElement>(null)
+  const pageMatchElementsRef = useRef<HTMLElement[]>([])
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (downloadMenuRef.current && !downloadMenuRef.current.contains(e.target as Node)) {
         setIsDownloadMenuOpen(false);
       }
+      if (pageSearchContainerRef.current && !pageSearchContainerRef.current.contains(e.target as Node)) {
+        setIsPageSearchOpen(false);
+      }
     };
-    if (isDownloadMenuOpen) {
+    if (isDownloadMenuOpen || isPageSearchOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isDownloadMenuOpen]);
+  }, [isDownloadMenuOpen, isPageSearchOpen]);
+
+  // Focus input and select text when in-page search opens
+  useEffect(() => {
+    if (isPageSearchOpen) {
+      setTimeout(() => {
+        pageSearchInputRef.current?.focus();
+        pageSearchInputRef.current?.select();
+      }, 60);
+    } else {
+      if (scrollContainerRef.current) {
+        clearPageHighlights(scrollContainerRef.current);
+      }
+      setPageMatchesCount(0);
+      setActiveMatchIndex(0);
+      pageMatchElementsRef.current = [];
+    }
+  }, [isPageSearchOpen]);
+
+  // Keyboard shortcut Ctrl+F / Cmd+F to open in-page search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setIsPageSearchOpen(true);
+        setTimeout(() => {
+          pageSearchInputRef.current?.focus();
+          pageSearchInputRef.current?.select();
+        }, 60);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // In-Page Search match navigation
+  const handleNextPageMatch = useCallback(() => {
+    const elements = pageMatchElementsRef.current;
+    if (!elements || elements.length === 0) return;
+    const nextIdx = (activeMatchIndex + 1) % elements.length;
+    setActiveMatchIndex(nextIdx);
+    elements.forEach((el, idx) => {
+      if (idx === nextIdx) {
+        el.classList.add('page-search-active-match');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        el.classList.remove('page-search-active-match');
+      }
+    });
+  }, [activeMatchIndex]);
+
+  const handlePrevPageMatch = useCallback(() => {
+    const elements = pageMatchElementsRef.current;
+    if (!elements || elements.length === 0) return;
+    const prevIdx = (activeMatchIndex - 1 + elements.length) % elements.length;
+    setActiveMatchIndex(prevIdx);
+    elements.forEach((el, idx) => {
+      if (idx === prevIdx) {
+        el.classList.add('page-search-active-match');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        el.classList.remove('page-search-active-match');
+      }
+    });
+  }, [activeMatchIndex]);
+
+  // Execute in-page search and highlight matches dynamically
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    if (!isPageSearchOpen || !pageSearchQuery.trim()) {
+      clearPageHighlights(container);
+      setPageMatchesCount(0);
+      setActiveMatchIndex(0);
+      pageMatchElementsRef.current = [];
+      return;
+    }
+
+    const regex = buildArabicRegex(pageSearchQuery);
+    if (!regex) {
+      clearPageHighlights(container);
+      setPageMatchesCount(0);
+      setActiveMatchIndex(0);
+      pageMatchElementsRef.current = [];
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (!scrollContainerRef.current) return;
+      const matched = applyPageHighlights(scrollContainerRef.current, regex);
+      pageMatchElementsRef.current = matched;
+      setPageMatchesCount(matched.length);
+      setActiveMatchIndex(0);
+
+      if (matched.length > 0) {
+        matched.forEach((el, idx) => {
+          if (idx === 0) {
+            el.classList.add('page-search-active-match');
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            el.classList.remove('page-search-active-match');
+          }
+        });
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [pageSearchQuery, isPageSearchOpen, currentPage, pageText, continuousPages]);
+
 
   // In-memory page cache per book session (0ms instant page loads)
   const pageCacheRef = useRef<Map<number, ProcessedContent>>(new Map())
@@ -2653,6 +3020,125 @@ export default function TurathReader({
 
         <div className="flex items-center gap-2 relative h-full py-2" ref={settingsRef}>
 
+          {/* In-Page Quick Search Button & Floating Search Bar (البحث في الصفحة المفتوحة) */}
+          <div className="relative" ref={pageSearchContainerRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsPageSearchOpen(prev => !prev);
+                setIsDownloadMenuOpen(false);
+                setShowBookmarks(false);
+                setShowSettings(false);
+              }}
+              className={`w-10 h-10 rounded-xl flex justify-center items-center transition-all duration-300 backdrop-blur-md border shadow-sm ${isPageSearchOpen
+                ? 'bg-sky-500/20 border-sky-500 text-sky-600 dark:text-sky-400 shadow-[0_0_15px_rgba(14,165,233,0.4)] scale-105'
+                : readerTheme === 'dark'
+                  ? 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-sky-400 hover:shadow-md hover:scale-105'
+                  : 'bg-white/50 border-gray-200/60 text-slate-500 hover:bg-white/80 hover:text-sky-600 hover:shadow-md hover:scale-105'
+                }`}
+              title="بحث في هذه الصفحة (Ctrl+F)"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+
+            {/* Single Unified Floating In-Page Search Capsule (أزرق سماوي قوي وبارز) */}
+            {isPageSearchOpen && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className={`absolute top-full left-0 mt-3 z-50 flex items-center gap-3 px-4 py-2.5 rounded-2xl border-2 transition-all duration-300 animate-in fade-in slide-in-from-top-2 w-[420px] sm:w-[700px] ${readerTheme === 'dark'
+                  ? 'bg-[#0a101d]/98 border-sky-400 ring-2 ring-sky-400/40 shadow-[0_16px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(56,189,248,0.25)] text-white'
+                  : readerTheme === 'sepia'
+                    ? 'bg-[#FAF5ED]/98 border-sky-500 ring-2 ring-sky-400/40 shadow-[0_16px_40px_rgba(14,165,233,0.25)] text-[#3D2C1D]'
+                    : 'bg-white/98 border-sky-500 ring-2 ring-sky-400/50 shadow-[0_16px_40px_rgba(14,165,233,0.25),0_4px_12px_rgba(0,0,0,0.06)] text-slate-900'
+                  }`}
+              >
+                {/* Search Icon */}
+                <Search className="w-5 h-5 shrink-0 text-sky-500 dark:text-sky-400" strokeWidth={2.5} />
+
+                {/* Single Seamless Transparent Input (No nested inner frame!) */}
+                <input
+                  ref={pageSearchInputRef}
+                  type="text"
+                  value={pageSearchQuery}
+                  onChange={(e) => setPageSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (e.shiftKey) handlePrevPageMatch();
+                      else handleNextPageMatch();
+                    } else if (e.key === 'Escape') {
+                      setIsPageSearchOpen(false);
+                      setPageSearchQuery('');
+                    }
+                  }}
+                  placeholder="بحث في الصفحة المفتوحة..."
+                  className="flex-1 bg-transparent border-0 outline-none text-sm sm:text-base font-semibold placeholder:text-slate-400 dark:placeholder:text-white/40 p-0 m-0 focus:ring-0 leading-normal"
+                />
+
+                {/* Clear Input Button */}
+                {pageSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setPageSearchQuery('')}
+                    className="p-1 rounded-lg text-slate-400 hover:text-sky-600 dark:hover:text-white transition-colors cursor-pointer shrink-0"
+                    title="مسح البحث"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Match Counter & Arrow Controls */}
+                {pageSearchQuery.trim() && (
+                  <div className="flex items-center gap-1.5 shrink-0 border-r border-sky-200 dark:border-sky-500/30 pr-2 mr-1">
+                    <span className={`text-xs font-black px-2.5 py-0.5 rounded-md ${pageMatchesCount > 0
+                      ? readerTheme === 'dark'
+                        ? 'bg-sky-500/20 text-sky-300 border border-sky-400/40'
+                        : 'bg-sky-100 text-sky-900 border border-sky-300/90 font-bold'
+                      : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
+                      }`}>
+                      {pageMatchesCount > 0 ? `${activeMatchIndex + 1} / ${pageMatchesCount}` : 'لا نتائج'}
+                    </span>
+
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        disabled={pageMatchesCount === 0}
+                        onClick={handlePrevPageMatch}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-sky-500/15 dark:hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 disabled:opacity-25 transition-all cursor-pointer active:scale-90"
+                        title="الموضع السابق (Shift+Enter)"
+                      >
+                        <ChevronRight className="w-4 h-4 rotate-90" strokeWidth={2.5} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pageMatchesCount === 0}
+                        onClick={handleNextPageMatch}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-sky-500/15 dark:hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 disabled:opacity-25 transition-all cursor-pointer active:scale-90"
+                        title="الموضع التالي (Enter)"
+                      >
+                        <ChevronLeft className="w-4 h-4 -rotate-90" strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Divider & Close Button */}
+                <div className="h-5 w-px bg-sky-200 dark:bg-sky-500/30 shrink-0" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPageSearchOpen(false);
+                    setPageSearchQuery('');
+                  }}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-sky-500/15 dark:hover:bg-sky-500/25 text-slate-400 hover:text-sky-600 dark:hover:text-white transition-all cursor-pointer shrink-0 active:scale-90"
+                  title="إغلاق (Esc)"
+                >
+                  <X className="w-4 h-4" strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Feature 5 & 6: Unified Download & Export Dropdown (مطابق تماماً لخارج الكتاب) */}
           <div className="relative" ref={downloadMenuRef}>
@@ -2960,11 +3446,10 @@ export default function TurathReader({
               </h3>
               <button
                 onClick={() => setSidebarTab('none')}
-                className={`w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-200 active:scale-95 shadow-sm hover:scale-105 ${
-                  readerTheme === 'dark'
-                    ? 'bg-white/10 border-white/20 text-white/90 hover:bg-white/20 hover:text-white shadow-black/40'
-                    : 'bg-white/80 border-slate-300/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-400 shadow-slate-900/5'
-                }`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-200 active:scale-95 shadow-sm hover:scale-105 ${readerTheme === 'dark'
+                  ? 'bg-white/10 border-white/20 text-white/90 hover:bg-white/20 hover:text-white shadow-black/40'
+                  : 'bg-white/80 border-slate-300/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-400 shadow-slate-900/5'
+                  }`}
                 title="إغلاق اللوحة"
               >
                 <X className="h-4 w-4" strokeWidth={2.5} />
@@ -3151,20 +3636,19 @@ export default function TurathReader({
 
               {/* Feature 4: Full-Text In-Book Search Panel */}
               <div className={`absolute inset-0 flex flex-col transition-all duration-300 ${sidebarTab === 'search' ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-4 pointer-events-none -z-10'}`}>
-                <div className="p-4 border-b border-border/40">
+                <div className={`p-4 border-b ${readerTheme === 'dark' ? 'border-white/10' : 'border-slate-200/80'}`}>
                   <form onSubmit={handleSearchInBook} className="relative group">
                     <button
                       type="submit"
                       disabled={!bookSearchQuery.trim() || isSearchingBook}
-                      className={`absolute right-3 top-2.5 p-1 rounded-lg transition-all cursor-pointer ${
-                        accentColor === 'amber'
-                          ? 'text-[#966b2d] hover:text-[#76541f] dark:text-amber-400'
-                          : accentColor === 'emerald'
-                            ? 'text-teal-600 hover:text-teal-700 dark:text-teal-400'
-                            : accentColor === 'blue'
-                              ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
-                              : 'text-brand-magenta hover:text-purple-700 dark:text-purple-400'
-                      } disabled:opacity-40`}
+                      className={`absolute right-3 top-2.5 p-1 rounded-lg transition-all cursor-pointer ${accentColor === 'amber'
+                        ? readerTheme === 'dark' ? 'text-amber-400 hover:text-amber-300' : 'text-[#8a5d1b] hover:text-[#6a4411]'
+                        : accentColor === 'emerald'
+                          ? readerTheme === 'dark' ? 'text-teal-400 hover:text-teal-300' : 'text-teal-700 hover:text-teal-800'
+                          : accentColor === 'blue'
+                            ? readerTheme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-700 hover:text-blue-800'
+                            : readerTheme === 'dark' ? 'text-purple-400 hover:text-purple-300' : 'text-purple-700 hover:text-purple-800'
+                        } disabled:opacity-40`}
                       title="بدء البحث"
                     >
                       {isSearchingBook ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4 stroke-[2.4]" />}
@@ -3174,21 +3658,26 @@ export default function TurathReader({
                       placeholder="ابحث في نصوص الكتاب..."
                       value={bookSearchQuery}
                       onChange={(e) => setBookSearchQuery(e.target.value)}
-                      className={`w-full rounded-2xl pr-10 pl-9 py-2.5 text-sm focus:outline-none focus:ring-2 ${
-                        accentColor === 'amber'
-                          ? 'focus:ring-amber-500'
-                          : accentColor === 'emerald'
-                            ? 'focus:ring-teal-500'
-                            : accentColor === 'blue'
-                              ? 'focus:ring-blue-500'
-                              : 'focus:ring-brand-magenta'
-                      } transition-all shadow-inner ${readerTheme === 'dark' ? 'bg-white/5 border border-white/10 text-white placeholder-white/40 focus:bg-white/10' : 'bg-slate-100 text-slate-900 placeholder-slate-400 border border-slate-200'}`}
+                      className={`w-full rounded-2xl pr-10 pl-9 py-2.5 text-sm focus:outline-none focus:ring-2 ${accentColor === 'amber'
+                        ? 'focus:ring-amber-500'
+                        : accentColor === 'emerald'
+                          ? 'focus:ring-teal-500'
+                          : accentColor === 'blue'
+                            ? 'focus:ring-blue-500'
+                            : 'focus:ring-brand-magenta'
+                        } transition-all shadow-inner ${readerTheme === 'dark'
+                          ? 'bg-white/5 border border-white/10 text-white placeholder-white/40 focus:bg-white/10'
+                          : 'bg-slate-100/90 text-slate-900 placeholder-slate-400 border border-slate-300/80 focus:bg-white'
+                        }`}
                     />
                     {bookSearchQuery && (
                       <button
                         type="button"
                         onClick={() => { setBookSearchQuery(''); setBookSearchResults([]); setHasSearchedBook(false); }}
-                        className="absolute left-3 top-3 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+                        className={`absolute left-3 top-3 transition-colors ${readerTheme === 'dark'
+                          ? 'text-white/40 hover:text-white'
+                          : 'text-slate-400 hover:text-slate-800'
+                          }`}
                         title="مسح البحث"
                       >
                         <X className="w-4 h-4" />
@@ -3196,72 +3685,134 @@ export default function TurathReader({
                     )}
                   </form>
                   {hasSearchedBook && !isSearchingBook && (
-                    <div className="flex items-center justify-between mt-2.5 text-[11px] px-1 text-muted-foreground font-semibold">
-                      <span>النتائج: <strong className={accentColor === 'amber' ? 'text-[#966b2d] dark:text-amber-400' : 'text-brand-blue'}>{bookSearchResults.length}</strong> موضع</span>
-                      {bookSearchResults.length > 0 && <span className="opacity-75">اضغط على أي نتيجة للقفز</span>}
+                    <div className={`flex items-center justify-between mt-2.5 text-[11.5px] px-1 font-bold ${readerTheme === 'dark' ? 'text-white/80' : 'text-slate-700'
+                      }`}>
+                      <span>
+                        النتائج:{' '}
+                        <strong className={
+                          readerTheme === 'dark'
+                            ? (accentColor === 'amber' ? 'text-amber-400 font-black' : accentColor === 'emerald' ? 'text-teal-400 font-black' : accentColor === 'blue' ? 'text-blue-400 font-black' : 'text-purple-400 font-black')
+                            : (accentColor === 'amber' ? 'text-[#855314] font-black' : accentColor === 'emerald' ? 'text-teal-700 font-black' : accentColor === 'blue' ? 'text-blue-700 font-black' : 'text-purple-700 font-black')
+                        }>
+                          {bookSearchResults.length}
+                        </strong>{' '}
+                        موضع
+                      </span>
+                      {bookSearchResults.length > 0 && (
+                        <span className={readerTheme === 'dark' ? 'text-white/50 text-[10.5px] font-normal' : 'text-slate-500 text-[10.5px] font-medium'}>
+                          اضغط على أي نتيجة للقفز
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-2.5">
                   {isSearchingBook ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
-                      <Loader2 className={`h-7 w-7 animate-spin ${accentColor === 'amber' ? 'text-[#b88d46]' : 'text-brand-blue'}`} />
-                      <p className="text-xs font-semibold">جاري البحث في بطون صفحات الكتاب...</p>
+                    <div className="flex flex-col items-center justify-center h-48 gap-3">
+                      <Loader2 className={`h-7 w-7 animate-spin ${accentColor === 'amber' ? 'text-amber-500' : accentColor === 'emerald' ? 'text-teal-600' : accentColor === 'blue' ? 'text-blue-600' : 'text-purple-600'
+                        }`} />
+                      <p className={`text-xs font-semibold ${readerTheme === 'dark' ? 'text-white/70' : 'text-slate-600'}`}>
+                        جاري البحث في بطون صفحات الكتاب...
+                      </p>
                     </div>
                   ) : !hasSearchedBook ? (
                     <div className="flex flex-col items-center justify-center h-56 text-center gap-3 p-6">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-sm ${
-                        accentColor === 'amber'
-                          ? 'bg-amber-500/10 border-amber-500/25 text-[#966b2d] dark:text-amber-400'
-                          : accentColor === 'emerald'
-                            ? 'bg-teal-500/10 border-teal-500/25 text-teal-600 dark:text-teal-400'
-                            : accentColor === 'blue'
-                              ? 'bg-blue-500/10 border-blue-500/25 text-blue-600 dark:text-blue-400'
-                              : 'bg-brand-magenta/10 border-brand-magenta/25 text-brand-magenta'
-                      }`}>
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-sm ${accentColor === 'amber'
+                        ? readerTheme === 'dark' ? 'bg-amber-500/10 border-amber-500/25 text-amber-400' : 'bg-amber-100/70 border-amber-300 text-[#855314]'
+                        : accentColor === 'emerald'
+                          ? readerTheme === 'dark' ? 'bg-teal-500/10 border-teal-500/25 text-teal-400' : 'bg-teal-100/70 border-teal-300 text-teal-800'
+                          : accentColor === 'blue'
+                            ? readerTheme === 'dark' ? 'bg-blue-500/10 border-blue-500/25 text-blue-400' : 'bg-blue-100/70 border-blue-300 text-blue-800'
+                            : readerTheme === 'dark' ? 'bg-purple-500/10 border-purple-500/25 text-purple-400' : 'bg-purple-100/70 border-purple-300 text-purple-800'
+                        }`}>
                         <Search className="w-7 h-7 stroke-[2.3]" />
                       </div>
                       <div className="space-y-1">
                         <p className={`text-sm font-bold ${readerTheme === 'dark' ? 'text-white/90' : 'text-slate-800'}`}>
                           ابحث عن أي لفظ أو مسألة في صفحات الكتاب
                         </p>
-                        <p className={`text-xs ${readerTheme === 'dark' ? 'text-white/60' : 'text-slate-600'}`}>
+                        <p className={`text-xs ${readerTheme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
                           سيتم استعراض كل المواضع مع مقتطفات السياق
                         </p>
                       </div>
                     </div>
                   ) : bookSearchResults.length === 0 ? (
-                    <div className={`p-8 text-center text-xs font-bold rounded-2xl ${readerTheme === 'dark' ? 'bg-white/5 text-white/60' : 'bg-black/5 text-black/60'}`}>
+                    <div className={`p-8 text-center text-xs font-bold rounded-2xl border ${readerTheme === 'dark' ? 'bg-white/5 border-white/10 text-white/70' : 'bg-slate-100 text-slate-700 border-slate-200'
+                      }`}>
                       لم يُعثر على أي نتائج مطابقة لـ "{bookSearchQuery}" في هذا الكتاب.
                     </div>
                   ) : (
-                    bookSearchResults.map((hit, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSelectSearchResult(hit)}
-                        className={`w-full text-right p-3 rounded-2xl border transition-all text-xs group cursor-pointer ${hit.page === currentPage
-                          ? 'bg-brand-blue/15 border-brand-blue/40 shadow-sm'
-                          : readerTheme === 'dark'
-                            ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-brand-blue/30'
-                            : 'bg-white border-slate-200/80 hover:bg-blue-50/70 hover:border-blue-300'
-                          }`}
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <span className="font-extrabold text-[11px] px-2 py-0.5 rounded-md bg-brand-blue/15 text-brand-blue border border-brand-blue/20">
-                            صـ {hit.page} {hit.vol ? `(جـ ${hit.vol})` : ''}
-                          </span>
-                          {hit.headings && hit.headings.length > 0 && (
-                            <span className="truncate text-[10px] text-muted-foreground max-w-[160px]">
-                              {hit.headings[hit.headings.length - 1]}
+                    bookSearchResults.map((hit, idx) => {
+                      const isCurrent = hit.page === currentPage;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleSelectSearchResult(hit)}
+                          className={`w-full text-right p-3.5 rounded-2xl border transition-all text-xs group cursor-pointer shadow-xs ${isCurrent
+                            ? readerTheme === 'dark'
+                              ? accentColor === 'amber'
+                                ? 'bg-amber-500/20 border-amber-400/50 shadow-sm ring-1 ring-amber-400/40 text-white'
+                                : accentColor === 'emerald'
+                                  ? 'bg-teal-500/20 border-teal-400/50 shadow-sm ring-1 ring-teal-400/40 text-white'
+                                  : accentColor === 'blue'
+                                    ? 'bg-blue-500/20 border-blue-400/50 shadow-sm ring-1 ring-blue-400/40 text-white'
+                                    : 'bg-purple-500/20 border-purple-400/50 shadow-sm ring-1 ring-purple-400/40 text-white'
+                              : accentColor === 'amber'
+                                ? 'bg-amber-50/90 border-amber-300/90 shadow-sm ring-1 ring-amber-400/40 text-slate-900'
+                                : accentColor === 'emerald'
+                                  ? 'bg-teal-50/90 border-teal-300/90 shadow-sm ring-1 ring-teal-400/40 text-slate-900'
+                                  : accentColor === 'blue'
+                                    ? 'bg-blue-50/90 border-blue-300/90 shadow-sm ring-1 ring-blue-400/40 text-slate-900'
+                                    : 'bg-purple-50/90 border-purple-300/90 shadow-sm ring-1 ring-purple-400/40 text-slate-900'
+                            : readerTheme === 'dark'
+                              ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-white/90'
+                              : 'bg-white border-slate-200/90 hover:bg-slate-50 hover:border-slate-300 text-slate-900'
+                            }`}
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className={`font-black text-[11px] px-2.5 py-0.5 rounded-lg border ${isCurrent
+                              ? readerTheme === 'dark'
+                                ? 'bg-amber-400 text-stone-950 border-amber-300'
+                                : accentColor === 'amber'
+                                  ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                                  : accentColor === 'emerald'
+                                    ? 'bg-teal-600 text-white border-teal-700 shadow-xs'
+                                    : accentColor === 'blue'
+                                      ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                                      : 'bg-purple-600 text-white border-purple-700 shadow-xs'
+                              : readerTheme === 'dark'
+                                ? accentColor === 'amber'
+                                  ? 'bg-amber-500/20 text-amber-200 border-amber-500/30'
+                                  : accentColor === 'emerald'
+                                    ? 'bg-teal-500/20 text-teal-200 border-teal-500/30'
+                                    : accentColor === 'blue'
+                                      ? 'bg-blue-500/20 text-blue-200 border-blue-500/30'
+                                      : 'bg-purple-500/20 text-purple-200 border-purple-500/30'
+                                : accentColor === 'amber'
+                                  ? 'bg-amber-100 text-[#73430b] border-amber-300/70 font-black'
+                                  : accentColor === 'emerald'
+                                    ? 'bg-teal-100 text-teal-800 border-teal-300/70 font-black'
+                                    : accentColor === 'blue'
+                                      ? 'bg-blue-100 text-blue-800 border-blue-300/70 font-black'
+                                      : 'bg-purple-100 text-purple-800 border-purple-300/70 font-black'
+                              }`}>
+                              صـ {hit.page} {hit.vol ? `(جـ ${hit.vol})` : ''}
                             </span>
-                          )}
-                        </div>
-                        <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-200 line-clamp-3">
-                          {hit.snippet || hit.text || ''}
-                        </p>
-                      </button>
-                    ))
+                            {hit.headings && hit.headings.length > 0 && (
+                              <span className={`truncate text-[11px] font-semibold max-w-[170px] ${readerTheme === 'dark' ? 'text-white/60' : 'text-slate-600'
+                                }`}>
+                                {hit.headings[hit.headings.length - 1]}
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-xs leading-relaxed line-clamp-3 text-right ${readerTheme === 'dark' ? 'text-slate-200' : 'text-slate-800 font-medium'
+                            }`}>
+                            {renderSearchSnippet(hit.snippet || hit.text || '', readerTheme === 'dark', accentColor)}
+                          </p>
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -3445,7 +3996,7 @@ export default function TurathReader({
                     font-weight: 700;
                     font-size: 1.25em !important;
                     line-height: 1.4 !important;
-                    margin: 1.35rem auto 0.4rem !important;
+                    margin: 1.25rem auto 0.4rem !important;
                     position: relative;
                     width: fit-content;
                     max-width: 90%;
@@ -3469,7 +4020,7 @@ export default function TurathReader({
                     font-weight: 700 !important;
                     font-size: 1.05em !important;
                     line-height: 1.4 !important;
-                    margin: 0.95rem 0 0.25rem 0 !important;
+                    margin: 0.65rem 0 0.35rem 0 !important;
                     position: relative;
                     width: 100% !important;
                     max-width: 100% !important;
@@ -3507,10 +4058,45 @@ export default function TurathReader({
                     border: none !important;
                   }
 
+                  /* Quranic Verses Base Typography (الآيات القرآنية) */
+                  .turath-content span[data-type="quran"],
+                  .turath-content .islamic-quran-verse {
+                    display: inline !important;
+                    font-family: var(--font-scheherazade, 'Scheherazade New', 'Amiri', 'Traditional Arabic', serif) !important;
+                    font-weight: 700 !important;
+                    margin: 0 0.15rem !important;
+                    padding: 0 !important;
+                    background: none !important;
+                    border: none !important;
+                  }
+
+                  /* Parenthetical text & square brackets (الكلام بين أقواس) */
+                  .turath-content span[data-type="parenthetical"],
+                  .turath-content .islamic-parenthetical,
+                  .turath-content span[data-type="bracketed-note"],
+                  .turath-content .islamic-bracketed-note {
+                    display: inline !important;
+                    font-weight: 600 !important;
+                  }
+
+                  /* Hadith & Quotes «...» */
+                  .turath-content span[data-type="hadith-quote"],
+                  .turath-content .islamic-hadith-quote {
+                    display: inline !important;
+                    font-weight: 600 !important;
+                  }
+
+                  /* Narrator & Speech Keywords (ألفاظ الرواية والقول: قال:، يقول:، حدثنا...) */
+                  .turath-content span[data-type="narrator-keyword"],
+                  .turath-content .islamic-narrator-keyword {
+                    display: inline !important;
+                    font-weight: 800 !important;
+                  }
+
                   /* Light Reader Theme Colors */
                   .light-reader .turath-content,
                   .light-reader .turath-content p,
-                  .light-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific) {
+                  .light-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific):not([data-type="quran"]):not(.islamic-quran-verse):not([data-type="parenthetical"]):not(.islamic-parenthetical):not([data-type="hadith-quote"]):not(.islamic-hadith-quote):not([data-type="bracketed-note"]):not(.islamic-bracketed-note):not([data-type="narrator-keyword"]):not(.islamic-narrator-keyword):not([data-type="footnote-ref"]):not(.islamic-footnote-ref) {
                       color: #0f172a !important;
                   }
                   .light-reader .turath-content h1,
@@ -3533,11 +4119,36 @@ export default function TurathReader({
                   .light-reader .turath-content .islamic-honorific {
                       color: ${lightTitleColor} !important;
                   }
+                  /* Light Reader Islamic Typography Colors */
+                  .light-reader .turath-content span[data-type="quran"],
+                  .light-reader .turath-content .islamic-quran-verse {
+                      color: #047857 !important;
+                      -webkit-text-fill-color: #047857 !important;
+                      background: none !important;
+                      border: none !important;
+                  }
+                  .light-reader .turath-content span[data-type="parenthetical"],
+                  .light-reader .turath-content .islamic-parenthetical,
+                  .light-reader .turath-content span[data-type="bracketed-note"],
+                  .light-reader .turath-content .islamic-bracketed-note {
+                      color: #0369a1 !important;
+                      -webkit-text-fill-color: #0369a1 !important;
+                  }
+                  .light-reader .turath-content span[data-type="hadith-quote"],
+                  .light-reader .turath-content .islamic-hadith-quote {
+                      color: #9a3412 !important;
+                      -webkit-text-fill-color: #9a3412 !important;
+                  }
+                  .light-reader .turath-content span[data-type="narrator-keyword"],
+                  .light-reader .turath-content .islamic-narrator-keyword {
+                      color: #b91c1c !important;
+                      -webkit-text-fill-color: #b91c1c !important;
+                  }
 
                   /* Sepia Reader Theme Colors */
                   .sepia-reader .turath-content,
                   .sepia-reader .turath-content p,
-                  .sepia-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific) {
+                  .sepia-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific):not([data-type="quran"]):not(.islamic-quran-verse):not([data-type="parenthetical"]):not(.islamic-parenthetical):not([data-type="hadith-quote"]):not(.islamic-hadith-quote):not([data-type="bracketed-note"]):not(.islamic-bracketed-note):not([data-type="narrator-keyword"]):not(.islamic-narrator-keyword):not([data-type="footnote-ref"]):not(.islamic-footnote-ref) {
                       color: #3b2a1a !important;
                   }
                   .sepia-reader .turath-content h1,
@@ -3560,11 +4171,36 @@ export default function TurathReader({
                   .sepia-reader .turath-content .islamic-honorific {
                       color: #b45309 !important;
                   }
+                  /* Sepia Reader Islamic Typography Colors */
+                  .sepia-reader .turath-content span[data-type="quran"],
+                  .sepia-reader .turath-content .islamic-quran-verse {
+                      color: #065f46 !important;
+                      -webkit-text-fill-color: #065f46 !important;
+                      background: none !important;
+                      border: none !important;
+                  }
+                  .sepia-reader .turath-content span[data-type="parenthetical"],
+                  .sepia-reader .turath-content .islamic-parenthetical,
+                  .sepia-reader .turath-content span[data-type="bracketed-note"],
+                  .sepia-reader .turath-content .islamic-bracketed-note {
+                      color: #0f766e !important;
+                      -webkit-text-fill-color: #0f766e !important;
+                  }
+                  .sepia-reader .turath-content span[data-type="hadith-quote"],
+                  .sepia-reader .turath-content .islamic-hadith-quote {
+                      color: #9a3412 !important;
+                      -webkit-text-fill-color: #9a3412 !important;
+                  }
+                  .sepia-reader .turath-content span[data-type="narrator-keyword"],
+                  .sepia-reader .turath-content .islamic-narrator-keyword {
+                      color: #991b1b !important;
+                      -webkit-text-fill-color: #991b1b !important;
+                  }
 
                   /* Dark Reader Theme Colors */
                   .dark-reader .turath-content,
                   .dark-reader .turath-content p,
-                  .dark-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific) {
+                  .dark-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific):not([data-type="quran"]):not(.islamic-quran-verse):not([data-type="parenthetical"]):not(.islamic-parenthetical):not([data-type="hadith-quote"]):not(.islamic-hadith-quote):not([data-type="bracketed-note"]):not(.islamic-bracketed-note):not([data-type="narrator-keyword"]):not(.islamic-narrator-keyword):not([data-type="footnote-ref"]):not(.islamic-footnote-ref) {
                       color: #ffffff !important;
                   }
                   .dark-reader .turath-content h1,
@@ -3591,6 +4227,32 @@ export default function TurathReader({
                   .dark-reader .turath-content span[data-type="honorific"],
                   .dark-reader .turath-content .islamic-honorific {
                       color: ${darkTitleColor} !important;
+                  }
+                  /* Dark Reader Islamic Typography Colors */
+                  .dark-reader .turath-content span[data-type="quran"],
+                  .dark-reader .turath-content .islamic-quran-verse {
+                      color: #34d399 !important;
+                      -webkit-text-fill-color: #34d399 !important;
+                      background: none !important;
+                      border: none !important;
+                      text-shadow: none !important;
+                  }
+                  .dark-reader .turath-content span[data-type="parenthetical"],
+                  .dark-reader .turath-content .islamic-parenthetical,
+                  .dark-reader .turath-content span[data-type="bracketed-note"],
+                  .dark-reader .turath-content .islamic-bracketed-note {
+                      color: #38bdf8 !important;
+                      -webkit-text-fill-color: #38bdf8 !important;
+                  }
+                  .dark-reader .turath-content span[data-type="hadith-quote"],
+                  .dark-reader .turath-content .islamic-hadith-quote {
+                      color: #fb923c !important;
+                      -webkit-text-fill-color: #fb923c !important;
+                  }
+                  .dark-reader .turath-content span[data-type="narrator-keyword"],
+                  .dark-reader .turath-content .islamic-narrator-keyword {
+                      color: #f87171 !important;
+                      -webkit-text-fill-color: #f87171 !important;
                   }
                   .turath-content span[data-type="poetry"] {
                     display: block;
@@ -3686,6 +4348,47 @@ export default function TurathReader({
                     background: ${accentColor === 'amber' ? 'rgba(223, 191, 131, 0.3)' : accentColor === 'emerald' ? 'rgba(45, 212, 191, 0.3)' : accentColor === 'blue' ? 'rgba(96, 165, 250, 0.3)' : 'rgba(168, 85, 247, 0.35)'} !important;
                     border-color: ${darkTitleColor} !important;
                     transform: scale(1.1) !important;
+                  }
+
+                  /* In-Page Quick Search Highlight Markers */
+                  .turath-content mark.page-search-match {
+                    background-color: #fef08a !important;
+                    color: #713f12 !important;
+                    border-radius: 4px;
+                    padding: 1px 3px;
+                    font-weight: 700;
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+                    transition: all 0.2s ease;
+                  }
+                  .light-reader .turath-content mark.page-search-match {
+                    background-color: #fde047 !important;
+                    color: #582900 !important;
+                    border-bottom: 2px solid #ca8a04;
+                  }
+                  .dark-reader .turath-content mark.page-search-match {
+                    background-color: rgba(234, 179, 8, 0.35) !important;
+                    color: #fef08a !important;
+                    border: 1px solid rgba(234, 179, 8, 0.4);
+                  }
+                  .sepia-reader .turath-content mark.page-search-match {
+                    background-color: #fde047 !important;
+                    color: #451a03 !important;
+                  }
+
+                  .turath-content mark.page-search-match.page-search-active-match {
+                    background-color: #f97316 !important;
+                    color: #ffffff !important;
+                    border-radius: 5px;
+                    padding: 2px 5px;
+                    font-weight: 900;
+                    box-shadow: 0 0 12px rgba(249, 115, 22, 0.7);
+                    outline: 2px solid #ea580c;
+                  }
+                  .dark-reader .turath-content mark.page-search-match.page-search-active-match {
+                    background-color: #f59e0b !important;
+                    color: #000000 !important;
+                    box-shadow: 0 0 16px rgba(245, 158, 11, 0.85);
+                    outline: 2px solid #fde68a;
                   }
                 `}</style>
                   <div className={`${readerTheme === 'dark' ? 'dark-reader' : readerTheme === 'sepia' ? 'sepia-reader' : 'light-reader'}`}>
@@ -3882,7 +4585,7 @@ export default function TurathReader({
 
           {/* Floating Pagination Footer with Inline Page & Volume Controls */}
           {readingMode === 'paged' && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 opacity-100 translate-y-0">
+            <div className="absolute bottom-1.5 sm:bottom-2 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 opacity-100 translate-y-0">
               <footer className={`flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-2xl border backdrop-blur-xl shadow-2xl ${readerTheme === 'dark' ? 'bg-[#121826]/90 border-white/10 shadow-black/50 text-white' : readerTheme === 'sepia' ? 'bg-[#FAF5ED]/95 border-[#E2D6C0] shadow-[0_10px_30px_rgba(80,50,20,0.1)] text-[#3D2C1D]' : 'bg-white/95 border-gray-200/90 shadow-xl text-slate-900'}`}>
                 {/* Previous Page (RTL: Right Arrow) */}
                 <button

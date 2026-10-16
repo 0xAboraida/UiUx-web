@@ -89,6 +89,113 @@ export function replaceIslamicLigatures(text: string): string {
   return newText;
 }
 
+function makeTashkeelPattern(word: string): string {
+  const tashkeel = '[\\u064B-\\u065F\\u0670\\u06D6-\\u06ED]*';
+  let pattern = '';
+  for (const ch of word) {
+    if (ch === 'ا' || ch === 'أ' || ch === 'إ' || ch === 'آ') {
+      pattern += '[اأإآ]' + tashkeel;
+    } else if (ch === 'ي' || ch === 'ى') {
+      pattern += '[ييى]' + tashkeel;
+    } else {
+      pattern += ch + tashkeel;
+    }
+  }
+  return pattern;
+}
+
+const NARRATOR_WORDS = [
+  'وكقوله', 'كقوله', 'فكقوله',
+  'ولقوله', 'لقوله', 'فلقوله',
+  'وبقوله', 'بقوله',
+  'وقوله', 'قوله', 'فقوله',
+  'وقولهم', 'قولهم', 'فقولهم',
+  'وقال', 'قال', 'فقال',
+  'وقالت', 'قالت', 'فقالت',
+  'وقالوا', 'قالوا', 'فقالوا',
+  'ويقول', 'يقول', 'فيقول',
+  'وتقول', 'تقول', 'فتقول',
+  'ويقولون', 'يقولون', 'فيقولون',
+  'وقلت', 'قلت', 'فقلت',
+  'وقلنا', 'قلنا', 'فقلنا',
+  'وقيل', 'قيل', 'فقيل',
+  'ويقال', 'يقال', 'فيقال',
+  'وحدثنا', 'حدثنا', 'فحدثنا',
+  'وحدثني', 'حدثني', 'فحدثني',
+  'وأخبرنا', 'أخبرنا', 'فأخبرنا',
+  'وأخبرني', 'أخبرني', 'فأخبرني',
+  'وأنبأنا', 'أنبأنا', 'فأنبأنا',
+  'وأنبأني', 'أنبأني',
+  'وسمعت', 'سمعت',
+  'وروى', 'روى',
+  'وروي', 'روي',
+  'وروينا', 'روينا'
+];
+
+const SPEECH_PATTERNS_STR = NARRATOR_WORDS.map(w => makeTashkeelPattern(w)).join('|');
+const SPEECH_REGEX = new RegExp(`(?<!<[^>]*)(?<![\\p{L}\\p{M}])(${SPEECH_PATTERNS_STR})((?:[:：]|[-–—]|،)*(?=[\\s،:：-]|$))(?![^<]*>)`, 'gu');
+
+export function parseIslamicTypography(text: string): string {
+  if (!text) return '';
+
+  // 1. Protect titles
+  const titles: string[] = [];
+  let parsed = text.replace(/<span\s+data-type="title"[^>]*>[\s\S]*?<\/span>/gi, (match) => {
+    const idx = titles.length;
+    titles.push(match);
+    return `__TITLE_TOKEN_${idx}__`;
+  });
+
+  // 2. Protect existing HTML footnote badges
+  const footnoteTokens: string[] = [];
+  parsed = parsed.replace(/<span\s+class="[^"]*islamic-footnote-sup[^"]*"[^>]*>[\s\S]*?<\/span>/gi, (match) => {
+    const idx = footnoteTokens.length;
+    footnoteTokens.push(match);
+    return `__FN_TOKEN_${idx}__`;
+  });
+
+  // 3. Protect honorific spans
+  const honorificTokens: string[] = [];
+  parsed = parsed.replace(/<span\s+data-type="honorific"[^>]*>[\s\S]*?<\/span>/gi, (match) => {
+    const idx = honorificTokens.length;
+    honorificTokens.push(match);
+    return `__HONOR_TOKEN_${idx}__`;
+  });
+
+  // 4. Extract and wrap Quran verses in green styling (including ornate brackets ﴿ ﴾ or { })
+  const quranTokens: string[] = [];
+  const quranRegex = /([﴿﴾][^﴿﴾\r\n]+[﴿﴾]|\{[\u0600-\u06FF\s،.:!؟-]{3,}\})/gu;
+  parsed = parsed.replace(quranRegex, (match) => {
+    const idx = quranTokens.length;
+    quranTokens.push(`<span data-type="quran" class="islamic-quran-verse font-scheherazade">${match}</span>`);
+    return `__QURAN_TOKEN_${idx}__`;
+  });
+
+  // 5. Quotes / Hadith text: «...»
+  const quoteRegex = /(?<!<[^>]*)(«[^»\r\n]+»)(?![^<]*>)/gu;
+  parsed = parsed.replace(quoteRegex, '<span data-type="hadith-quote" class="islamic-hadith-quote">$1</span>');
+
+  // 6. Parentheses (...) and Brackets [...]
+  const parenRegex = /(?<!<[^>]*)\(([^()<>\r\n]+)\)(?![^<]*>)/gu;
+  parsed = parsed.replace(parenRegex, '<span data-type="parenthetical" class="islamic-parenthetical">($1)</span>');
+
+  const bracketRegex = /(?<!<[^>]*)(?<!\[)\[([^\[\]<>\r\n]+)\](?![^<]*>)/gu;
+  parsed = parsed.replace(bracketRegex, '<span data-type="bracketed-note" class="islamic-bracketed-note">[$1]</span>');
+
+  // 7. Speech / Attribution keywords
+  parsed = parsed.replace(SPEECH_REGEX, (match, word, punct) => {
+    return `<span data-type="narrator-keyword" class="islamic-narrator-keyword font-bold">${word}${punct}</span>`;
+  });
+
+  // 8. Restore tokens in reverse order
+  parsed = parsed.replace(/__QURAN_TOKEN_(\d+)__/g, (_, idx) => quranTokens[Number(idx)] || '');
+  parsed = parsed.replace(/__HONOR_TOKEN_(\d+)__/g, (_, idx) => honorificTokens[Number(idx)] || '');
+  parsed = parsed.replace(/__FN_TOKEN_(\d+)__/g, (_, idx) => footnoteTokens[Number(idx)] || '');
+  parsed = parsed.replace(/__TITLE_TOKEN_(\d+)__/g, (_, idx) => titles[Number(idx)] || '');
+
+  return parsed;
+}
+
 export interface ProcessedContent {
   main: string;
   matn: string;
@@ -162,7 +269,7 @@ export const processTextContent = (rawText: string): ProcessedContent => {
     const fnBadge = (_: string, num: string) =>
       `<span class="islamic-footnote-sup inline-flex items-center justify-center mx-1 align-baseline"><a href="#fn-${num}" data-type="footnote-ref" class="islamic-footnote-ref font-sans font-extrabold text-[12px] shadow-2xs no-underline transition-all hover:scale-110 border-b-0 cursor-pointer">${num}</a></span>`;
 
-    return processedText
+    const rawFormatted = processedText
       .replace(/\s*[-–—]?\s*\(\^\s*([\d\u0660-\u0669]+)\)\s*[-–—]?/g, fnBadge)
       .replace(/\s*[-–—]?\s*\^\(([\d\u0660-\u0669]+)\)\s*[-–—]?/g, fnBadge)
       .replace(/\s*[-–—]?\s*\^([\d\u0660-\u0669]+)\s*[-–—]?/g, fnBadge)
@@ -172,6 +279,8 @@ export const processTextContent = (rawText: string): ProcessedContent => {
       .replace(/\s*\[([\d\u0660-\u0669]{1,2})\]\s*/g, fnBadge)
       .replace(/(?<=[\p{L}])([\d\u0660-\u0669]{1,2})(?=[.,،:;"'«»)\s]|$)/gu, fnBadge)
       .replace(/(?<=["'»])\s*([\d\u0660-\u0669]{1,2})(?=[.,،:;]|\s*[.,،:;])/gu, fnBadge);
+
+    return parseIslamicTypography(rawFormatted);
   };
 
   const formattedMatn = formatMainText(matnPart);
