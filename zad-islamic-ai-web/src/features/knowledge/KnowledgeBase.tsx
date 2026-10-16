@@ -17,7 +17,7 @@ import { getAvatarUrl } from '../../api/client'
 import NotificationBell from '../../components/layout/NotificationBell'
 import UserProfileModal from '../profile/UserProfileModal'
 import TurathReader from './TurathReader'
-import LibrarySidebar from './components/LibrarySidebar'
+import LibrarySidebar, { LibraryCurrentContext } from './components/LibrarySidebar'
 import SettingsModal from './components/SettingsModal'
 import LibraryHomeView from './components/LibraryHomeView'
 import IslamicPattern from './components/IslamicPattern'
@@ -330,7 +330,11 @@ export default function KnowledgeBase({
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>(() => {
     try {
       const saved = localStorage.getItem('zad_font_size');
-      if (saved === 'small' || saved === 'medium' || saved === 'large') return saved;
+      if (saved === 'large') {
+        localStorage.setItem('zad_font_size', 'medium');
+        return 'medium';
+      }
+      if (saved === 'small' || saved === 'medium') return saved;
     } catch (e) { }
     return 'medium';
   });
@@ -594,6 +598,8 @@ export default function KnowledgeBase({
 
   // Collapsible Sidebar & Recent Book State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedNarrator, setSelectedNarrator] = useState<any | null>(null);
+  const [readerActiveTheme, setReaderActiveTheme] = useState<'light' | 'dark' | 'sepia' | null>(null);
   const [recentBook, setRecentBook] = useState<BookMeta | null>(() => {
     try {
       const saved = localStorage.getItem('zad_recent_read_book');
@@ -602,6 +608,36 @@ export default function KnowledgeBase({
     return null;
   });
 
+  const currentLocationContext = useMemo<LibraryCurrentContext | null>(() => {
+    if (view === 'reader' && selectedBook) {
+      return {
+        type: 'reader',
+        category: selectedBook.category || selectedBook.cat_name || 'الفقه الحنبلي',
+        bookTitle: selectedBook.title,
+        authorName: selectedBook.author || selectedBook.author_name,
+      };
+    }
+    if (activeMainTab === 'authors' && selectedAuthor) {
+      return {
+        type: 'author',
+        authorName: selectedAuthor,
+      };
+    }
+    if (activeMainTab === 'narrators' && selectedNarrator) {
+      return {
+        type: 'narrator',
+        narratorName: selectedNarrator.name || selectedNarrator.label,
+      };
+    }
+    if (activeMainTab === 'categories' && selectedDomain && selectedDomain !== 'all') {
+      return {
+        type: 'category',
+        category: selectedDomain,
+      };
+    }
+    return null;
+  }, [view, selectedBook, activeMainTab, selectedAuthor, selectedNarrator, selectedDomain]);
+
   const handleReadBook = (book: BookMeta, page?: number) => {
     const bookWithPage = page && page > 0 ? { ...book, savedPage: page } : book;
     setSelectedBook(bookWithPage);
@@ -609,24 +645,84 @@ export default function KnowledgeBase({
     try {
       localStorage.setItem('zad_recent_read_book', JSON.stringify(bookWithPage));
     } catch (e) { }
+    setIsHomeSearchResultsDismissed(true);
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setView('reader');
   };
 
   if (view === 'reader' && selectedBook) {
     return (
-      <TurathReader
-        book={selectedBook}
-        onClose={() => setView('search')}
-        onAskBook={onAskBook}
-        globalFontSize={fontSize}
-        onSelectAuthor={(authorName) => {
-          setReturnToReaderBook(selectedBook);
-          setView('search');
-          setActiveMainTab('authors');
-          setSelectedAuthor(authorName);
-          window.scrollTo({ top: 0, behavior: 'instant' });
-        }}
-      />
+      <>
+        <TurathReader
+          book={selectedBook}
+          onClose={() => setView('search')}
+          onAskBook={onAskBook}
+          globalFontSize={fontSize}
+          onReaderThemeChange={(t) => setReaderActiveTheme(t)}
+          onSelectAuthor={(authorName) => {
+            setReturnToReaderBook(selectedBook);
+            setView('search');
+            setActiveMainTab('authors');
+            setSelectedAuthor(authorName);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+          onOpenSidebar={() => setIsSidebarOpen(true)}
+        />
+        <LibrarySidebar
+          isOpen={isSidebarOpen}
+          theme={readerActiveTheme || theme}
+          activeMainTab="categories"
+          currentContext={currentLocationContext}
+          counts={{
+            domains: availableDomains.length,
+            authors: liveStats.total_authors,
+            narrators: '18.9K',
+            featured: featuredBookIds.size > 0 ? publishedBooks.filter(b => featuredBookIds.has(b.id) || featuredBookIds.has(b.title)).length : 0,
+            favorites: favoriteBooksList.length,
+          }}
+          recentBook={recentBook}
+          onClose={() => setIsSidebarOpen(false)}
+          onSelectTab={(tab) => {
+            setIsSidebarOpen(false);
+            setView('search');
+            if (tab === 'home') {
+              handleGoToLibraryHome();
+            } else {
+              window.scrollTo({ top: 0, behavior: 'instant' });
+              setActiveMainTab(tab);
+              setSelectedAuthor(null);
+            }
+          }}
+          onReadRecentBook={(book) => {
+            setIsSidebarOpen(false);
+            handleReadBook(book);
+          }}
+          onSelectCategory={(category) => {
+            setIsSidebarOpen(false);
+            setView('search');
+            setActiveMainTab('categories');
+            setSelectedDomain(category);
+            setSelectedAuthor(null);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+          onSelectAuthor={(author) => {
+            setIsSidebarOpen(false);
+            setView('search');
+            setActiveMainTab('authors');
+            setSelectedAuthor(author);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+          selectedCentury={selectedCentury}
+          onChangeCentury={(c) => setSelectedCentury(c)}
+          availableCenturies={availableCenturies}
+          sortAsc={sortAsc}
+          onToggleSort={() => setSortAsc(!sortAsc)}
+          onOpenSettings={() => {
+            setIsSidebarOpen(false);
+            setIsSettingsModalOpen(true);
+          }}
+        />
+      </>
     );
   }
 
@@ -635,6 +731,7 @@ export default function KnowledgeBase({
     return (
       <SearchConsole
         isCompact={isCompact}
+        isScrolledPastSearch={isScrolledPastSearch}
         currentSearchValue={currentSearchValue}
         handleSearchChange={handleSearchChange}
         onSearchSubmit={handleSearchSubmit}
@@ -688,6 +785,7 @@ export default function KnowledgeBase({
           isOpen={isSidebarOpen}
           theme={theme}
           activeMainTab={activeMainTab}
+          currentContext={currentLocationContext}
           counts={{
             domains: availableDomains.length,
             authors: liveStats.total_authors,
@@ -707,6 +805,19 @@ export default function KnowledgeBase({
             }
           }}
           onReadRecentBook={handleReadBook}
+          onSelectCategory={(category) => {
+            setIsSidebarOpen(false);
+            setActiveMainTab('categories');
+            setSelectedDomain(category);
+            setSelectedAuthor(null);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+          onSelectAuthor={(author) => {
+            setIsSidebarOpen(false);
+            setActiveMainTab('authors');
+            setSelectedAuthor(author);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }}
           selectedCentury={selectedCentury}
           onChangeCentury={(c) => setSelectedCentury(c)}
           availableCenturies={availableCenturies}
@@ -903,7 +1014,11 @@ export default function KnowledgeBase({
                   activeSubTab={activeMainTab as CatalogSubTab}
                   onSubTabChange={(tab) => {
                     setActiveMainTab(tab as MainTab);
+                    if (tab !== 'narrators') {
+                      setSelectedNarrator(null);
+                    }
                   }}
+                  onSelectNarrator={setSelectedNarrator}
                   categoriesProps={{
                     categorySearch,
                     selectedDomain,

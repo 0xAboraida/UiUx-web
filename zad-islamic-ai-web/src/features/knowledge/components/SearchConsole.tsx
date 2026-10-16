@@ -21,6 +21,7 @@ import { BookCard } from './BookCard';
 
 export interface SearchConsoleProps {
   isCompact?: boolean;
+  isScrolledPastSearch?: boolean;
   currentSearchValue: string;
   handleSearchChange: (val: string) => void;
   onSearchSubmit?: () => void;
@@ -45,6 +46,7 @@ export interface SearchConsoleProps {
 
 export const SearchConsole: React.FC<SearchConsoleProps> = ({
   isCompact = false,
+  isScrolledPastSearch = false,
   currentSearchValue,
   handleSearchChange,
   onSearchSubmit,
@@ -68,6 +70,13 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
 }) => {
   const { isDark, accentColor } = useTheme();
 
+  // On the home tab, only one search console is active and displayed to the user:
+  // When scrolled past the hero, the compact navbar search console is active.
+  // Otherwise, the hero search console is active.
+  const isSearchActiveForThisInstance =
+    activeMainTab === 'home' &&
+    (isScrolledPastSearch ? isCompact : !isCompact);
+
   // Dropdown Popovers State
   const [isDomainPickerOpen, setIsDomainPickerOpen] = useState(false);
   const [isAuthorPickerOpen, setIsAuthorPickerOpen] = useState(false);
@@ -78,23 +87,42 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (domainPickerRef.current && !domainPickerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (domainPickerRef.current && !domainPickerRef.current.contains(target)) {
         setIsDomainPickerOpen(false);
       }
-      if (authorPickerRef.current && !authorPickerRef.current.contains(event.target as Node)) {
+      if (authorPickerRef.current && !authorPickerRef.current.contains(target)) {
         setIsAuthorPickerOpen(false);
       }
-      if (searchConsoleRef.current && !searchConsoleRef.current.contains(event.target as Node)) {
-        setIsHomeSearchResultsDismissed?.(true);
+      // Only the currently active search console instance handles dismissing the home search results popover
+      if (isSearchActiveForThisInstance && searchConsoleRef.current) {
+        const isInsideSearchConsole = searchConsoleRef.current.contains(target);
+        const isInsidePopover = (event.target as Element)?.closest?.('[data-search-popover="true"]');
+        if (!isInsideSearchConsole && !isInsidePopover) {
+          setIsHomeSearchResultsDismissed?.(true);
+        }
       }
     };
 
     const handleWindowScroll = () => {
-      if (window.scrollY > 120) {
-        setIsHomeSearchResultsDismissed?.(true);
-        setIsDomainPickerOpen(false);
-        setIsAuthorPickerOpen(false);
+      setIsDomainPickerOpen(false);
+      setIsAuthorPickerOpen(false);
+
+      // للشريط الرئيسي في الواجهة: لا يختفي بمجرد التمرير البسيط، بل يختفي فقط إذا خرج شريط البحث بالكامل من الشاشة
+      if (!isCompact) {
+        const heroEl = document.getElementById('hero-main-search-bar');
+        if (heroEl) {
+          const rect = heroEl.getBoundingClientRect();
+          if (rect.bottom < -30) {
+            setIsHomeSearchResultsDismissed?.(true);
+          }
+        } else if (window.scrollY > 500) {
+          setIsHomeSearchResultsDismissed?.(true);
+        }
       }
+      // للشريط المصغر في النافبار (isCompact):
+      // بما أنه شريط ثابت (Sticky) في أعلى الشاشة ويبقى دائماً أمام المستخدم،
+      // فلا ينبغي إخفاء نتائجه بمجرد التمرير العادي في الخلفية، بل يختفي فقط بالنقر في أي مكان خارج الشاشة أو عند إغلاقه
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -103,7 +131,7 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
       window.removeEventListener('scroll', handleWindowScroll);
     };
-  }, [setIsHomeSearchResultsDismissed]);
+  }, [isCompact, isSearchActiveForThisInstance, setIsHomeSearchResultsDismissed]);
 
   const getHeroSearchContainerStyle = () => {
     // If we're on the home page hero, provide an ultra-clean, transparent glassmorphic aesthetic
@@ -376,7 +404,7 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
     if (isDark) {
       switch (accentColor) {
         case 'amber':
-          return 'bg-[#18130e] border-[#dfbf83]/30 text-white shadow-[0_25px_80px_rgba(0,0,0,0.95)] ring-1 ring-[#dfbf83]/15';
+          return 'bg-[#0d0f14] border-[#dfbf83]/30 text-white shadow-[0_25px_80px_rgba(0,0,0,0.95)] ring-1 ring-[#dfbf83]/15';
         case 'emerald':
           return 'bg-[#0b1717] border-teal-500/30 text-white shadow-[0_25px_80px_rgba(0,0,0,0.95)] ring-1 ring-teal-500/15';
         case 'blue':
@@ -445,8 +473,7 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
   };
 
   const isLiveSearchActive =
-    !isCompact &&
-    activeMainTab === 'home' &&
+    isSearchActiveForThisInstance &&
     (Boolean(currentSearchValue.trim()) || selectedDomain !== 'all' || filterAuthor !== 'all') &&
     !isHomeSearchResultsDismissed;
 
@@ -751,7 +778,9 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
       {/* 3. Floating Live Search Results Popover (نافذة منبثقة ملتصقة بالسيرش بار) */}
       {isLiveSearchActive && (
         <div
-          className={`absolute top-full left-0 right-0 mt-3 rounded-2xl sm:rounded-3xl border shadow-2xl backdrop-blur-2xl transition-all duration-300 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 text-right ${getSearchPopoverContainerStyle()}`}
+          data-search-popover="true"
+          onMouseDown={(e) => e.stopPropagation()}
+          className={`absolute top-full left-0 right-0 ${isCompact ? 'mt-2' : 'mt-3'} rounded-2xl sm:rounded-3xl border shadow-2xl backdrop-blur-2xl transition-all duration-300 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 text-right ${getSearchPopoverContainerStyle()}`}
         >
           {/* Popover Header */}
           <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-white/10">
@@ -804,9 +833,12 @@ export const SearchConsole: React.FC<SearchConsoleProps> = ({
                   key={book.id || book.title}
                   book={book}
                   viewMode="list"
+                  compact={isCompact}
                   showCategoryBadge={true}
                   onAsk={(b) => onAskBook?.(b)}
-                  onRead={(b) => handleReadBook?.(b)}
+                  onRead={(b) => {
+                    handleReadBook?.(b);
+                  }}
                   onOpenAuthorBio={(b) => setSelectedAuthorBook?.(b)}
                   onOpenBookInfo={(b) => setActiveInfoBook?.(b)}
                   isFavorite={Boolean(favoriteBookIds?.has(book.id))}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { ArrowRight, BookOpen, ChevronLeft, ChevronRight, FileText, BookText, Folder, Menu, Loader2, Search, ChevronDown, Settings2, Maximize, Minimize, Sun, Moon, Type, Sparkles, X, Send, Bookmark, Copy, Volume2, VolumeX, BookmarkCheck, AlignJustify, MoreVertical, Hash, Download, CheckCircle2, FileDown, Layers, Check, HardDriveDownload, BookCheck } from 'lucide-react'
+import { ArrowRight, BookOpen, ChevronLeft, ChevronRight, FileText, BookText, Folder, Menu, Loader2, Search, ChevronDown, Settings2, Maximize, Minimize, Sun, Moon, Type, Sparkles, X, Send, Bookmark, Copy, Volume2, VolumeX, BookmarkCheck, AlignJustify, MoreVertical, Hash, Download, CheckCircle2, FileDown, Layers, Check, HardDriveDownload, BookCheck, RotateCcw } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 import { Bubble, TypingBubble } from '../chat/components/ChatBubble'
 import type { Message } from '../chat/data'
@@ -9,7 +9,7 @@ import zadDarkLogo from '@/assets/images/ZadDarkLogo.png'
 import { PanelResizer } from '../study/components/PanelResizer'
 import { AudioReaderButton } from '@/components/common/AudioReaderButton'
 import { fetchTurathBookIndexes, fetchTurathPage, searchTurathCorpus, fetchTurathBookPdfUrl, type TurathSearchHit } from '../../api/turathApi'
-import { idbGetTurathBookTree, idbSetTurathBookTree, idbSaveBookOffline, idbGetOfflineBook, idbIsBookSavedOffline, idbRemoveOfflineBook } from '../../utils/indexedDbStorage'
+import { idbGetTurathBookTree, idbSetTurathBookTree, idbDeleteTurathBookTree, idbSaveBookOffline, idbGetOfflineBook, idbIsBookSavedOffline, idbRemoveOfflineBook } from '../../utils/indexedDbStorage'
 import { downloadBookFile } from './utils/bookExport'
 import { hasBookPdf, getBookPdfUrl } from './utils/turathMeta'
 import IslamicPattern from './components/IslamicPattern'
@@ -78,12 +78,25 @@ const TocNode = ({
 
   const hasChildren = node.children.length > 0;
 
+  const getTreeLineBorderClass = () => {
+    if (isAncestorActive || isExactActive) {
+      switch (accentColor) {
+        case 'amber': return 'border-[#b88d46]';
+        case 'emerald': return 'border-teal-500';
+        case 'blue': return 'border-blue-500';
+        case 'purple':
+        default: return 'border-purple-500';
+      }
+    }
+    return 'border-border/30';
+  };
+
   const getContainerStyles = () => {
     if (isExactActive) {
       if (readerTheme === 'dark') {
         switch (accentColor) {
           case 'amber':
-            return 'bg-gradient-to-r from-[#8e682d] via-[#b88d46] to-[#dfbf83] text-stone-950 font-black border-[#dfbf83]/60 shadow-md shadow-amber-950/50 ring-1 ring-[#dfbf83]/40';
+            return 'bg-[#dfbf83] text-stone-950 font-bold border-[#cba35d] shadow-md shadow-amber-950/50 ring-1 ring-[#dfbf83]/50';
           case 'emerald':
             return 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-500 text-white font-extrabold border-teal-400/60 shadow-md shadow-teal-950/50 ring-1 ring-teal-400/40';
           case 'blue':
@@ -95,7 +108,7 @@ const TocNode = ({
       } else {
         switch (accentColor) {
           case 'amber':
-            return 'bg-gradient-to-r from-[#8e682d] via-[#b88d46] to-[#dfbf83] text-stone-950 font-black border-[#b88d46] shadow-md shadow-amber-600/30 ring-1 ring-[#b88d46]/40';
+            return 'bg-[#dfbf83] text-stone-950 font-bold border-[#cba35d] shadow-md shadow-amber-600/20 ring-1 ring-[#cba35d]/40';
           case 'emerald':
             return 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-500 text-white font-extrabold border-teal-700 shadow-md shadow-teal-600/30 ring-1 ring-teal-600/40';
           case 'blue':
@@ -109,19 +122,19 @@ const TocNode = ({
     if (isAncestorActive) {
       if (readerTheme === 'dark') {
         switch (accentColor) {
-          case 'amber': return 'bg-amber-950/70 text-amber-200 font-bold border-amber-600/60 shadow-xs';
-          case 'emerald': return 'bg-teal-950/70 text-teal-200 font-bold border-teal-600/60 shadow-xs';
-          case 'blue': return 'bg-blue-950/70 text-blue-200 font-bold border-blue-600/60 shadow-xs';
+          case 'amber': return 'bg-amber-950/35 text-amber-200/90 font-semibold border-amber-600/30 shadow-none';
+          case 'emerald': return 'bg-teal-950/35 text-teal-200/90 font-semibold border-teal-600/30 shadow-none';
+          case 'blue': return 'bg-blue-950/35 text-blue-200/90 font-semibold border-blue-600/30 shadow-none';
           case 'purple':
-          default: return 'bg-purple-950/70 text-purple-200 font-bold border-purple-600/60 shadow-xs';
+          default: return 'bg-purple-950/35 text-purple-200/90 font-semibold border-purple-600/30 shadow-none';
         }
       } else {
         switch (accentColor) {
-          case 'amber': return 'bg-amber-100 text-amber-950 font-bold border-amber-300 shadow-xs';
-          case 'emerald': return 'bg-teal-100 text-teal-950 font-bold border-teal-300 shadow-xs';
-          case 'blue': return 'bg-blue-100 text-blue-950 font-bold border-blue-300 shadow-xs';
+          case 'amber': return 'bg-[#dfbf83]/15 text-[#78531b] font-bold border border-[#dfbf83]/40 shadow-none';
+          case 'emerald': return 'bg-teal-500/10 text-teal-800 font-bold border border-teal-500/30 shadow-none';
+          case 'blue': return 'bg-blue-500/10 text-blue-800 font-bold border border-blue-500/30 shadow-none';
           case 'purple':
-          default: return 'bg-purple-100 text-purple-950 font-bold border-purple-300 shadow-xs';
+          default: return 'bg-purple-500/10 text-purple-900 font-bold border border-purple-500/30 shadow-none';
         }
       }
     }
@@ -170,7 +183,7 @@ const TocNode = ({
   const getBadgeStyles = () => {
     if (isExactActive) {
       return accentColor === 'amber'
-        ? 'bg-black/20 text-stone-950 font-bold backdrop-blur-xs'
+        ? 'bg-black/10 text-stone-950 font-bold border border-black/5'
         : 'bg-white/20 text-white font-bold backdrop-blur-xs';
     }
     if (isAncestorActive) {
@@ -199,7 +212,7 @@ const TocNode = ({
   const getHoverPreviewCardStyle = () => {
     if (readerTheme === 'dark') {
       switch (accentColor) {
-        case 'amber': return 'bg-[#18130e]/95 border-amber-500/40 text-amber-100 shadow-amber-950/80';
+        case 'amber': return 'bg-[#10131a]/95 border-[#dfbf83]/40 text-amber-100 shadow-black/80';
         case 'emerald': return 'bg-[#081514]/95 border-teal-500/40 text-teal-100 shadow-teal-950/80';
         case 'blue': return 'bg-[#091322]/95 border-blue-500/40 text-blue-100 shadow-blue-950/80';
         case 'purple':
@@ -250,7 +263,7 @@ const TocNode = ({
           {hasChildren && (
             <button
               onClick={(e) => { e.stopPropagation(); toggleExpand(node.originalIndex); }}
-              className={`p-1 rounded-md transition-all opacity-80 hover:opacity-100 hover:scale-110 ${isExpanded ? 'rotate-0' : 'rotate-90'} ${isExactActive ? 'bg-white/20 text-white' : isAncestorActive ? 'bg-black/10 dark:bg-white/15 text-foreground' : 'hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400'}`}
+              className={`p-1 rounded-md transition-all opacity-80 hover:opacity-100 hover:scale-110 ${isExpanded ? 'rotate-0' : 'rotate-90'} ${isExactActive ? (accentColor === 'amber' ? 'bg-black/10 text-stone-950 hover:bg-black/15' : 'bg-white/20 text-white') : isAncestorActive ? 'bg-black/10 dark:bg-white/15 text-foreground' : 'hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400'}`}
             >
               <ChevronDown className="h-3.5 w-3.5 transition-transform duration-300" strokeWidth={2.2} />
             </button>
@@ -261,9 +274,9 @@ const TocNode = ({
         </div>
       </div>
 
-      {hasChildren && (
-        <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-1' : 'grid-rows-[0fr] opacity-0 overflow-hidden'}`}>
-          <div className={`overflow-hidden pr-2.5 border-r-2 mr-1 space-y-1 transition-colors ${isAncestorActive || isExactActive ? 'border-purple-600' : 'border-border/30'}`}>
+      {hasChildren && isExpanded && (
+        <div className="mt-1 transition-all duration-200">
+          <div className={`overflow-hidden pr-2.5 border-r-2 mr-1 space-y-1 transition-colors ${getTreeLineBorderClass()}`}>
             {node.children.map(child => (
               <TocNode
                 key={child.originalIndex}
@@ -388,8 +401,17 @@ const processTextContent = (rawText: string): ProcessedContent => {
   const formatMainText = (text: string) => {
     if (!text) return '';
 
+    // Remove blank lines and excessive breaks immediately preceding and following title elements.
+    // In white-space: pre-wrap, newlines around block-level title elements create massive unwanted vertical gaps.
+    let processedText = text
+      .replace(/(?:<br\s*\/?>|\s*[\r\n]+\s*)+(<span\s+data-type="title"[^>]*>|<h[1-6][^>]*>)/gi, '$1')
+      .replace(/(<\/span>|<\/h[1-6]>)(?:<br\s*\/?>|\s*[\r\n]+\s*)+/gi, '$1');
+
+    // Collapse 3+ consecutive newlines in normal text
+    processedText = processedText.replace(/\n{3,}/g, '\n\n');
+
     // Tag title elements with data-level="1" or data-level="2" dynamically if missing
-    let processedText = text.replace(/<span\s+data-type="title"([^>]*)>([\s\S]*?)<\/span>/gi, (match, attrs, titleText) => {
+    processedText = processedText.replace(/<span\s+data-type="title"([^>]*)>([\s\S]*?)<\/span>/gi, (match, attrs, titleText) => {
       if (attrs.includes('data-level=')) {
         return match;
       }
@@ -400,7 +422,7 @@ const processTextContent = (rawText: string): ProcessedContent => {
     });
 
     const fnBadge = (_: string, num: string) =>
-      `<span class="islamic-footnote-sup inline-flex items-center justify-center mx-1 align-baseline"><a href="#fn-${num}" data-type="footnote-ref" class="islamic-footnote-ref font-sans font-extrabold text-[12px] shadow-2xs no-underline transition-all hover:scale-110 border-b-0 cursor-pointer">${num}</a></span>`;
+      `<span class="islamic-footnote-sup inline-flex items-center justify-center mx-1 align-baseline"><a href="#fn-${num}" data-type="footnote-ref" class="islamic-footnote-ref font-scheherazade font-bold text-[13px] shadow-2xs no-underline transition-all hover:scale-110 border-b-0 cursor-pointer">${num}</a></span>`;
 
     return processedText
       // 1. Wrapped markers: (^1), ^(1), ^1, (1), [1], (1^)
@@ -579,23 +601,94 @@ const RenderFootnotes = ({
   fontFamily: string;
   fontSize: number;
 }) => {
+  const { accentColor } = useTheme();
   const items = useMemo(() => parseFootnoteItems(footnoteText), [footnoteText]);
 
   if (!footnoteText || !footnoteText.trim()) return null;
 
-  const cardBg =
-    readerTheme === 'dark'
-      ? 'bg-purple-950/40 border-purple-500/30 hover:border-purple-400/50 text-purple-100 shadow-sm'
-      : readerTheme === 'sepia'
-        ? 'bg-[#F4ECD8]/80 border-[#D4C4A8] hover:border-[#B89F7D] text-[#4A3523] shadow-2xs'
-        : 'bg-white/90 border-purple-200/80 hover:border-purple-300 text-slate-800 shadow-sm';
+  const getCardBg = () => {
+    if (readerTheme === 'dark') {
+      switch (accentColor) {
+        case 'amber': return 'bg-[#10131a]/70 border-[#dfbf83]/25 hover:border-[#dfbf83]/40 text-amber-100 shadow-sm';
+        case 'emerald': return 'bg-[#061413]/70 border-teal-500/25 hover:border-teal-400/40 text-teal-100 shadow-sm';
+        case 'blue': return 'bg-[#061020]/70 border-blue-500/25 hover:border-blue-400/40 text-blue-100 shadow-sm';
+        case 'purple':
+        default: return 'bg-purple-950/30 border-purple-500/25 hover:border-purple-400/40 text-purple-100 shadow-sm';
+      }
+    }
+    if (readerTheme === 'sepia') {
+      return 'bg-[#F4ECD8]/80 border-[#D4C4A8] hover:border-[#B89F7D] text-[#4A3523] shadow-2xs';
+    }
+    switch (accentColor) {
+      case 'amber': return 'bg-white/95 border-amber-200/90 hover:border-[#dfbf83] text-stone-900 shadow-xs';
+      case 'emerald': return 'bg-white/95 border-teal-200/90 hover:border-teal-400 text-slate-900 shadow-xs';
+      case 'blue': return 'bg-white/95 border-blue-200/90 hover:border-blue-400 text-slate-900 shadow-xs';
+      case 'purple':
+      default: return 'bg-white/95 border-purple-200/90 hover:border-purple-300 text-slate-800 shadow-xs';
+    }
+  };
 
-  const badgeStyle =
-    readerTheme === 'dark'
-      ? 'bg-gradient-to-r from-purple-600 to-brand-magenta text-white border-purple-400/40 shadow-xs'
-      : readerTheme === 'sepia'
-        ? 'bg-[#E5D7BF] text-[#5C3F22] border-[#C8B89E] font-bold'
-        : 'bg-gradient-to-r from-purple-600 to-brand-magenta text-white border-purple-300 shadow-xs';
+  const getBadgeStyle = () => {
+    if (readerTheme === 'dark') {
+      switch (accentColor) {
+        case 'amber': return 'bg-gradient-to-br from-[#8e682d] via-[#b88d46] to-[#dfbf83] text-stone-950 font-black border-[#dfbf83]/50 shadow-xs';
+        case 'emerald': return 'bg-gradient-to-br from-teal-700 via-teal-600 to-emerald-500 text-white font-bold border-teal-400/50 shadow-xs';
+        case 'blue': return 'bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-600 text-white font-bold border-blue-400/50 shadow-xs';
+        case 'purple':
+        default: return 'bg-gradient-to-r from-purple-600 to-brand-magenta text-white font-bold border-purple-400/40 shadow-xs';
+      }
+    }
+    if (readerTheme === 'sepia') {
+      return 'bg-[#E5D7BF] text-[#5C3F22] border-[#C8B89E] font-bold';
+    }
+    switch (accentColor) {
+      case 'amber': return 'bg-gradient-to-br from-[#8e682d] via-[#b88d46] to-[#dfbf83] text-stone-950 font-black border-[#b88d46]/60 shadow-xs';
+      case 'emerald': return 'bg-gradient-to-br from-teal-700 via-teal-600 to-emerald-500 text-white font-bold border-teal-500/60 shadow-xs';
+      case 'blue': return 'bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-600 text-white font-bold border-blue-500/60 shadow-xs';
+      case 'purple':
+      default: return 'bg-gradient-to-r from-purple-600 to-brand-magenta text-white font-bold border-purple-300 shadow-xs';
+    }
+  };
+
+  const getDividerLineClass = () => {
+    if (readerTheme === 'dark') {
+      switch (accentColor) {
+        case 'amber': return 'border-amber-500/35';
+        case 'emerald': return 'border-teal-500/35';
+        case 'blue': return 'border-blue-500/35';
+        case 'purple':
+        default: return 'border-purple-500/30';
+      }
+    }
+    if (readerTheme === 'sepia') return 'border-[#C8B89E]';
+    switch (accentColor) {
+      case 'amber': return 'border-amber-300/80';
+      case 'emerald': return 'border-teal-300/80';
+      case 'blue': return 'border-blue-300/80';
+      case 'purple':
+      default: return 'border-purple-200/80';
+    }
+  };
+
+  const getHeaderBadgeClass = () => {
+    if (readerTheme === 'dark') {
+      switch (accentColor) {
+        case 'amber': return 'bg-[#10131a] border-[#dfbf83]/40 text-[#eed9b0] shadow-sm';
+        case 'emerald': return 'bg-[#061413] border-teal-500/40 text-teal-300 shadow-sm';
+        case 'blue': return 'bg-[#061020] border-blue-500/40 text-blue-300 shadow-sm';
+        case 'purple':
+        default: return 'bg-[#181825] border-purple-500/40 text-purple-300 shadow-sm';
+      }
+    }
+    if (readerTheme === 'sepia') return 'bg-[#F4ECD8] border-[#C8B89E] text-[#5C3F22] shadow-2xs';
+    switch (accentColor) {
+      case 'amber': return 'bg-[#fdfaf3] border-[#dfbf83] text-[#78531b] shadow-xs';
+      case 'emerald': return 'bg-teal-50 border-teal-300 text-teal-900 shadow-xs';
+      case 'blue': return 'bg-blue-50 border-blue-300 text-blue-900 shadow-xs';
+      case 'purple':
+      default: return 'bg-white border-purple-200 text-purple-800 shadow-xs';
+    }
+  };
 
   return (
     <div className="mt-14 pt-2">
@@ -603,21 +696,11 @@ const RenderFootnotes = ({
       <div className="relative my-8 flex items-center justify-center">
         <div className="absolute inset-0 flex items-center">
           <div
-            className={`w-full border-t-2 border-dashed ${readerTheme === 'dark'
-              ? 'border-purple-500/30'
-              : readerTheme === 'sepia'
-                ? 'border-[#C8B89E]'
-                : 'border-purple-200/80'
-              }`}
+            className={`w-full border-t-2 border-dashed ${getDividerLineClass()}`}
           />
         </div>
         <div
-          className={`relative px-4 py-1 text-xs font-extrabold rounded-full border backdrop-blur-md transition-all ${readerTheme === 'dark'
-            ? 'bg-[#181825] border-purple-500/40 text-purple-300 shadow-sm'
-            : readerTheme === 'sepia'
-              ? 'bg-[#F4ECD8] border-[#C8B89E] text-[#5C3F22] shadow-2xs'
-              : 'bg-white border-purple-200 text-purple-800 shadow-xs'
-            }`}
+          className={`relative px-4 py-1 text-sm font-bold font-scheherazade rounded-full border backdrop-blur-md transition-all ${getHeaderBadgeClass()}`}
         >
           الحواشي والتعليقات
         </div>
@@ -630,10 +713,10 @@ const RenderFootnotes = ({
             <div
               key={idx}
               id={`fn-${item.num}`}
-              className={`group flex items-start gap-3.5 p-4 rounded-2xl border transition-all duration-300 ${cardBg}`}
+              className={`group flex items-start gap-3.5 p-4 rounded-2xl border transition-all duration-300 ${getCardBg()}`}
             >
               {/* Stylized Circular Number Badge */}
-              <span className={`shrink-0 font-sans font-extrabold text-xs rounded-full border flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 transition-transform group-hover:scale-105 ${badgeStyle}`}>
+              <span className={`shrink-0 font-scheherazade font-bold text-sm rounded-full border flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 transition-transform group-hover:scale-105 ${getBadgeStyle()}`}>
                 {item.num}
               </span>
 
@@ -663,12 +746,16 @@ export default function TurathReader({
   onAskBook,
   globalFontSize,
   onSelectAuthor,
+  onOpenSidebar,
+  onReaderThemeChange,
 }: {
   book: BookMeta
   onClose: () => void
   onAskBook: (b: BookMeta) => void
   globalFontSize?: 'small' | 'medium' | 'large'
   onSelectAuthor?: (authorName: string) => void
+  onOpenSidebar?: () => void
+  onReaderThemeChange?: (theme: 'light' | 'dark' | 'sepia') => void
 }) {
   const { theme, accentColor, isDark } = useTheme()
   const [loadingBook, setLoadingBook] = useState(true)
@@ -694,18 +781,42 @@ export default function TurathReader({
 
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set())
 
-  // New features state
-  const [fontSize, setFontSize] = useState<number>(20)
-  const [fontFamily, setFontFamily] = useState<string>('font-amiri')
+  // Reader font size state - Default is strictly 22px
+  const [fontSize, setFontSize] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('turath_reader_font_size');
+      if (saved) {
+        const parsed = Number(saved);
+        // If it was saved as 28 from the previous default, reset to 22
+        if (parsed === 28) {
+          localStorage.setItem('turath_reader_font_size', '22');
+          return 22;
+        }
+        if (parsed >= 14 && parsed <= 40) return parsed;
+      }
+    } catch { }
+    return 22;
+  });
+  const [fontFamily, setFontFamily] = useState<string>('font-amiri');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('turath_reader_font_size', String(fontSize));
+    } catch { }
+  }, [fontSize]);
 
   useEffect(() => {
     if (globalFontSize) {
-      if (globalFontSize === 'small') setFontSize(16);
-      if (globalFontSize === 'medium') setFontSize(20);
-      if (globalFontSize === 'large') setFontSize(26);
+      if (globalFontSize === 'small') setFontSize(18);
+      else if (globalFontSize === 'medium') setFontSize(22);
+      else if (globalFontSize === 'large') setFontSize(22);
     }
   }, [globalFontSize]);
   const [readerTheme, setReaderTheme] = useState<'light' | 'dark' | 'sepia'>(() => theme === 'dark' ? 'dark' : 'light')
+
+  useEffect(() => {
+    onReaderThemeChange?.(readerTheme);
+  }, [readerTheme, onReaderThemeChange]);
 
   // -------------------------------------------------------------------------
   // Dynamic 4-Theme Styling Helpers for Reader
@@ -713,7 +824,7 @@ export default function TurathReader({
   const getReaderRootBg = () => {
     if (readerTheme === 'dark') {
       switch (accentColor) {
-        case 'amber': return 'bg-[#0f0c08] text-slate-100';
+        case 'amber': return 'bg-[#090b10] text-slate-100';
         case 'emerald': return 'bg-[#061110] text-slate-100';
         case 'blue': return 'bg-[#060e1a] text-slate-100';
         case 'purple':
@@ -756,7 +867,7 @@ export default function TurathReader({
 
   const getReaderFrameBgColor = (opacity: number) => {
     switch (accentColor) {
-      case 'amber': return `rgba(20, 16, 12, ${opacity / 100})`;
+      case 'amber': return `rgba(13, 16, 22, ${opacity / 100})`;
       case 'emerald': return `rgba(8, 20, 19, ${opacity / 100})`;
       case 'blue': return `rgba(8, 16, 28, ${opacity / 100})`;
       case 'purple':
@@ -765,26 +876,60 @@ export default function TurathReader({
   };
 
   const getReaderBackButtonClass = () => {
+    if (readerTheme === 'dark') {
+      switch (accentColor) {
+        case 'amber':
+          return 'bg-white/5 border border-white/10 text-[#eed9b0] hover:bg-gradient-to-r hover:from-[#8e682d] hover:to-[#dfbf83] hover:text-stone-950 font-bold';
+        case 'emerald':
+          return 'bg-white/5 border border-white/10 text-teal-300 hover:bg-teal-600 hover:text-white font-bold';
+        case 'blue':
+          return 'bg-white/5 border border-white/10 text-blue-300 hover:bg-blue-600 hover:text-white font-bold';
+        case 'purple':
+        default:
+          return 'bg-white/5 border border-white/10 text-purple-300 hover:bg-brand-magenta hover:text-white font-bold';
+      }
+    }
     switch (accentColor) {
       case 'amber':
-        return 'bg-amber-500/10 text-amber-800 dark:text-[#eed9b0] hover:bg-gradient-to-r hover:from-[#8e682d] hover:to-[#dfbf83] hover:text-stone-950 font-bold';
+        return 'border border-[#dfbf83]/80 bg-gradient-to-br from-[#dfbf83]/20 via-[#dfbf83]/35 to-[#b88d46]/25 text-[#78531b] hover:from-[#8e682d] hover:to-[#dfbf83] hover:text-stone-950 shadow-sm font-bold';
       case 'emerald':
-        return 'bg-teal-500/10 text-teal-600 dark:text-teal-300 hover:bg-teal-600 hover:text-white';
+        return 'border border-teal-300/80 bg-teal-50 text-teal-800 hover:bg-teal-600 hover:text-white shadow-sm font-bold';
       case 'blue':
-        return 'bg-blue-500/10 text-blue-600 dark:text-blue-300 hover:bg-blue-600 hover:text-white';
+        return 'border border-blue-300/80 bg-blue-50 text-blue-800 hover:bg-blue-600 hover:text-white shadow-sm font-bold';
       case 'purple':
       default:
-        return 'bg-brand-magenta/10 text-brand-magenta hover:bg-brand-magenta hover:text-white';
+        return 'border border-purple-200/80 bg-purple-50 text-brand-magenta hover:bg-brand-magenta hover:text-white shadow-sm font-bold';
+    }
+  };
+
+  const getNavCircleBtnStyle = () => {
+    if (readerTheme === 'dark') {
+      switch (accentColor) {
+        case 'amber':
+          return 'bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 hover:border-[#dfbf83]/50 text-slate-300 hover:text-[#eed8ad] shadow-xs hover:shadow-[#dfbf83]/20 transition-all';
+        case 'emerald':
+          return 'bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 hover:border-teal-400/50 text-slate-300 hover:text-teal-200 shadow-xs hover:shadow-teal-500/20 transition-all';
+        case 'blue':
+          return 'bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 hover:border-blue-400/50 text-slate-300 hover:text-blue-200 shadow-xs hover:shadow-blue-500/20 transition-all';
+        case 'purple':
+        default:
+          return 'bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 hover:border-purple-400/50 text-slate-300 hover:text-purple-200 shadow-xs hover:shadow-purple-500/20 transition-all';
+      }
+    }
+    switch (accentColor) {
+      case 'amber':
+        return 'bg-white/80 hover:bg-white border border-[#ebd9b5] hover:border-[#dfbf83] text-[#8a652a] shadow-xs';
+      case 'emerald':
+        return 'bg-white/80 hover:bg-white border border-teal-200 hover:border-teal-300 text-teal-800 shadow-xs';
+      case 'blue':
+        return 'bg-white/80 hover:bg-white border border-blue-200 hover:border-blue-300 text-blue-800 shadow-xs';
+      case 'purple':
+      default:
+        return 'bg-white/80 hover:bg-white border border-purple-200 hover:border-purple-300 text-purple-800 shadow-xs';
     }
   };
 
   const getHeaderTabActiveStyle = (tab: 'toc' | 'search' | 'hadiths' | 'chat') => {
-    if (tab === 'search') {
-      if (readerTheme === 'dark') {
-        return 'bg-blue-500/25 border border-blue-400/50 text-white shadow-lg shadow-blue-500/25 font-extrabold scale-[1.02] ring-1 ring-blue-400/30';
-      }
-      return 'bg-gradient-to-b from-white/90 via-blue-50/60 to-blue-100/70 backdrop-blur-xl border border-blue-300/80 text-blue-950 shadow-md shadow-blue-500/10 font-extrabold scale-[1.02]';
-    }
     if (tab === 'hadiths') {
       if (readerTheme === 'dark') {
         return 'bg-amber-500/25 border border-amber-500/50 text-white shadow-lg shadow-amber-500/25 font-extrabold scale-[1.02] ring-1 ring-amber-500/30';
@@ -818,17 +963,17 @@ export default function TurathReader({
     }
   };
 
-  const getHeaderTitleGradient = () => {
+  const getHeaderTitleColor = () => {
     switch (accentColor) {
       case 'amber':
-        return 'bg-gradient-to-r from-[#8e682d] via-[#b88d46] to-[#dfbf83]';
+        return readerTheme === 'dark' ? 'text-[#dfbf83]' : 'text-[#8e682d]';
       case 'emerald':
-        return 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-400';
+        return readerTheme === 'dark' ? 'text-teal-300' : 'text-teal-800';
       case 'blue':
-        return 'bg-gradient-to-r from-blue-700 via-blue-600 to-sky-400';
+        return readerTheme === 'dark' ? 'text-sky-300' : 'text-blue-800';
       case 'purple':
       default:
-        return 'bg-gradient-to-r from-brand-magenta to-brand-blue';
+        return readerTheme === 'dark' ? 'text-purple-300' : 'text-[#7e1891]';
     }
   };
 
@@ -840,11 +985,11 @@ export default function TurathReader({
 
   const getAccentDotColor = () => {
     switch (accentColor) {
-      case 'amber': return 'bg-[#b88d46]';
-      case 'emerald': return 'bg-teal-500';
-      case 'blue': return 'bg-blue-500';
+      case 'amber': return 'bg-[#b88d46] shadow-[0_0_6px_#b88d46]';
+      case 'emerald': return 'bg-teal-500 shadow-[0_0_6px_#14b8a6]';
+      case 'blue': return 'bg-blue-500 shadow-[0_0_6px_#3b82f6]';
       case 'purple':
-      default: return 'bg-brand-magenta';
+      default: return 'bg-brand-magenta shadow-[0_0_6px_#950bc4]';
     }
   };
 
@@ -859,12 +1004,21 @@ export default function TurathReader({
   };
 
   const getBreadcrumbChapterColor = () => {
+    if (readerTheme === 'dark') {
+      switch (accentColor) {
+        case 'amber': return 'text-[#eed9b0]';
+        case 'emerald': return 'text-teal-300';
+        case 'blue': return 'text-blue-300';
+        case 'purple':
+        default: return 'text-purple-300';
+      }
+    }
     switch (accentColor) {
-      case 'amber': return 'text-[#8e682d] dark:text-[#eed9b0]';
-      case 'emerald': return 'text-teal-700 dark:text-teal-300';
-      case 'blue': return 'text-blue-700 dark:text-blue-300';
+      case 'amber': return 'text-[#76541f]';
+      case 'emerald': return 'text-teal-800';
+      case 'blue': return 'text-blue-800';
       case 'purple':
-      default: return 'text-brand-magenta dark:text-purple-300';
+      default: return 'text-brand-magenta';
     }
   };
 
@@ -1455,6 +1609,8 @@ export default function TurathReader({
     return () => clearTimeout(timeout);
   }, [activeTocIndex, sidebarTab]);
 
+  const [reloadTocCounter, setReloadTocCounter] = useState(0);
+
   // Fetch book TOC & metadata with IndexedDB cache priority (0ms instant)
   useEffect(() => {
     let isMounted = true;
@@ -1467,8 +1623,8 @@ export default function TurathReader({
         if (isMounted) setIsSavedOffline(saved);
       }).catch(() => { });
 
-      const applyIndexes = (dataObj: any) => {
-        if (!dataObj) return;
+      const applyIndexes = (dataObj: any): boolean => {
+        if (!dataObj) return false;
         if (dataObj.meta) {
           if (dataObj.meta.info) {
             const match = dataObj.meta.info.match(/المؤلف:\s*([^\n]+)/);
@@ -1476,21 +1632,51 @@ export default function TurathReader({
           }
           if (dataObj.meta.author_id) setAuthorId(dataObj.meta.author_id);
         }
-        if (dataObj.indexes) {
-          const idx = dataObj.indexes;
-          if (Array.isArray(idx.headings)) {
-            const mappedHeadings: Heading[] = idx.headings.map((h: any, i: number) => ({
-              id: h.id ?? (i + 1),
-              title: h.title,
-              level: h.level ?? 1,
-              page: h.page
-            }));
-            setToc(mappedHeadings);
-            setExpandedNodes(new Set<number>());
-            if (mappedHeadings.length > 0) {
-              setCurrentPage(prev => (prev <= 1 ? mappedHeadings[0].page : prev));
+
+        // Support various heading representations:
+        // 1. dataObj.indexes.headings (standard Turath API)
+        // 2. dataObj.headings (flat list or fallback API)
+        // 3. dataObj.children (StudyMode hierarchical tree)
+        let headingsFound: any[] = [];
+        if (dataObj.indexes && Array.isArray(dataObj.indexes.headings) && dataObj.indexes.headings.length > 0) {
+          headingsFound = dataObj.indexes.headings;
+        } else if (Array.isArray(dataObj.headings) && dataObj.headings.length > 0) {
+          headingsFound = dataObj.headings;
+        } else if (Array.isArray(dataObj.children) && dataObj.children.length > 0) {
+          const flatten = (list: any[], level = 1): any[] => {
+            const acc: any[] = [];
+            for (const item of list) {
+              acc.push({
+                id: item.id || acc.length + 1,
+                title: item.title || item.name || '',
+                level: item.level || level,
+                page: item.page || 1
+              });
+              if (Array.isArray(item.children) && item.children.length > 0) {
+                acc.push(...flatten(item.children, level + 1));
+              }
             }
+            return acc;
+          };
+          headingsFound = flatten(dataObj.children);
+        }
+
+        if (headingsFound.length > 0) {
+          const mappedHeadings: Heading[] = headingsFound.map((h: any, i: number) => ({
+            id: h.id ?? (i + 1),
+            title: h.title,
+            level: h.level ?? 1,
+            page: h.page ?? 1
+          }));
+          setToc(mappedHeadings);
+          setExpandedNodes(new Set<number>());
+          if (mappedHeadings.length > 0) {
+            setCurrentPage(prev => (prev <= 1 ? mappedHeadings[0].page : prev));
           }
+        }
+
+        const idx = dataObj.indexes;
+        if (idx) {
           // Feature 2: Hadiths & Numbers Map
           const hMap = idx.hadiths || idx.numbers || {};
           setHadithsMap(hMap);
@@ -1517,29 +1703,45 @@ export default function TurathReader({
           if (idx.pdf_base) setPdfBase(idx.pdf_base);
           if (idx.pdfs) setPdfsMap(idx.pdfs);
         }
+
+        return headingsFound.length > 0;
       };
 
-      // 1. Check IndexedDB cache first (0ms instant load!)
-      try {
-        const cachedTree = await idbGetTurathBookTree(bookNumId);
-        if (cachedTree && isMounted) {
-          applyIndexes(cachedTree);
-          setLoadingBook(false);
-          return;
+      // 1. IndexedDB Cache Strategy
+      // If manual reload triggered by user (reloadTocCounter > 0), bypass and purge cache!
+      if (reloadTocCounter > 0) {
+        try {
+          await idbDeleteTurathBookTree(bookNumId);
+        } catch { }
+      } else {
+        try {
+          const cachedTree = await idbGetTurathBookTree(bookNumId);
+          if (cachedTree && isMounted) {
+            const hasHeadings = applyIndexes(cachedTree);
+            if (hasHeadings) {
+              setLoadingBook(false);
+              return;
+            } else {
+              // Stale or corrupted cache without headings, purge it!
+              await idbDeleteTurathBookTree(bookNumId);
+            }
+          }
+        } catch (e) {
+          console.warn('IndexedDB read error for book TOC:', e);
         }
-      } catch (e) {
-        console.warn('IndexedDB read error for book TOC:', e);
       }
 
       // 2. Fetch using high-speed Turath Book Indexes API
       try {
         const turathData = await fetchTurathBookIndexes(bookNumId);
         if (turathData && isMounted) {
-          applyIndexes(turathData);
-          // Cache in IndexedDB for subsequent 0ms loads
-          await idbSetTurathBookTree(bookNumId, turathData);
-          setLoadingBook(false);
-          return;
+          const hasHeadings = applyIndexes(turathData);
+          if (hasHeadings) {
+            // Cache valid indexes in IndexedDB for subsequent 0ms loads
+            await idbSetTurathBookTree(bookNumId, turathData);
+            setLoadingBook(false);
+            return;
+          }
         }
       } catch (err) {
         console.warn('fetchTurathBookIndexes failed, trying fallback:', err);
@@ -1551,8 +1753,10 @@ export default function TurathReader({
         const res = await fetch(`${baseUrl}/api/v1/data-ingestion/zad-book-info/${book.id}`);
         if (res.ok && isMounted) {
           const data = await res.json();
-          applyIndexes(data);
-          await idbSetTurathBookTree(bookNumId, data);
+          const hasHeadings = applyIndexes(data);
+          if (hasHeadings) {
+            await idbSetTurathBookTree(bookNumId, data);
+          }
         }
       } catch (err) {
         console.error("Failed to load book info", err);
@@ -1563,12 +1767,32 @@ export default function TurathReader({
 
     fetchBookInfo();
     return () => { isMounted = false; };
-  }, [book.id]);
+  }, [book.id, reloadTocCounter]);
 
   // -------------------------------------------------------------------------
   // Feature 2: Hadith & Numbered Item Navigation Helper
   // -------------------------------------------------------------------------
   const hadithsCount = useMemo(() => Object.keys(hadithsMap).length, [hadithsMap]);
+
+  const numberedItemsLabel = useMemo(() => {
+    const textToMatch = `${book.title || ''} ${book.name || ''} ${book.category || ''} ${book.cat_name || ''}`;
+
+    // Check if Hadith / Sunnah book
+    if (/(حديث|سنة|سنن|صحيح|مسند|معجم|أثر|آثار|أجزاء حديثية)/i.test(textToMatch)) {
+      return { short: 'الأحاديث', full: 'الأحاديث النبوية', single: 'الحديث', plural: 'أحاديث' };
+    }
+    // Check if Fiqh / Usul / Fatawa / Masa'il
+    if (/(فقه|أصول|مسائل|فتاوى|أحكام|قواعد)/i.test(textToMatch)) {
+      return { short: 'المسائل', full: 'المسائل والأحكام', single: 'المسألة', plural: 'مسائل' };
+    }
+    // Check if Tarajim / Rijal / Tabaqat
+    if (/(رجال|تراجم|طبقات|سير|تاريخ|أعلام|وفيات)/i.test(textToMatch)) {
+      return { short: 'التراجم', full: 'تراجم الأعلام', single: 'الترجمة', plural: 'تراجم' };
+    }
+    // Comprehensive fallback
+    return { short: 'الأحاديث والمسائل', full: 'الأحاديث والمسائل المرقّمة', single: 'الموضع', plural: 'مواضع' };
+  }, [book.title, book.name, book.category, book.cat_name]);
+
   const handleJumpToHadith = (hadithNum: string) => {
     const clean = hadithNum.trim();
     if (!clean || !hadithsMap) return;
@@ -2203,7 +2427,11 @@ export default function TurathReader({
     sepia: 'prose-headings:text-[#4a382b]'
   }
 
-  const maxPage = toc.length > 0 ? Math.max(...toc.map(h => h.page)) : currentPage;
+  const maxPage = (pageMap && pageMap.length > 0)
+    ? pageMap.length
+    : (toc.length > 0
+      ? Math.max(...toc.map(h => h.page))
+      : (book.page_count && book.page_count > 0 ? book.page_count : currentPage));
   const progressPercent = Math.min(100, Math.max(0, (currentPage / (maxPage || 1)) * 100));
 
   // Smooth scrolling and highlighting when clicking footnote references in text
@@ -2254,19 +2482,32 @@ export default function TurathReader({
       {/* Islamic Geometric Wallpaper Pattern (ثابتة في خلفية القراءة متناسقة مع السمة) */}
       <IslamicPattern
         isFixed={true}
-        opacity={readerTheme === 'dark' ? 0.05 : 0.06}
+        opacity={readerTheme === 'dark' ? 0.025 : 0.06}
         className={`${getReaderPatternColor()} pointer-events-none transition-colors duration-300`}
       />
 
       {/* Top Navigation Bar (Study Mode Style) */}
       <header
-        className={`shrink-0 min-h-[4rem] py-1.5 w-full flex items-center justify-between px-4 z-40 transition-transform duration-500 border-b ${distractionFree ? '-translate-y-full opacity-0 absolute' : 'translate-y-0 opacity-100'} ${readerTheme === 'dark' ? 'bg-[#0a0514]/80 backdrop-blur-md border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]' : 'bg-white/80 backdrop-blur-md border-gray-200/80 text-slate-900'}`}
+        className={`shrink-0 min-h-[4rem] py-1.5 w-full flex items-center justify-between px-4 z-40 transition-transform duration-500 border-b ${distractionFree ? '-translate-y-full opacity-0 absolute' : 'translate-y-0 opacity-100'} ${readerTheme === 'dark' ? 'bg-[#090b10]/85 backdrop-blur-md border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)] text-white' : 'bg-white/80 backdrop-blur-md border-gray-200/80 text-slate-900'}`}
       >
         <div className="flex items-center gap-2 h-full flex-1 min-w-0">
+          {/* Library Sidebar Menu Button (Circular design matching library navbar) */}
+          {onOpenSidebar && (
+            <button
+              type="button"
+              onClick={onOpenSidebar}
+              className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all backdrop-blur-md active:scale-95 cursor-pointer group shrink-0 ${getNavCircleBtnStyle()}`}
+              title="فهرس وتصنيفات المكتبة العامة"
+              aria-label="فتح فهرس وتصنيفات المكتبة العامة"
+            >
+              <Menu className="h-5 w-5 transition-transform group-hover:scale-110" strokeWidth={2.2} />
+            </button>
+          )}
+
           <button
             onClick={onClose}
-            className={`w-10 h-10 flex items-center justify-center shrink-0 rounded-xl transition-all shadow-sm group ${getReaderBackButtonClass()}`}
-            title="العودة"
+            className={`w-10 h-10 flex items-center justify-center shrink-0 rounded-xl transition-all shadow-sm group cursor-pointer ${getReaderBackButtonClass()}`}
+            title="العودة للمكتبة"
           >
             <ArrowRight className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
           </button>
@@ -2298,7 +2539,7 @@ export default function TurathReader({
                 }`}
               title="بحث شامل في نصوص ومتون صفحات هذا الكتاب"
             >
-              <Search size={15} className="text-brand-blue shrink-0" />
+              <Search size={15} className={`${sidebarTab === 'search' ? (accentColor === 'amber' ? 'text-stone-950 dark:text-[#eed9b0]' : 'text-current') : (accentColor === 'amber' ? 'text-[#b88d46]' : accentColor === 'emerald' ? 'text-teal-600' : accentColor === 'blue' ? 'text-blue-600' : 'text-brand-magenta')} shrink-0`} />
               <span>بحث بالمتن</span>
             </button>
 
@@ -2311,10 +2552,10 @@ export default function TurathReader({
                     ? 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
                     : 'bg-white/50 border border-slate-200/90 text-slate-600 hover:bg-white/80 hover:text-slate-900 hover:border-slate-300'
                   }`}
-                title={`انتقال برقم الحديث أو المسألة (${hadithsCount} موضع)`}
+                title={`انتقال برقم ${numberedItemsLabel.single} (${hadithsCount} ${numberedItemsLabel.plural})`}
               >
                 <Hash size={14} className="text-amber-500 shrink-0" />
-                <span>الأحاديث</span>
+                <span>{numberedItemsLabel.short}</span>
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500 font-extrabold">{hadithsCount}</span>
               </button>
             )}
@@ -2337,7 +2578,7 @@ export default function TurathReader({
 
           {/* Book Title & Hierarchy */}
           <div className="flex items-center gap-3 min-w-0 pointer-events-none text-muted-foreground">
-            <h1 className={`font-display text-2xl md:text-3xl font-bold bg-clip-text text-transparent ${getHeaderTitleGradient()} shrink-0 drop-shadow-sm leading-normal`}>
+            <h1 className={`font-scheherazade text-2xl md:text-3xl font-bold ${getHeaderTitleColor()} shrink-0 leading-normal`}>
               {book.title}
             </h1>
 
@@ -2361,8 +2602,8 @@ export default function TurathReader({
                   {/* Full Author Name Tooltip on Hover */}
                   <div className="absolute right-0 top-full mt-1.5 hidden group-hover/author:block z-50 pointer-events-none animate-in fade-in slide-in-from-top-1 duration-200">
                     <div className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold shadow-xl backdrop-blur-xl whitespace-nowrap ${readerTheme === 'dark'
-                        ? 'bg-[#0d071a]/95 border-purple-500/40 text-purple-100 shadow-black/80'
-                        : 'bg-white/95 border-slate-200 text-slate-800 shadow-lg'
+                      ? 'bg-[#0d071a]/95 border-purple-500/40 text-purple-100 shadow-black/80'
+                      : 'bg-white/95 border-slate-200 text-slate-800 shadow-lg'
                       }`}>
                       {authorName}
                     </div>
@@ -2373,7 +2614,7 @@ export default function TurathReader({
               {activeHierarchy.length > 0 && (
                 <div className="relative group/breadcrumb pointer-events-auto">
                   <span className={`flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] md:text-[11px] font-bold border backdrop-blur-md shadow-sm transition-all cursor-pointer ${readerTheme === 'dark' ? 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10' : 'bg-black/5 border-black/10 text-slate-800 hover:bg-black/10'}`}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-blue animate-pulse shrink-0" />
+                    <span className={`w-1.5 h-1.5 rounded-full ${getAccentDotColor()} animate-pulse shrink-0`} />
                     <span className="flex items-center gap-1.5 min-w-0">
                       {/* Level 1 Chapter Title */}
                       <span className={`font-extrabold shrink-0 ${getBreadcrumbChapterColor()}`}>
@@ -2419,12 +2660,12 @@ export default function TurathReader({
               type="button"
               onClick={() => setIsDownloadMenuOpen(!isDownloadMenuOpen)}
               className={`w-10 h-10 rounded-xl flex justify-center items-center transition-all duration-300 backdrop-blur-md border shadow-sm ${isDownloadMenuOpen
-                  ? 'bg-brand-magenta/20 border-brand-magenta/40 text-brand-magenta shadow-[0_0_15px_rgba(149,11,196,0.3)] scale-105'
-                  : isSavedOffline
-                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-500'
-                    : readerTheme === 'dark'
-                      ? 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white hover:shadow-md hover:scale-105'
-                      : 'bg-white/50 border-gray-200/60 text-slate-500 hover:bg-white/80 hover:text-slate-900 hover:shadow-md hover:scale-105'
+                ? 'bg-brand-magenta/20 border-brand-magenta/40 text-brand-magenta shadow-[0_0_15px_rgba(149,11,196,0.3)] scale-105'
+                : isSavedOffline
+                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-500'
+                  : readerTheme === 'dark'
+                    ? 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white hover:shadow-md hover:scale-105'
+                    : 'bg-white/50 border-gray-200/60 text-slate-500 hover:bg-white/80 hover:text-slate-900 hover:shadow-md hover:scale-105'
                 }`}
               title="خيارات تحميل وتصدير الكتاب"
             >
@@ -2441,10 +2682,10 @@ export default function TurathReader({
               <div
                 onClick={(e) => e.stopPropagation()}
                 className={`absolute top-full left-0 mt-2 w-64 backdrop-blur-2xl border rounded-2xl shadow-2xl p-2 z-50 text-right animate-in fade-in slide-in-from-top-2 duration-150 ${readerTheme === 'dark'
-                    ? 'bg-[#121826]/95 border-white/10 shadow-black/80 text-white'
-                    : readerTheme === 'sepia'
-                      ? 'bg-[#FAF5ED]/95 border-[#E2D6C0] shadow-xl text-[#3D2C1D]'
-                      : 'bg-white/95 border-gray-200 shadow-xl text-slate-900'
+                  ? 'bg-[#121826]/95 border-white/10 shadow-black/80 text-white'
+                  : readerTheme === 'sepia'
+                    ? 'bg-[#FAF5ED]/95 border-[#E2D6C0] shadow-xl text-[#3D2C1D]'
+                    : 'bg-white/95 border-gray-200 shadow-xl text-slate-900'
                   }`}
               >
                 <p className="text-[10px] font-bold opacity-60 px-2 py-1 border-b border-inherit mb-1">
@@ -2590,7 +2831,7 @@ export default function TurathReader({
 
               {/* Reading Mode */}
               <div className="mb-6">
-                <label className={`text-[11px] font-bold mb-3 block uppercase tracking-wider ${readerTheme === 'dark' ? 'text-white/50' : 'text-slate-400'}`}>نمط العرض</label>
+                <label className={`text-[11px] font-bold mb-3 block uppercase tracking-wider ${readerTheme === 'dark' ? 'text-white/50' : 'text-slate-400'}`}>نمط القراءة</label>
                 <div className="flex gap-2">
                   <button onClick={() => handleSetReadingMode('paged')} className={`flex-1 py-2.5 rounded-2xl border transition-all duration-300 ${readingMode === 'paged' ? 'border-brand-blue bg-brand-blue/10 text-brand-blue shadow-sm scale-105' : readerTheme === 'dark' ? 'border-white/10 hover:bg-white/10 text-white/60 hover:text-white hover:border-white/20' : 'border-black/10 hover:bg-black/5 text-slate-600 hover:text-slate-900'} flex flex-col items-center justify-center gap-1.5`}>
                     <BookText className="h-5 w-5" />
@@ -2662,7 +2903,7 @@ export default function TurathReader({
 
               {/* Font Family Dropdown */}
               <div>
-                <label className={`text-[11px] font-bold mb-2 block uppercase tracking-wider ${readerTheme === 'dark' ? 'text-white/50' : 'text-slate-400'}`}>خط القراءة التراثي</label>
+                <label className={`text-[11px] font-bold mb-2 block uppercase tracking-wider ${readerTheme === 'dark' ? 'text-white/50' : 'text-slate-400'}`}>خط القراءة</label>
                 <div className="relative">
                   <select
                     value={fontFamily === 'font-read' ? 'font-amiri' : fontFamily === 'font-sans' ? 'font-cairo' : fontFamily}
@@ -2704,22 +2945,27 @@ export default function TurathReader({
           <div className="w-full h-full flex flex-col relative">
             {readerTheme === 'dark' && (
               <>
-                <div className="absolute -top-32 -right-32 w-64 h-64 bg-brand-magenta/15 rounded-full blur-[80px] pointer-events-none"></div>
-                <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-brand-blue/15 rounded-full blur-[80px] pointer-events-none"></div>
+                <div className={`absolute -top-32 -right-32 w-64 h-64 ${accentColor === 'amber' ? 'bg-amber-500/5' : 'bg-brand-magenta/15'} rounded-full blur-[80px] pointer-events-none`}></div>
+                <div className={`absolute -bottom-32 -left-32 w-64 h-64 ${accentColor === 'amber' ? 'bg-[#dfbf83]/5' : 'bg-brand-blue/15'} rounded-full blur-[80px] pointer-events-none`}></div>
               </>
             )}
 
             {/* Header of the sliding panel */}
             <div className={`flex items-center justify-between p-4 border-b ${readerTheme === 'dark' ? 'border-white/5 bg-white/[0.02] text-white' : 'border-gray-200/60 bg-white/50 text-slate-900'}`}>
-              <h3 className="font-bold font-display text-base flex items-center gap-2">
-                {sidebarTab === 'toc' && <><Menu className={`h-4 w-4 ${accentColor === 'amber' ? 'text-[#b88d46]' : accentColor === 'emerald' ? 'text-teal-600' : accentColor === 'blue' ? 'text-blue-600' : 'text-brand-magenta'}`} /> الفهرس الشجري</>}
-                {sidebarTab === 'search' && <><Search className="h-4 w-4 text-brand-blue" /> البحث في نصوص الكتاب</>}
-                {sidebarTab === 'hadiths' && <><Hash className="h-4 w-4 text-amber-500" /> الأحاديث والمسائل</>}
+              <h3 className="font-bold text-base flex items-center gap-2">
+                {sidebarTab === 'toc' && <><Menu className={`h-4 w-4 ${accentColor === 'amber' ? 'text-[#b88d46]' : accentColor === 'emerald' ? 'text-teal-600' : accentColor === 'blue' ? 'text-blue-600' : 'text-brand-magenta'}`} /> فهرس المحتويات</>}
+                {sidebarTab === 'search' && <><Search className={`h-4 w-4 ${accentColor === 'amber' ? 'text-[#b88d46]' : accentColor === 'emerald' ? 'text-teal-600' : accentColor === 'blue' ? 'text-blue-600' : 'text-brand-magenta'}`} /> البحث في نصوص الكتاب</>}
+                {sidebarTab === 'hadiths' && <><Hash className="h-4 w-4 text-amber-500" /> {numberedItemsLabel.full}</>}
                 {sidebarTab === 'chat' && <><img src={readerTheme === 'dark' ? whiteLogo : zadDarkLogo} alt="Zad" className="h-4 w-4 object-contain" /> المساعد الذكي</>}
               </h3>
               <button
                 onClick={() => setSidebarTab('none')}
-                className={`p-2 rounded-full backdrop-blur-md bg-black/5 border border-black/5 dark:bg-white/10 dark:border-white/10 ${getPaginationBtnHoverClass()} hover:border-transparent transition-all text-muted-foreground shadow-sm`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-200 active:scale-95 shadow-sm hover:scale-105 ${
+                  readerTheme === 'dark'
+                    ? 'bg-white/10 border-white/20 text-white/90 hover:bg-white/20 hover:text-white shadow-black/40'
+                    : 'bg-white/80 border-slate-300/80 text-slate-700 hover:bg-white hover:text-slate-900 hover:border-slate-400 shadow-slate-900/5'
+                }`}
+                title="إغلاق اللوحة"
               >
                 <X className="h-4 w-4" strokeWidth={2.5} />
               </button>
@@ -2742,9 +2988,38 @@ export default function TurathReader({
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar">
                   {loadingBook ? (
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
+                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4 p-6">
                       <Loader2 className={`h-8 w-8 animate-spin ${getPaginationLayersIconClass()}`} />
-                      <p className="text-sm font-semibold">جاري تحميل الفهرس...</p>
+                      <div className="text-center space-y-1">
+                        <p className="text-sm font-bold">جاري تحميل الفهرس...</p>
+                        <p className="text-xs opacity-60">قد يستغرق بضع ثوانٍ في الكتب والموسوعات الكبرى</p>
+                      </div>
+                    </div>
+                  ) : toc.length === 0 ? (
+                    <div className={`p-6 text-center text-xs rounded-2xl mt-4 flex flex-col items-center gap-3 ${readerTheme === 'dark' ? 'bg-white/5 text-white/70' : 'bg-black/5 text-black/70'}`}>
+                      <p className="font-bold text-sm">تعذر تحميل الفهرس الكامل</p>
+                      <p className="opacity-75 leading-relaxed">نظراً لضخامة حجم فهرس الكتاب، يمكنك المحاولة مجدداً للتحميل.</p>
+                      <button
+                        type="button"
+                        disabled={loadingBook}
+                        onClick={() => {
+                          setLoadingBook(true);
+                          setReloadTocCounter(c => c + 1);
+                        }}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        {loadingBook ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>جاري التحميل...</span>
+                          </>
+                        ) : (
+                          <>
+                            <RotateCcw className="w-4 h-4" />
+                            <span>إعادة محاولة التحميل</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   ) : filteredToc.length === 0 ? (
                     <div className={`p-8 text-center text-sm rounded-2xl mt-4 ${readerTheme === 'dark' ? 'bg-white/5 text-white/60' : 'bg-black/5 text-black/60'}`}>لا توجد نتائج مطابقة للبحث</div>
@@ -2764,7 +3039,7 @@ export default function TurathReader({
                             }}
                             className={`w-full flex items-center justify-between py-3 px-3 text-sm rounded-xl transition-all duration-300 group cursor-pointer border ${isExactActive
                               ? accentColor === 'amber'
-                                ? 'bg-amber-500/15 text-amber-900 dark:text-amber-200 font-bold border-amber-500/30 shadow-sm ring-1 ring-amber-500/30'
+                                ? 'bg-[#dfbf83] text-stone-950 font-bold border-[#cba35d] shadow-sm ring-1 ring-[#cba35d]/40'
                                 : accentColor === 'emerald'
                                   ? 'bg-teal-500/15 text-teal-900 dark:text-teal-200 font-bold border-teal-500/30 shadow-sm ring-1 ring-teal-500/30'
                                   : accentColor === 'blue'
@@ -2784,7 +3059,7 @@ export default function TurathReader({
                             <span className={`truncate text-right max-w-[80%] leading-relaxed transition-colors ${accentColor === 'amber' ? 'group-hover:text-[#b88d46]' : accentColor === 'emerald' ? 'group-hover:text-teal-600' : accentColor === 'blue' ? 'group-hover:text-blue-600' : 'group-hover:text-brand-magenta'}`}>{heading.title}</span>
                             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors ${isExactActive
                               ? accentColor === 'amber'
-                                ? 'bg-amber-500/20 text-amber-900 dark:text-amber-200'
+                                ? 'bg-black/10 text-stone-950 font-bold border border-black/5'
                                 : accentColor === 'emerald'
                                   ? 'bg-teal-500/20 text-teal-900 dark:text-teal-200'
                                   : accentColor === 'blue'
@@ -2878,25 +3153,51 @@ export default function TurathReader({
               <div className={`absolute inset-0 flex flex-col transition-all duration-300 ${sidebarTab === 'search' ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-4 pointer-events-none -z-10'}`}>
                 <div className="p-4 border-b border-border/40">
                   <form onSubmit={handleSearchInBook} className="relative group">
+                    <button
+                      type="submit"
+                      disabled={!bookSearchQuery.trim() || isSearchingBook}
+                      className={`absolute right-3 top-2.5 p-1 rounded-lg transition-all cursor-pointer ${
+                        accentColor === 'amber'
+                          ? 'text-[#966b2d] hover:text-[#76541f] dark:text-amber-400'
+                          : accentColor === 'emerald'
+                            ? 'text-teal-600 hover:text-teal-700 dark:text-teal-400'
+                            : accentColor === 'blue'
+                              ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
+                              : 'text-brand-magenta hover:text-purple-700 dark:text-purple-400'
+                      } disabled:opacity-40`}
+                      title="بدء البحث"
+                    >
+                      {isSearchingBook ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4 stroke-[2.4]" />}
+                    </button>
                     <input
                       type="text"
                       placeholder="ابحث في نصوص الكتاب..."
                       value={bookSearchQuery}
                       onChange={(e) => setBookSearchQuery(e.target.value)}
-                      className={`w-full rounded-2xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue transition-all shadow-inner ${readerTheme === 'dark' ? 'bg-white/5 border border-white/10 text-white placeholder-white/40 focus:bg-white/10' : 'bg-slate-100 text-slate-900 placeholder-slate-400 border border-slate-200'}`}
+                      className={`w-full rounded-2xl pr-10 pl-9 py-2.5 text-sm focus:outline-none focus:ring-2 ${
+                        accentColor === 'amber'
+                          ? 'focus:ring-amber-500'
+                          : accentColor === 'emerald'
+                            ? 'focus:ring-teal-500'
+                            : accentColor === 'blue'
+                              ? 'focus:ring-blue-500'
+                              : 'focus:ring-brand-magenta'
+                      } transition-all shadow-inner ${readerTheme === 'dark' ? 'bg-white/5 border border-white/10 text-white placeholder-white/40 focus:bg-white/10' : 'bg-slate-100 text-slate-900 placeholder-slate-400 border border-slate-200'}`}
                     />
-                    <button
-                      type="submit"
-                      disabled={!bookSearchQuery.trim() || isSearchingBook}
-                      className="absolute left-2.5 top-2.5 p-1 rounded-lg text-brand-blue hover:bg-brand-blue/10 disabled:opacity-40 transition-all cursor-pointer"
-                      title="بدء البحث"
-                    >
-                      {isSearchingBook ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                    </button>
+                    {bookSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => { setBookSearchQuery(''); setBookSearchResults([]); setHasSearchedBook(false); }}
+                        className="absolute left-3 top-3 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+                        title="مسح البحث"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </form>
                   {hasSearchedBook && !isSearchingBook && (
                     <div className="flex items-center justify-between mt-2.5 text-[11px] px-1 text-muted-foreground font-semibold">
-                      <span>النتائج: <strong className="text-brand-blue">{bookSearchResults.length}</strong> موضع</span>
+                      <span>النتائج: <strong className={accentColor === 'amber' ? 'text-[#966b2d] dark:text-amber-400' : 'text-brand-blue'}>{bookSearchResults.length}</strong> موضع</span>
                       {bookSearchResults.length > 0 && <span className="opacity-75">اضغط على أي نتيجة للقفز</span>}
                     </div>
                   )}
@@ -2905,14 +3206,30 @@ export default function TurathReader({
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-2.5">
                   {isSearchingBook ? (
                     <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
-                      <Loader2 className="h-7 w-7 animate-spin text-brand-blue" />
+                      <Loader2 className={`h-7 w-7 animate-spin ${accentColor === 'amber' ? 'text-[#b88d46]' : 'text-brand-blue'}`} />
                       <p className="text-xs font-semibold">جاري البحث في بطون صفحات الكتاب...</p>
                     </div>
                   ) : !hasSearchedBook ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground gap-2 p-4">
-                      <Search className="w-8 h-8 opacity-40 text-brand-blue" />
-                      <p className="text-xs font-bold">ابحث عن أي لفظ أو مسألة في صفحات الكتاب</p>
-                      <p className="text-[11px] opacity-60">سيتم استعراض كل المواضع مع مقتطفات السياق</p>
+                    <div className="flex flex-col items-center justify-center h-56 text-center gap-3 p-6">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-sm ${
+                        accentColor === 'amber'
+                          ? 'bg-amber-500/10 border-amber-500/25 text-[#966b2d] dark:text-amber-400'
+                          : accentColor === 'emerald'
+                            ? 'bg-teal-500/10 border-teal-500/25 text-teal-600 dark:text-teal-400'
+                            : accentColor === 'blue'
+                              ? 'bg-blue-500/10 border-blue-500/25 text-blue-600 dark:text-blue-400'
+                              : 'bg-brand-magenta/10 border-brand-magenta/25 text-brand-magenta'
+                      }`}>
+                        <Search className="w-7 h-7 stroke-[2.3]" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className={`text-sm font-bold ${readerTheme === 'dark' ? 'text-white/90' : 'text-slate-800'}`}>
+                          ابحث عن أي لفظ أو مسألة في صفحات الكتاب
+                        </p>
+                        <p className={`text-xs ${readerTheme === 'dark' ? 'text-white/60' : 'text-slate-600'}`}>
+                          سيتم استعراض كل المواضع مع مقتطفات السياق
+                        </p>
+                      </div>
                     </div>
                   ) : bookSearchResults.length === 0 ? (
                     <div className={`p-8 text-center text-xs font-bold rounded-2xl ${readerTheme === 'dark' ? 'bg-white/5 text-white/60' : 'bg-black/5 text-black/60'}`}>
@@ -2955,7 +3272,7 @@ export default function TurathReader({
                   <div className="flex items-center gap-2 mb-2">
                     <input
                       type="number"
-                      placeholder="أدخل رقم الحديث أو المسألة..."
+                      placeholder={`أدخل رقم ${numberedItemsLabel.single}...`}
                       value={hadithSearchInput}
                       onChange={(e) => setHadithSearchInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -2972,7 +3289,7 @@ export default function TurathReader({
                     </button>
                   </div>
                   <p className="text-[11px] text-muted-foreground font-semibold">
-                    يتوفر في هذا الكتاب <strong className="text-amber-500">{hadithsCount}</strong> موضعاً مرقماً للأحاديث والمسائل.
+                    يتوفر في هذا الكتاب <strong className="text-amber-500">{hadithsCount}</strong> موضعاً مرقماً ({numberedItemsLabel.plural}).
                   </p>
                 </div>
 
@@ -3034,14 +3351,14 @@ export default function TurathReader({
                 <button
                   onClick={toggleBookmark}
                   className={`p-2 rounded-xl transition-all ${bookmarks.includes(currentPage)
-                      ? accentColor === 'amber'
-                        ? 'bg-amber-500/15 text-[#b88d46] shadow-sm'
-                        : accentColor === 'emerald'
-                          ? 'bg-teal-500/15 text-teal-600 shadow-sm'
-                          : accentColor === 'blue'
-                            ? 'bg-blue-500/15 text-blue-600 shadow-sm'
-                            : 'bg-brand-magenta/15 text-brand-magenta shadow-sm'
-                      : `text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 ${accentColor === 'amber' ? 'hover:text-[#b88d46]' : accentColor === 'emerald' ? 'hover:text-teal-600' : accentColor === 'blue' ? 'hover:text-blue-600' : 'hover:text-brand-magenta'}`
+                    ? accentColor === 'amber'
+                      ? 'bg-amber-500/15 text-[#b88d46] shadow-sm'
+                      : accentColor === 'emerald'
+                        ? 'bg-teal-500/15 text-teal-600 shadow-sm'
+                        : accentColor === 'blue'
+                          ? 'bg-blue-500/15 text-blue-600 shadow-sm'
+                          : 'bg-brand-magenta/15 text-brand-magenta shadow-sm'
+                    : `text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 ${accentColor === 'amber' ? 'hover:text-[#b88d46]' : accentColor === 'emerald' ? 'hover:text-teal-600' : accentColor === 'blue' ? 'hover:text-blue-600' : 'hover:text-brand-magenta'}`
                     }`}
                   title={bookmarks.includes(currentPage) ? "إزالة العلامة" : "حفظ كعلامة مرجعية"}
                 >
@@ -3107,6 +3424,15 @@ export default function TurathReader({
               ) : pageText ? (
                 <div className="animate-in fade-in duration-700">
                   <style>{`
+                  /* Base Text Font Size - dynamically driven by fontSize state (default 22px, controlled by slider) */
+                  .turath-content,
+                  .turath-content p,
+                  .turath-content div,
+                  .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific) {
+                    font-size: ${fontSize}px !important;
+                    line-height: 2.3 !important;
+                  }
+
                   /* Primary Main Chapter Headings (Level 1: "كتاب الصلاة", "باب المواقيت") */
                   .turath-content h1,
                   .turath-content h2,
@@ -3118,21 +3444,23 @@ export default function TurathReader({
                     font-family: 'Scheherazade New', 'Amiri', serif !important;
                     font-weight: 700;
                     font-size: 1.25em !important;
-                    line-height: 1.5;
-                    margin: 1.75rem auto 0.6rem !important;
+                    line-height: 1.4 !important;
+                    margin: 1.35rem auto 0.4rem !important;
                     position: relative;
                     width: fit-content;
                     max-width: 90%;
-                    padding: 0 1rem 0.5rem;
+                    padding: 0 1rem 0.35rem;
                     background: transparent !important;
                     border-radius: 0 !important;
                     border-bottom: 2px solid ${readerTheme === 'dark' ? darkTitleBorder : lightTitleBorder};
                   }
 
-                  /* Secondary Sub-Titles & Mas'alahs (Level 2+: "فصل", "والثلثان فرض أربعة") */
+                  /* Secondary Sub-Titles & Mas'alahs (Level 2+: "فصل", "مسألة", etc.) */
                   .turath-content span[data-type="title"]:not([data-level="1"]),
                   .turath-content span[data-type="title"][data-level="2"],
                   .turath-content span[data-type="title"][data-level="3"],
+                  .turath-content span[data-type="title"][data-level="4"],
+                  .turath-content span[data-type="title"][data-level="5"],
                   .turath-content h3,
                   .turath-content h4 {
                     display: block !important;
@@ -3140,8 +3468,8 @@ export default function TurathReader({
                     font-family: 'Scheherazade New', 'Amiri', serif !important;
                     font-weight: 700 !important;
                     font-size: 1.05em !important;
-                    line-height: 1.6;
-                    margin: 1.1rem 0 0.35rem 0 !important;
+                    line-height: 1.4 !important;
+                    margin: 0.95rem 0 0.25rem 0 !important;
                     position: relative;
                     width: 100% !important;
                     max-width: 100% !important;
@@ -3151,8 +3479,16 @@ export default function TurathReader({
                     border: none !important;
                   }
 
-                  .turath-content span[data-type="title"] + p {
+                  .turath-content > span[data-type="title"]:first-child,
+                  .turath-content > h1:first-child,
+                  .turath-content > h2:first-child,
+                  .turath-content > h3:first-child,
+                  .turath-content > h4:first-child {
                     margin-top: 0.25rem !important;
+                  }
+
+                  .turath-content span[data-type="title"] + p {
+                    margin-top: 0.2rem !important;
                   }
 
                   .turath-content span[data-type="title"]::before,
@@ -3312,18 +3648,21 @@ export default function TurathReader({
                     transition: all 0.2s ease-in-out !important;
                     min-width: 22px !important;
                     height: 22px !important;
-                    padding: 0 6px !important;
+                    padding: 0 5px !important;
                     border-radius: 9999px !important;
+                    font-family: 'Amiri', 'Scheherazade New', 'Cairo', serif !important;
+                    font-weight: 700 !important;
+                    font-size: 13px !important;
                   }
                   .light-reader .turath-content .islamic-footnote-ref {
-                    background: ${accentColor === 'amber' ? 'rgba(184, 141, 70, 0.08)' : accentColor === 'emerald' ? 'rgba(13, 148, 136, 0.08)' : accentColor === 'blue' ? 'rgba(37, 99, 235, 0.08)' : 'rgba(149, 11, 196, 0.08)'} !important;
-                    border: 1px solid ${lightTitleBorder} !important;
-                    color: ${lightTitleColor} !important;
-                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+                    background: ${accentColor === 'amber' ? 'rgba(184, 141, 70, 0.12)' : accentColor === 'emerald' ? 'rgba(13, 148, 136, 0.12)' : accentColor === 'blue' ? 'rgba(37, 99, 235, 0.12)' : 'rgba(149, 11, 196, 0.12)'} !important;
+                    border: 1.5px solid ${accentColor === 'amber' ? '#b88d46' : accentColor === 'emerald' ? '#0d9488' : accentColor === 'blue' ? '#2563eb' : '#950bc4'} !important;
+                    color: ${accentColor === 'amber' ? '#78531b' : accentColor === 'emerald' ? '#0f766e' : accentColor === 'blue' ? '#1d4ed8' : '#7e22ce'} !important;
+                    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
                   }
                   .light-reader .turath-content .islamic-footnote-ref:hover {
-                    background: ${accentColor === 'amber' ? 'rgba(184, 141, 70, 0.2)' : accentColor === 'emerald' ? 'rgba(13, 148, 136, 0.2)' : accentColor === 'blue' ? 'rgba(37, 99, 235, 0.2)' : 'rgba(149, 11, 196, 0.2)'} !important;
-                    border-color: ${lightTitleColor} !important;
+                    background: ${accentColor === 'amber' ? 'rgba(184, 141, 70, 0.25)' : accentColor === 'emerald' ? 'rgba(13, 148, 136, 0.25)' : accentColor === 'blue' ? 'rgba(37, 99, 235, 0.25)' : 'rgba(149, 11, 196, 0.25)'} !important;
+                    border-color: ${accentColor === 'amber' ? '#8e682d' : accentColor === 'emerald' ? '#0f766e' : accentColor === 'blue' ? '#1e40af' : '#6b21a8'} !important;
                     transform: scale(1.1) !important;
                   }
                   .sepia-reader .turath-content .islamic-footnote-ref {
@@ -3413,14 +3752,14 @@ export default function TurathReader({
                                     setBookmarks(prev => prev.includes(p.page) ? prev.filter(b => b !== p.page) : [...prev, p.page])
                                   }}
                                   className={`p-1.5 rounded-lg transition-all ${bookmarks.includes(p.page)
-                                      ? accentColor === 'amber'
-                                        ? 'bg-amber-500/15 text-[#b88d46] shadow-sm'
-                                        : accentColor === 'emerald'
-                                          ? 'bg-teal-500/15 text-teal-600 shadow-sm'
-                                          : accentColor === 'blue'
-                                            ? 'bg-blue-500/15 text-blue-600 shadow-sm'
-                                            : 'bg-brand-magenta/15 text-brand-magenta shadow-sm'
-                                      : `text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 ${accentColor === 'amber' ? 'hover:text-[#b88d46]' : accentColor === 'emerald' ? 'hover:text-teal-600' : accentColor === 'blue' ? 'hover:text-blue-600' : 'hover:text-brand-magenta'}`
+                                    ? accentColor === 'amber'
+                                      ? 'bg-amber-500/15 text-[#b88d46] shadow-sm'
+                                      : accentColor === 'emerald'
+                                        ? 'bg-teal-500/15 text-teal-600 shadow-sm'
+                                        : accentColor === 'blue'
+                                          ? 'bg-blue-500/15 text-blue-600 shadow-sm'
+                                          : 'bg-brand-magenta/15 text-brand-magenta shadow-sm'
+                                    : `text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 ${accentColor === 'amber' ? 'hover:text-[#b88d46]' : accentColor === 'emerald' ? 'hover:text-teal-600' : accentColor === 'blue' ? 'hover:text-blue-600' : 'hover:text-brand-magenta'}`
                                     }`}
                                   title={bookmarks.includes(p.page) ? "إزالة العلامة" : "حفظ كعلامة مرجعية"}
                                 >
@@ -3515,12 +3854,12 @@ export default function TurathReader({
                               <button
                                 onClick={loadNextPage}
                                 className={`px-6 py-2 rounded-xl font-bold shadow-md transition-all hover:scale-105 active:scale-95 ${accentColor === 'amber'
-                                    ? 'bg-gradient-to-r from-[#8e682d] via-[#b88d46] to-[#dfbf83] text-stone-950 hover:brightness-110'
-                                    : accentColor === 'emerald'
-                                      ? 'bg-teal-600 text-white hover:bg-teal-500'
-                                      : accentColor === 'blue'
-                                        ? 'bg-blue-600 text-white hover:bg-blue-500'
-                                        : 'bg-brand-magenta text-white hover:bg-brand-magenta/90'
+                                  ? 'bg-gradient-to-r from-[#8e682d] via-[#b88d46] to-[#dfbf83] text-stone-950 hover:brightness-110'
+                                  : accentColor === 'emerald'
+                                    ? 'bg-teal-600 text-white hover:bg-teal-500'
+                                    : accentColor === 'blue'
+                                      ? 'bg-blue-600 text-white hover:bg-blue-500'
+                                      : 'bg-brand-magenta text-white hover:bg-brand-magenta/90'
                                   }`}
                               >
                                 إعادة المحاولة
@@ -3551,10 +3890,10 @@ export default function TurathReader({
                   onClick={goPrev}
                   disabled={currentPage <= 1}
                   className={`flex items-center justify-center p-2 rounded-xl transition-all duration-300 font-bold shadow-xs disabled:opacity-30 disabled:pointer-events-none group cursor-pointer ${readerTheme === 'dark'
-                      ? `bg-white/5 ${getPaginationBtnHoverClass()}`
-                      : readerTheme === 'sepia'
-                        ? 'bg-[#F0E5D4] hover:bg-[#8B5226] hover:text-white text-[#4A3523]'
-                        : `bg-slate-100 ${getPaginationBtnHoverClass()} text-slate-700`
+                    ? `bg-white/5 ${getPaginationBtnHoverClass()}`
+                    : readerTheme === 'sepia'
+                      ? 'bg-[#F0E5D4] hover:bg-[#8B5226] hover:text-white text-[#4A3523]'
+                      : `bg-slate-100 ${getPaginationBtnHoverClass()} text-slate-700`
                     }`}
                   title="الصفحة السابقة"
                 >
@@ -3625,10 +3964,10 @@ export default function TurathReader({
                   onClick={goNext}
                   disabled={currentPage >= (maxPage || 1)}
                   className={`flex items-center justify-center p-2 rounded-xl transition-all duration-300 font-bold shadow-xs disabled:opacity-30 disabled:pointer-events-none group cursor-pointer ${readerTheme === 'dark'
-                      ? `bg-white/5 ${getPaginationBtnHoverClass()}`
-                      : readerTheme === 'sepia'
-                        ? 'bg-[#F0E5D4] hover:bg-[#8B5226] hover:text-white text-[#4A3523]'
-                        : `bg-slate-100 ${getPaginationBtnHoverClass()} text-slate-700`
+                    ? `bg-white/5 ${getPaginationBtnHoverClass()}`
+                    : readerTheme === 'sepia'
+                      ? 'bg-[#F0E5D4] hover:bg-[#8B5226] hover:text-white text-[#4A3523]'
+                      : `bg-slate-100 ${getPaginationBtnHoverClass()} text-slate-700`
                     }`}
                   title="الصفحة التالية"
                 >

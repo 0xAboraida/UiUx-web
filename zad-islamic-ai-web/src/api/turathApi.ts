@@ -77,9 +77,11 @@ async function fetchTurathJson(endpointWithQuery: string): Promise<any> {
     try {
       const res = await fetch(`${TURATH_PROXY_URL}${endpointWithQuery}`)
       if (res.ok) {
-        const contentType = res.headers.get('content-type') || ''
-        if (contentType.includes('application/json') || contentType.includes('text/plain')) {
+        try {
           return await res.json()
+        } catch {
+          const text = await res.text()
+          try { return JSON.parse(text) } catch { }
         }
       }
     } catch {
@@ -90,9 +92,11 @@ async function fetchTurathJson(endpointWithQuery: string): Promise<any> {
     try {
       const res = await fetch(`${TURATH_EDGE_URL}${endpointWithQuery}`)
       if (res.ok) {
-        const contentType = res.headers.get('content-type') || ''
-        if (contentType.includes('application/json') || contentType.includes('text/plain')) {
+        try {
           return await res.json()
+        } catch {
+          const text = await res.text()
+          try { return JSON.parse(text) } catch { }
         }
       }
     } catch {
@@ -104,9 +108,11 @@ async function fetchTurathJson(endpointWithQuery: string): Promise<any> {
   try {
     const res = await fetch(`${TURATH_DIRECT_URL}${endpointWithQuery}`)
     if (res.ok) {
-      const contentType = res.headers.get('content-type') || ''
-      if (contentType.includes('application/json') || contentType.includes('text/plain')) {
+      try {
         return await res.json()
+      } catch {
+        const text = await res.text()
+        try { return JSON.parse(text) } catch { }
       }
     }
   } catch {

@@ -534,8 +534,8 @@ export default function StudyMode({ onExit }: { onExit: () => void }) {
 
         if (headings && headings.length > 0) {
           const chapters = convertTurathHeadingsToTree(headings, turathId, bookNode.title)
-          // 3. Cache in IndexedDB with authentic headings AND metadata!
-          await idbSetTurathBookTree(turathId, { children: chapters, meta: data?.meta })
+          // 3. Cache in IndexedDB with authentic headings, indexes, AND metadata!
+          await idbSetTurathBookTree(turathId, { children: chapters, meta: data?.meta, indexes: data?.indexes })
           // 4. Update state in memory tree
           setTreeData(prev => updateBookInTree(prev, bookNode.title, chapters, turathId))
           return chapters

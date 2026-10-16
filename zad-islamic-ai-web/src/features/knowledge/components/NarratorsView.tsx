@@ -42,9 +42,10 @@ interface NarratorsViewProps {
   onReadBook?: (book: any, page?: number) => void;
   publishedBooks?: any[];
   onOpenBookInfo?: (book: any) => void;
+  onSelectNarrator?: (narrator: TurathNarratorItem | null) => void;
 }
 
-export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookInfo }: NarratorsViewProps = {}) {
+export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookInfo, onSelectNarrator }: NarratorsViewProps = {}) {
   const { accentColor, isDark } = useTheme();
 
   // Layout mode: default to 'list' as requested
@@ -63,6 +64,12 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
   const [selectedNarrator, setSelectedNarrator] = useState<TurathNarratorItem | null>(() => cachedActiveNarrator);
   const [narratorDetail, setNarratorDetail] = useState<TurathNarratorDetail | null>(() => cachedActiveDetail);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  useEffect(() => {
+    if (cachedActiveNarrator) {
+      onSelectNarrator?.(cachedActiveNarrator);
+    }
+  }, [onSelectNarrator]);
 
   // Quick Rank Filter
   const [rankFilter, setRankFilter] = useState<'all' | 'sahaba' | 'thiqah' | 'saduq' | 'daif'>('all');
@@ -126,6 +133,7 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
   const handleOpenNarrator = async (narratorItem: TurathNarratorItem) => {
     cachedActiveNarrator = narratorItem;
     setSelectedNarrator(narratorItem);
+    onSelectNarrator?.(narratorItem);
 
     if (cachedActiveDetail && cachedActiveDetail.id === narratorItem.id) {
       setNarratorDetail(cachedActiveDetail);
@@ -429,6 +437,7 @@ export default function NarratorsView({ onReadBook, publishedBooks, onOpenBookIn
           cachedActiveDetail = null;
           setSelectedNarrator(null);
           setNarratorDetail(null);
+          onSelectNarrator?.(null);
         }}
         onOpenBook={onReadBook}
         publishedBooks={publishedBooks}

@@ -262,19 +262,6 @@ export function BookCard({
     }
   };
 
-  const getReadButtonClass = () => {
-    switch (accentColor) {
-      case 'amber':
-        return 'bg-gradient-to-r from-[#8e682d] via-[#b88d46] to-[#dfbf83] hover:from-[#76541f] hover:to-[#b88d46] text-stone-950 font-black shadow-sm shadow-amber-900/30';
-      case 'emerald':
-        return 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-500 hover:from-teal-800 hover:to-teal-600 text-white shadow-sm shadow-teal-900/30 font-bold';
-      case 'blue':
-        return 'bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 hover:from-blue-800 hover:to-blue-700 text-white shadow-sm shadow-blue-900/30 font-bold';
-      case 'purple':
-      default:
-        return 'bg-gradient-to-r from-brand-magenta via-purple-600 to-brand-deep hover:from-brand-deep hover:to-purple-800 text-white shadow-sm shadow-brand-magenta/20 font-bold';
-    }
-  };
 
   const getAskButtonClass = () => {
     switch (accentColor) {
@@ -554,12 +541,26 @@ export function BookCard({
 
         {/* Book Details */}
         <div className={`flex items-center ${compact ? 'gap-2 sm:gap-2.5' : 'gap-3'} flex-1 min-w-0`}>
-          <div className={`${compact ? 'w-7 h-7 rounded-lg' : 'w-9 h-9 rounded-xl'} flex items-center justify-center shrink-0 transition-all shadow-sm ${getBookIconClass()}`}>
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              onRead(book);
+            }}
+            className={`${compact ? 'w-7 h-7 rounded-lg' : 'w-9 h-9 rounded-xl'} flex items-center justify-center shrink-0 transition-all shadow-sm cursor-pointer ${getBookIconClass()}`}
+            title="فتح وقراءة الكتاب"
+          >
             <BookOpen className={compact ? 'w-3.5 h-3.5' : 'w-4.5 h-4.5'} />
           </div>
 
           <div className="min-w-0 flex-1">
-            <h4 className={`font-bold ${compact ? 'text-xs sm:text-[13px] mb-0' : 'text-sm sm:text-base mb-0.5'} text-slate-800 dark:text-slate-100 transition-colors truncate ${getTitleHoverClass()}`}>
+            <h4
+              onClick={(e) => {
+                e.stopPropagation();
+                onRead(book);
+              }}
+              className={`font-bold ${compact ? 'text-xs sm:text-[13px] mb-0' : 'text-sm sm:text-base mb-0.5'} text-slate-800 dark:text-slate-100 transition-colors truncate cursor-pointer ${getTitleHoverClass()}`}
+              title="فتح وقراءة الكتاب"
+            >
               {book.title}
             </h4>
 
@@ -751,8 +752,9 @@ export function BookCard({
             </button>
           )}
 
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground group-hover:text-brand-magenta transition-colors">
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          {/* Subtle Navigation Arrow Indicator */}
+          <div className="flex items-center text-muted-foreground/40 group-hover:text-foreground group-hover:-translate-x-1 transition-all pr-1">
+            <ChevronLeft className="w-4 h-4" />
           </div>
         </div>
 

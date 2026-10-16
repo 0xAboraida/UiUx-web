@@ -25,6 +25,7 @@ export interface UnifiedCatalogViewProps {
   handleReadBook: (book: BookMeta) => void;
   onAskBook: (book: any) => void;
   publishedBooks: BookMeta[];
+  onSelectNarrator?: (narrator: any | null) => void;
 }
 
 export default function UnifiedCatalogView({
@@ -39,6 +40,7 @@ export default function UnifiedCatalogView({
   handleReadBook,
   onAskBook,
   publishedBooks,
+  onSelectNarrator,
 }: UnifiedCatalogViewProps) {
   const [internalSubTab, setInternalSubTab] = useState<CatalogSubTab>(initialSubTab);
   const currentSubTab = controlledSubTab ?? internalSubTab;
@@ -81,6 +83,7 @@ export default function UnifiedCatalogView({
                 onReadBook={handleReadBook}
                 publishedBooks={publishedBooks}
                 onOpenBookInfo={categoriesProps.setActiveInfoBook}
+                onSelectNarrator={onSelectNarrator}
               />
             )}
 
