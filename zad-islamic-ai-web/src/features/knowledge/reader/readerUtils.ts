@@ -182,12 +182,7 @@ export function parseIslamicTypography(text: string): string {
   const bracketRegex = /(?<!<[^>]*)(?<!\[)\[([^\[\]<>\r\n]+)\](?![^<]*>)/gu;
   parsed = parsed.replace(bracketRegex, '<span data-type="bracketed-note" class="islamic-bracketed-note">[$1]</span>');
 
-  // 7. Speech / Attribution keywords
-  parsed = parsed.replace(SPEECH_REGEX, (match, word, punct) => {
-    return `<span data-type="narrator-keyword" class="islamic-narrator-keyword font-bold">${word}${punct}</span>`;
-  });
-
-  // 8. Restore tokens in reverse order
+  // 7. Restore tokens in reverse order
   parsed = parsed.replace(/__QURAN_TOKEN_(\d+)__/g, (_, idx) => quranTokens[Number(idx)] || '');
   parsed = parsed.replace(/__HONOR_TOKEN_(\d+)__/g, (_, idx) => honorificTokens[Number(idx)] || '');
   parsed = parsed.replace(/__FN_TOKEN_(\d+)__/g, (_, idx) => footnoteTokens[Number(idx)] || '');

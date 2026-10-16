@@ -599,12 +599,7 @@ export function parseIslamicTypography(text: string): string {
   const bracketRegex = /(?<!<[^>]*)(?<!\[)\[([^\[\]<>\r\n]+)\](?![^<]*>)/gu;
   parsed = parsed.replace(bracketRegex, '<span data-type="bracketed-note" class="islamic-bracketed-note">[$1]</span>');
 
-  // 7. Speech / Attribution keywords (قال:، يقول:، حدثنا:، أخبرنا:...)
-  parsed = parsed.replace(SPEECH_REGEX, (match, word, punct) => {
-    return `<span data-type="narrator-keyword" class="islamic-narrator-keyword font-bold">${word}${punct}</span>`;
-  });
-
-  // 8. Restore tokens in reverse order
+  // 7. Restore tokens in reverse order
   parsed = parsed.replace(/__QURAN_TOKEN_(\d+)__/g, (_, idx) => quranTokens[Number(idx)] || '');
   parsed = parsed.replace(/__HONOR_TOKEN_(\d+)__/g, (_, idx) => honorificTokens[Number(idx)] || '');
   parsed = parsed.replace(/__FN_TOKEN_(\d+)__/g, (_, idx) => footnoteTokens[Number(idx)] || '');
@@ -2849,7 +2844,7 @@ export default function TurathReader({
       {/* Islamic Geometric Wallpaper Pattern (ثابتة في خلفية القراءة متناسقة مع السمة) */}
       <IslamicPattern
         isFixed={true}
-        opacity={readerTheme === 'dark' ? 0.025 : 0.06}
+        opacity={readerTheme === 'dark' ? 0.08 : readerTheme === 'sepia' ? 0.13 : 0.16}
         className={`${getReaderPatternColor()} pointer-events-none transition-colors duration-300`}
       />
 
@@ -3473,11 +3468,15 @@ export default function TurathReader({
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar">
                   {loadingBook ? (
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4 p-6">
-                      <Loader2 className={`h-8 w-8 animate-spin ${getPaginationLayersIconClass()}`} />
-                      <div className="text-center space-y-1">
-                        <p className="text-sm font-bold">جاري تحميل الفهرس...</p>
-                        <p className="text-xs opacity-60">قد يستغرق بضع ثوانٍ في الكتب والموسوعات الكبرى</p>
+                    <div className="flex flex-col items-center justify-center h-full gap-4 p-6">
+                      <Loader2 className={`h-9 w-9 animate-spin ${getPaginationLayersIconClass()}`} />
+                      <div className="text-center space-y-1.5">
+                        <p className={`text-sm font-bold ${readerTheme === 'dark' ? 'text-slate-100' : readerTheme === 'sepia' ? 'text-[#422d19]' : 'text-slate-800'}`}>
+                          جاري تحميل الفهرس...
+                        </p>
+                        <p className={`text-xs font-medium ${readerTheme === 'dark' ? 'text-slate-400' : readerTheme === 'sepia' ? 'text-[#705232]' : 'text-slate-500'}`}>
+                          قد يستغرق بضع ثوانٍ في الكتب والموسوعات الكبرى
+                        </p>
                       </div>
                     </div>
                   ) : toc.length === 0 ? (
@@ -3882,9 +3881,20 @@ export default function TurathReader({
 
         {/* Main Reading Area */}
         <main
-          className={`flex-1 relative h-full flex flex-col overflow-hidden rounded-3xl border backdrop-blur-xl ${readerTheme === 'dark' ? 'border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)]' : readerTheme === 'sepia' ? 'border-[#E2D6C0] bg-[#FAF5ED] shadow-[0_8px_30px_rgba(120,90,50,0.08)]' : 'border-gray-200/80 bg-white/70 shadow-lg'}`}
+          className={`flex-1 relative h-full flex flex-col overflow-hidden rounded-3xl border ${readerTheme === 'dark'
+            ? 'border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-xl'
+            : readerTheme === 'sepia'
+              ? 'border-[#E2D6C0] bg-[#FAF5ED] shadow-[0_8px_30px_rgba(120,90,50,0.08)]'
+              : readingMode === 'paged'
+                ? 'border-gray-200/90 bg-white shadow-lg'
+                : 'border-gray-200/80 bg-white/70 backdrop-blur-xl shadow-lg'
+            }`}
           style={{
-            backgroundColor: readerTheme === 'dark' ? getReaderFrameBgColor(darkFrameOpacity) : undefined
+            backgroundColor: readerTheme === 'dark'
+              ? getReaderFrameBgColor(darkFrameOpacity)
+              : (readerTheme === 'light' && readingMode === 'paged')
+                ? '#ffffff'
+                : undefined
           }}
         >
 
@@ -4063,7 +4073,7 @@ export default function TurathReader({
                   .turath-content .islamic-quran-verse {
                     display: inline !important;
                     font-family: var(--font-scheherazade, 'Scheherazade New', 'Amiri', 'Traditional Arabic', serif) !important;
-                    font-weight: 700 !important;
+                    font-weight: normal !important;
                     margin: 0 0.15rem !important;
                     padding: 0 !important;
                     background: none !important;
@@ -4076,27 +4086,20 @@ export default function TurathReader({
                   .turath-content span[data-type="bracketed-note"],
                   .turath-content .islamic-bracketed-note {
                     display: inline !important;
-                    font-weight: 600 !important;
+                    font-weight: normal !important;
                   }
 
                   /* Hadith & Quotes «...» */
                   .turath-content span[data-type="hadith-quote"],
                   .turath-content .islamic-hadith-quote {
                     display: inline !important;
-                    font-weight: 600 !important;
-                  }
-
-                  /* Narrator & Speech Keywords (ألفاظ الرواية والقول: قال:، يقول:، حدثنا...) */
-                  .turath-content span[data-type="narrator-keyword"],
-                  .turath-content .islamic-narrator-keyword {
-                    display: inline !important;
-                    font-weight: 800 !important;
+                    font-weight: normal !important;
                   }
 
                   /* Light Reader Theme Colors */
                   .light-reader .turath-content,
                   .light-reader .turath-content p,
-                  .light-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific):not([data-type="quran"]):not(.islamic-quran-verse):not([data-type="parenthetical"]):not(.islamic-parenthetical):not([data-type="hadith-quote"]):not(.islamic-hadith-quote):not([data-type="bracketed-note"]):not(.islamic-bracketed-note):not([data-type="narrator-keyword"]):not(.islamic-narrator-keyword):not([data-type="footnote-ref"]):not(.islamic-footnote-ref) {
+                  .light-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific):not([data-type="quran"]):not(.islamic-quran-verse):not([data-type="parenthetical"]):not(.islamic-parenthetical):not([data-type="hadith-quote"]):not(.islamic-hadith-quote):not([data-type="bracketed-note"]):not(.islamic-bracketed-note):not([data-type="footnote-ref"]):not(.islamic-footnote-ref) {
                       color: #0f172a !important;
                   }
                   .light-reader .turath-content h1,
@@ -4131,24 +4134,19 @@ export default function TurathReader({
                   .light-reader .turath-content .islamic-parenthetical,
                   .light-reader .turath-content span[data-type="bracketed-note"],
                   .light-reader .turath-content .islamic-bracketed-note {
-                      color: #0369a1 !important;
-                      -webkit-text-fill-color: #0369a1 !important;
+                      color: #0284c7 !important;
+                      -webkit-text-fill-color: #0284c7 !important;
                   }
                   .light-reader .turath-content span[data-type="hadith-quote"],
                   .light-reader .turath-content .islamic-hadith-quote {
-                      color: #9a3412 !important;
-                      -webkit-text-fill-color: #9a3412 !important;
-                  }
-                  .light-reader .turath-content span[data-type="narrator-keyword"],
-                  .light-reader .turath-content .islamic-narrator-keyword {
-                      color: #b91c1c !important;
-                      -webkit-text-fill-color: #b91c1c !important;
+                      color: #0284c7 !important;
+                      -webkit-text-fill-color: #0284c7 !important;
                   }
 
                   /* Sepia Reader Theme Colors */
                   .sepia-reader .turath-content,
                   .sepia-reader .turath-content p,
-                  .sepia-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific):not([data-type="quran"]):not(.islamic-quran-verse):not([data-type="parenthetical"]):not(.islamic-parenthetical):not([data-type="hadith-quote"]):not(.islamic-hadith-quote):not([data-type="bracketed-note"]):not(.islamic-bracketed-note):not([data-type="narrator-keyword"]):not(.islamic-narrator-keyword):not([data-type="footnote-ref"]):not(.islamic-footnote-ref) {
+                  .sepia-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific):not([data-type="quran"]):not(.islamic-quran-verse):not([data-type="parenthetical"]):not(.islamic-parenthetical):not([data-type="hadith-quote"]):not(.islamic-hadith-quote):not([data-type="bracketed-note"]):not(.islamic-bracketed-note):not([data-type="footnote-ref"]):not(.islamic-footnote-ref) {
                       color: #3b2a1a !important;
                   }
                   .sepia-reader .turath-content h1,
@@ -4188,19 +4186,14 @@ export default function TurathReader({
                   }
                   .sepia-reader .turath-content span[data-type="hadith-quote"],
                   .sepia-reader .turath-content .islamic-hadith-quote {
-                      color: #9a3412 !important;
-                      -webkit-text-fill-color: #9a3412 !important;
-                  }
-                  .sepia-reader .turath-content span[data-type="narrator-keyword"],
-                  .sepia-reader .turath-content .islamic-narrator-keyword {
-                      color: #991b1b !important;
-                      -webkit-text-fill-color: #991b1b !important;
+                      color: #0f766e !important;
+                      -webkit-text-fill-color: #0f766e !important;
                   }
 
                   /* Dark Reader Theme Colors */
                   .dark-reader .turath-content,
                   .dark-reader .turath-content p,
-                  .dark-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific):not([data-type="quran"]):not(.islamic-quran-verse):not([data-type="parenthetical"]):not(.islamic-parenthetical):not([data-type="hadith-quote"]):not(.islamic-hadith-quote):not([data-type="bracketed-note"]):not(.islamic-bracketed-note):not([data-type="narrator-keyword"]):not(.islamic-narrator-keyword):not([data-type="footnote-ref"]):not(.islamic-footnote-ref) {
+                  .dark-reader .turath-content span:not([data-type="title"]):not([data-type="poetry"]):not([data-type="page"]):not([data-type="honorific"]):not(.islamic-honorific):not([data-type="quran"]):not(.islamic-quran-verse):not([data-type="parenthetical"]):not(.islamic-parenthetical):not([data-type="hadith-quote"]):not(.islamic-hadith-quote):not([data-type="bracketed-note"]):not(.islamic-bracketed-note):not([data-type="footnote-ref"]):not(.islamic-footnote-ref) {
                       color: #ffffff !important;
                   }
                   .dark-reader .turath-content h1,
@@ -4246,13 +4239,8 @@ export default function TurathReader({
                   }
                   .dark-reader .turath-content span[data-type="hadith-quote"],
                   .dark-reader .turath-content .islamic-hadith-quote {
-                      color: #fb923c !important;
-                      -webkit-text-fill-color: #fb923c !important;
-                  }
-                  .dark-reader .turath-content span[data-type="narrator-keyword"],
-                  .dark-reader .turath-content .islamic-narrator-keyword {
-                      color: #f87171 !important;
-                      -webkit-text-fill-color: #f87171 !important;
+                      color: #38bdf8 !important;
+                      -webkit-text-fill-color: #38bdf8 !important;
                   }
                   .turath-content span[data-type="poetry"] {
                     display: block;
